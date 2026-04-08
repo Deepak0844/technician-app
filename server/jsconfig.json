@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "checkJs": false,
+    "paths": {
+      "#app": ["./app.js"],
+      "#bin/*": ["./bin/*"],
+      "#config/*": ["./config/*"],
+      "#constants/*": ["./constants/*"],
+      "#controllers/*": ["./controllers/*"],
+      "#middlewares/*": ["./middlewares/*"],
+      "#models/*": ["./models/*"],
+      "#routes/*": ["./routes/*"],
+      "#schemas/*": ["./schemas/*"],
+      "#services/*": ["./services/*"],
+      "#utils/*": ["./utils/*"]
+    }
+  },
+  "include": ["**/*.js"],
+  "exclude": ["node_modules"]
+}

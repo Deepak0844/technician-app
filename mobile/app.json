@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Technician App",
+    "slug": "technician-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#000000",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
+    },
+    "notification": {
+      "icon": "./assets/icon.png",
+      "color": "#c899ff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.technicianapp.mobile",
+      "infoPlist": {
+        "NSContactsUsageDescription": "We need access to your contacts to find customers.",
+        "NSUserNotificationsUsageDescription": "We use notifications to remind you about upcoming service jobs."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.technicianapp.mobile",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "READ_CONTACTS",
+        "WRITE_CONTACTS",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Technician App to access your contacts."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}

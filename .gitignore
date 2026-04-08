@@ -1,0 +1,8 @@
+**/node_modules/
+.env
+.agent/
+package-lock.json
+/mobile/android/
+/mobile/ios/
+/mobile/.expo/
+/mobile/dist
