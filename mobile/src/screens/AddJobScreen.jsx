@@ -4,15 +4,16 @@ import { ScrollView, Alert, View, TouchableOpacity, TextInput, ActivityIndicator
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCreateJobMutation, useUpdateJobMutation } from "../services/api/jobApi";
-import NotificationUtils from "../utils/notificationUtils";
-import { useGetCustomersQuery } from "../services/api/customerApi";
-import OfflineBanner from "../components/OfflineBanner";
-import { ApplianceTypes, JobStatuses } from "../constants/appConstants";
+import { useCreateJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
+import NotificationUtils from "@utils/notificationUtils";
+import { useGetCustomersQuery } from "@services/api/customerApi";
+import OfflineBanner from "@components/OfflineBanner";
+import { ApplianceTypes, JobStatuses } from "@constants/appConstants";
 import { Calendar } from "react-native-calendars";
+import useTheme from "@hooks/useTheme";
 
 // Gluestack Primitives
-import { Text } from "../components/ui/text";
+import { Text } from "@components/ui/text";
 
 // Icons
 import { 
@@ -45,7 +46,7 @@ export default function AddJobScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { job: editingJob, customer: initialCustomer, initialDate, origin } = route.params ?? {};
-  
+  const { colors } = useTheme();
   const userId = useSelector((state) => state.auth.user?._id);
   
   const [selectedCustomer, setSelectedCustomer] = useState(
@@ -248,52 +249,51 @@ export default function AddJobScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <OfflineBanner />
       
-      {/* TopAppBar - flex positioned, not absolute */}
-      <View className="w-full z-50 bg-[rgba(0,0,0,0.95)] flex-row items-center justify-between px-6 h-14" style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(73,72,71,0.2)' }}>
-        <View className="flex-row items-center gap-4">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 rounded-full active:scale-95 duration-200" activeOpacity={0.7}>
-            <ArrowLeft color="#c899ff" size={20} />
+      {/* TopAppBar */}
+      <View style={{ width: '100%', zIndex: 50, backgroundColor: colors.bgPrimary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, height: 56, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
+            <ArrowLeft color={colors.primary} size={20} />
           </TouchableOpacity>
-          <Text style={{ fontFamily: 'Space Grotesk' }} className="uppercase tracking-wider text-xs text-[#c899ff] font-bold" numberOfLines={1}>{editingJob ? "Edit Job" : "Add New Job"}</Text>
+          <Text style={{ fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12, color: colors.primary, fontWeight: '700' }} numberOfLines={1}>{editingJob ? "Edit Job" : "Add New Job"}</Text>
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-4 w-full max-w-lg mx-auto" showsVerticalScrollIndicator={false}>
-        <View className="h-4" />
+      <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
+        <View style={{ height: 16 }} />
         
         {/* Section: Customer Identity */}
-        <View className="mb-8 overflow-hidden rounded-2xl bg-[#131313] border border-white/5" style={{ shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20 }}>
-          <View className="bg-[#1a1919] px-5 py-3 border-b border-white/5 flex-row items-center justify-between">
-            <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[10px] font-bold text-[#81ecff] tracking-widest uppercase">Customer Details</Text>
-            <Users size={12} color="#81ecff" />
+        <View style={{ marginBottom: 32, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ backgroundColor: colors.bgCard, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', color: colors.secondary, letterSpacing: 4, textTransform: 'uppercase' }}>Customer Details</Text>
+            <Users size={12} color={colors.secondary} />
           </View>
           
-          <View className="p-5">
+          <View style={{ padding: 20 }}>
             {!selectedCustomer ? (
               <View>
                 <TouchableOpacity 
                   onPress={() => navigation.navigate("CustomerSearch", { onSelectCustomer: setSelectedCustomer })}
-                  className="py-8 items-center justify-center border border-dashed border-[#81ecff]/20 rounded-xl bg-[#81ecff]/5 mb-4"
+                  style={{ paddingVertical: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: colors.secondaryBorder, borderRadius: 12, backgroundColor: colors.secondaryBg, marginBottom: 16 }}
                 >
-                  <Search size={20} color="#81ecff" className="mb-2" />
-                  <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#81ecff] text-[10px] font-bold uppercase tracking-widest">Search Customers</Text>
+                  <Search size={20} color={colors.secondary} />
+                  <Text style={{ fontFamily: 'Space Grotesk', color: colors.secondary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginTop: 8 }}>Search Customers</Text>
                 </TouchableOpacity>
 
                 {topRecent.length > 0 && (
                   <View>
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[7px] uppercase font-bold tracking-widest mb-3 ml-1">Recent Customers</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                    <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Recent Customers</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       {topRecent.map((c) => (
                         <TouchableOpacity 
                           key={c._id} 
                           onPress={() => setSelectedCustomer(c)}
-                          className="mr-2 bg-[#1a1919] border border-white/5 px-4 py-2 rounded-xl items-center justify-center"
-                          style={{ minWidth: 80 }}
+                          style={{ marginRight: 8, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center', minWidth: 80 }}
                         >
-                          <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white text-[10px] font-bold">{c.name.split(' ')[0]}</Text>
+                          <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700' }}>{c.name.split(' ')[0]}</Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
@@ -301,24 +301,24 @@ export default function AddJobScreen() {
                 )}
               </View>
             ) : (
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <View className="flex-row items-center gap-2 mb-1">
-                    <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white text-lg font-bold">{selectedCustomer.name}</Text>
-                    <View className="bg-[#81ecff]/20 px-2 py-0.5 rounded-full border border-[#81ecff]/30">
-                       <Text className="text-[#81ecff] text-[7px] font-bold uppercase tracking-widest">Verified</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 18, fontWeight: '700' }}>{selectedCustomer.name}</Text>
+                    <View style={{ backgroundColor: colors.secondaryBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1, borderColor: colors.secondaryBorder }}>
+                       <Text style={{ color: colors.secondary, fontSize: 7, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Verified</Text>
                     </View>
                   </View>
-                  <View className="flex-row items-center gap-2 mb-1">
-                    <Phone size={10} color="#81ecff" />
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[10px] uppercase font-bold tracking-tighter">PHONE: {selectedCustomer.phone}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Phone size={10} color={colors.secondary} />
+                    <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 10, textTransform: 'uppercase', fontWeight: '700' }}>PHONE: {selectedCustomer.phone}</Text>
                   </View>
                 </View>
                 <TouchableOpacity 
                   onPress={() => setSelectedCustomer(null)}
-                  className="bg-[#1a1919] p-2 rounded-full border border-white/5"
+                  style={{ backgroundColor: colors.bgCard, padding: 8, borderRadius: 999, borderWidth: 1, borderColor: colors.border }}
                 >
-                  <Search size={14} color="#adaaaa" />
+                  <Search size={14} color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
             )}
@@ -326,126 +326,116 @@ export default function AddJobScreen() {
         </View>
 
         {/* Section: Job Parameters */}
-        <View className="mb-8 overflow-hidden rounded-2xl bg-[#131313] border border-white/5 shadow-2xl">
-          <View className="bg-[#1a1919] px-5 py-3 border-b border-white/5 flex-row items-center justify-between">
-            <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[10px] font-bold text-[#c899ff] tracking-widest uppercase">Job Details</Text>
-            <Settings size={12} color="#c899ff" />
+        <View style={{ marginBottom: 32, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ backgroundColor: colors.bgCard, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', color: colors.primary, letterSpacing: 4, textTransform: 'uppercase' }}>Job Details</Text>
+            <Settings size={12} color={colors.primary} />
           </View>
 
-          <View className="p-5">
+          <View style={{ padding: 20 }}>
             {/* Appliance Selector */}
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[8px] font-bold uppercase tracking-widest mb-3 ml-1">Device Type</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-6 overflow-visible">
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Device Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
               {ApplianceTypes.map((type) => {
                 const isSelected = appliance === type;
                 return (
                   <TouchableOpacity 
                     key={type} 
                     onPress={() => setAppliance(type)}
-                    className={`mr-3 px-6 py-2.5 rounded-xl border items-center justify-center transition-all ${isSelected ? 'bg-[#c899ff]/20 border-[#c899ff]' : 'bg-[#1a1919] border-white/5'}`}
+                    style={{ marginRight: 12, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isSelected ? colors.primaryBg : colors.bgCard, borderColor: isSelected ? colors.primary : colors.border }}
                   >
-                    <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-white' : 'text-[#737373]'}`}>{type}</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: isSelected ? colors.textPrimary : colors.textDisabled }}>{type}</Text>
                   </TouchableOpacity>
                 );
               })}
             </ScrollView>
 
-            {/* Diagnostic Input */}
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[8px] font-bold uppercase tracking-widest mb-3 ml-1">Issue Reported</Text>
-            <View className={`mb-6 p-4 rounded-xl bg-[#1a1919] border ${isFocusedIssue ? 'border-[#81ecff]' : 'border-white/5'}`}>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Issue Reported</Text>
+            <View style={{ marginBottom: 24, padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: isFocusedIssue ? colors.secondary : colors.border }}>
               <TextInput
                 placeholder="Briefly describe the problem..."
-                placeholderTextColor="#333"
+                placeholderTextColor={colors.placeholderText}
                 value={issue}
                 onFocus={() => setIsFocusedIssue(true)}
                 onBlur={() => setIsFocusedIssue(false)}
                 onChangeText={setIssue}
-                className="text-white text-xs leading-5"
+                style={{ fontFamily: 'Inter', color: colors.textPrimary, fontSize: 12, lineHeight: 20, textAlignVertical: 'top' }}
                 multiline
                 numberOfLines={3}
-                style={{ fontFamily: 'Inter', textAlignVertical: 'top' }}
               />
             </View>
 
-            {/* Resolution Input */}
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[8px] font-bold uppercase tracking-widest mb-3 ml-1">Resolution / Work Done</Text>
-            <View className={`mb-6 p-4 rounded-xl bg-[#1a1919] border ${isFocusedResolution ? 'border-[#10b981]' : 'border-white/5'}`}>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Resolution / Work Done</Text>
+            <View style={{ marginBottom: 24, padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: isFocusedResolution ? colors.success : colors.border }}>
               <TextInput
                 placeholder="Describe what was done to fix the issue..."
-                placeholderTextColor="#333"
+                placeholderTextColor={colors.placeholderText}
                 value={serviceDone}
                 onFocus={() => setIsFocusedResolution(true)}
                 onBlur={() => setIsFocusedResolution(false)}
                 onChangeText={setServiceDone}
-                className="text-white text-xs leading-5"
+                style={{ fontFamily: 'Inter', color: colors.textPrimary, fontSize: 12, lineHeight: 20, textAlignVertical: 'top' }}
                 multiline
                 numberOfLines={3}
-                style={{ fontFamily: 'Inter', textAlignVertical: 'top' }}
               />
             </View>
 
-            {/* Financial Protocol */}
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[8px] font-bold uppercase tracking-widest mb-3 ml-1">Service Fee</Text>
-            <View className={`flex-row items-center p-4 rounded-xl bg-[#1a1919] border ${isFocusedAmount ? 'border-[#c899ff]' : 'border-white/5'}`}>
-               <Text className="text-[#adaaaa] text-xs mr-2 font-bold uppercase" style={{ fontFamily: 'Space Grotesk' }}>Amt</Text>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Service Fee</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: isFocusedAmount ? colors.primary : colors.border }}>
+               <Text style={{ fontFamily: 'Space Grotesk', color: colors.textMuted, fontSize: 12, marginRight: 8, fontWeight: '700', textTransform: 'uppercase' }}>Amt</Text>
                <TextInput
                  keyboardType="numeric"
                  placeholder="0.00"
-                 placeholderTextColor="#333"
+                 placeholderTextColor={colors.placeholderText}
                  value={amount}
                  onFocus={() => setIsFocusedAmount(true)}
                  onBlur={() => setIsFocusedAmount(false)}
                  onChangeText={setAmount}
-                 className="text-white text-lg font-bold flex-1"
-                 style={{ fontFamily: 'Space Grotesk' }}
+                 style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 18, fontWeight: '700', flex: 1 }}
                />
-               <Text className="text-[#c899ff] text-[10px] font-bold uppercase tracking-widest">INR</Text>
+               <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4 }}>INR</Text>
             </View>
           </View>
         </View>
 
         {/* Section: Warranty Protocol */}
-        <View className="mb-8 overflow-hidden rounded-2xl bg-[#131313] border border-white/5">
-          <View className="bg-[#1a1919] px-5 py-3 border-b border-white/5 flex-row items-center justify-between">
-            <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[10px] font-bold text-[#81ecff] tracking-widest uppercase">Service Warranty</Text>
-            <ShieldCheck size={12} color="#81ecff" />
+        <View style={{ marginBottom: 32, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ backgroundColor: colors.bgCard, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', color: colors.secondary, letterSpacing: 4, textTransform: 'uppercase' }}>Service Warranty</Text>
+            <ShieldCheck size={12} color={colors.secondary} />
           </View>
           
-          <View className="p-5">
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[8px] font-bold uppercase tracking-widest mb-3 ml-1">Selection Period</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-4">
+          <View style={{ padding: 20 }}>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Selection Period</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
               {WarrantyPresets.map((p) => {
                 const isSelected = !showCustomWarranty && warranty === p;
                 return (
                   <TouchableOpacity 
                     key={p} 
-                    onPress={() => {
-                      setWarranty(p);
-                      setShowCustomWarranty(false);
-                    }}
-                    className={`mr-3 px-5 py-2.5 rounded-xl border items-center justify-center ${isSelected ? 'bg-[#81ecff]/20 border-[#81ecff]' : 'bg-[#1a1919] border-white/5'}`}
+                    onPress={() => { setWarranty(p); setShowCustomWarranty(false); }}
+                    style={{ marginRight: 12, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: isSelected ? colors.secondaryBg : colors.bgCard, borderColor: isSelected ? colors.secondary : colors.border }}
                   >
-                    <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'text-white' : 'text-[#737373]'}`}>{p}</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: isSelected ? colors.textPrimary : colors.textDisabled }}>{p}</Text>
                   </TouchableOpacity>
                 );
               })}
               <TouchableOpacity 
                 onPress={() => setShowCustomWarranty(true)}
-                className={`px-5 py-2.5 rounded-xl border items-center justify-center ${showCustomWarranty ? 'bg-[#c899ff]/20 border-[#c899ff]' : 'bg-[#1a1919] border-white/5'}`}
+                style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: showCustomWarranty ? colors.primaryBg : colors.bgCard, borderColor: showCustomWarranty ? colors.primary : colors.border }}
               >
-                <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[9px] font-bold uppercase tracking-wider ${showCustomWarranty ? 'text-white' : 'text-[#737373]'}`}>Custom</Text>
+                <Text style={{ fontFamily: 'Space Grotesk', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: showCustomWarranty ? colors.textPrimary : colors.textDisabled }}>Custom</Text>
               </TouchableOpacity>
             </ScrollView>
 
             {showCustomWarranty && (
-              <View className="mt-2 p-4 rounded-xl bg-[#1a1919] border border-[#c899ff]/30">
+              <View style={{ marginTop: 8, padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.primaryBorder }}>
                  <TextInput
                    placeholder="Enter custom warranty terms..."
-                   placeholderTextColor="#444"
+                   placeholderTextColor={colors.placeholderText}
                    value={customWarranty}
                    onChangeText={setCustomWarranty}
-                   className="text-white text-xs"
-                   style={{ fontFamily: 'Inter' }}
+                   style={{ fontFamily: 'Inter', color: colors.textPrimary, fontSize: 12 }}
                  />
               </View>
             )}
@@ -453,50 +443,45 @@ export default function AddJobScreen() {
         </View>
 
         {/* Section: Operational Timeline */}
-        <View className="mb-8 overflow-hidden rounded-2xl bg-[#131313] border border-white/5">
-          <View className="bg-[#1a1919] px-5 py-3 border-b border-white/5 flex-row items-center justify-between">
-            <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[10px] font-bold text-[#81ecff] tracking-widest uppercase">Schedule & Status</Text>
-            <Activity size={12} color="#81ecff" />
+        <View style={{ marginBottom: 32, overflow: 'hidden', borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ backgroundColor: colors.bgCard, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', color: colors.secondary, letterSpacing: 4, textTransform: 'uppercase' }}>Schedule & Status</Text>
+            <Activity size={12} color={colors.secondary} />
           </View>
           
-          <View className="p-5">
-            <View className="flex-row gap-4 mb-4">
-              {/* Date Card */}
+          <View style={{ padding: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
               <TouchableOpacity 
                 onPress={() => setShowCalendar(true)}
-                className="flex-1 bg-[#1a1919] p-4 rounded-xl border border-white/5 items-center"
-                style={{ shadowColor: '#81ecff', shadowOpacity: 0.1, shadowRadius: 10 }}
+                style={{ flex: 1, backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
               >
-                <CalendarIcon size={16} color="#81ecff" className="mb-2" />
-                <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[7px] uppercase font-bold tracking-widest mb-1">Service Date</Text>
-                <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white text-[10px] font-bold uppercase">{serviceDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</Text>
+                <CalendarIcon size={16} color={colors.secondary} />
+                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginTop: 8, marginBottom: 4 }}>Service Date</Text>
+                <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{serviceDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</Text>
               </TouchableOpacity>
 
-              {/* Time Card */}
               <TouchableOpacity 
                 onPress={() => setShowTimePicker(true)}
-                className="flex-1 bg-[#1a1919] p-4 rounded-xl border border-white/5 items-center"
-                style={{ shadowColor: '#c899ff', shadowOpacity: 0.1, shadowRadius: 10 }}
+                style={{ flex: 1, backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
               >
-                <Clock size={16} color="#c899ff" className="mb-2" />
-                <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[7px] uppercase font-bold tracking-widest mb-1">Time</Text>
-                <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white text-[10px] font-bold uppercase">{selectedTime}</Text>
+                <Clock size={16} color={colors.primary} />
+                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginTop: 8, marginBottom: 4 }}>Time</Text>
+                <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{selectedTime}</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Status Selector */}
             <TouchableOpacity 
               onPress={() => setShowStatusSheet(true)}
-              className="flex-row items-center justify-between bg-[#1a1919] p-4 rounded-xl border border-white/5"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}
             >
               <View>
-                <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-[7px] uppercase font-bold tracking-widest mb-1">Current Status</Text>
-                <View className="flex-row items-center gap-2">
-                  <View className={`w-1.5 h-1.5 rounded-full ${status === 'pending' ? 'bg-[#ffca28]' : status === 'in_progress' ? 'bg-[#81ecff]' : status === 'completed' ? 'bg-[#4caf50]' : 'bg-[#f44336]'}`} />
-                  <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white text-[10px] font-bold uppercase tracking-wider">{status.replace('_', ' ')}</Text>
+                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginBottom: 4 }}>Current Status</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: status === 'pending' ? colors.warning : status === 'in_progress' ? colors.secondary : status === 'completed' ? colors.success : colors.danger }} />
+                  <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>{status.replace('_', ' ')}</Text>
                 </View>
               </View>
-              <ChevronDown size={12} color="#444" />
+              <ChevronDown size={12} color={colors.textDisabled} />
             </TouchableOpacity>
           </View>
         </View>
@@ -506,61 +491,55 @@ export default function AddJobScreen() {
           onPress={handleSubmit}
           disabled={isSyncing}
           activeOpacity={0.8}
-          className="mb-12 overflow-hidden rounded-2xl"
-          style={{ shadowColor: '#c899ff', shadowOpacity: 0.4, shadowRadius: 30, elevation: 12 }}
+          style={{ marginBottom: 48, overflow: 'hidden', borderRadius: 16, shadowColor: colors.primary, shadowOpacity: 0.4, shadowRadius: 30, elevation: 12 }}
         >
           <LinearGradient 
-            colors={['#c899ff', '#81ecff']} 
+            colors={colors.gradientPrimary} 
             start={{ x: 0, y: 0 }} 
             end={{ x: 1, y: 1 }}
-            className="py-5 items-center justify-center flex-row gap-3"
+            style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 12 }}
           >
             {isSyncing ? (
-              <ActivityIndicator color="black" size="small" />
+              <ActivityIndicator color={colors.bgPrimary} size="small" />
             ) : (
               <>
-                <Text style={{ fontFamily: 'Space Grotesk' }} className="text-black font-black uppercase tracking-[0.2em] text-xs">
+                <Text style={{ fontFamily: 'Space Grotesk', color: colors.bgPrimary, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 4, fontSize: 12 }}>
                   {editingJob ? "Save Changes" : "Create Job"}
                 </Text>
-                <Zap color="black" size={14} />
+                <Zap color={colors.bgPrimary} size={14} />
               </>
             )}
           </LinearGradient>
         </TouchableOpacity>
-        {/* Spacer for Bottom Tab Bar Overlap */}
-        <View className="h-24" />
+        <View style={{ height: 96 }} />
       </ScrollView>
 
       {/* Calendar Modal */}
       <Modal visible={showCalendar} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="bg-[#1a1919] p-6 pb-12 rounded-t-3xl border-t border-white/10">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white font-bold uppercase tracking-widest">Select Date</Text>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Select Date</Text>
               <TouchableOpacity onPress={() => setShowCalendar(false)}>
-                <Text className="text-[#81ecff] font-bold">DONE</Text>
+                <Text style={{ color: colors.secondary, fontWeight: '700' }}>DONE</Text>
               </TouchableOpacity>
             </View>
             <Calendar
               minDate={!editingJob ? new Date().toISOString().split('T')[0] : undefined}
               theme={{
-                calendarBackground: '#1a1919',
-                textSectionTitleColor: '#81ecff',
-                selectedDayBackgroundColor: '#c899ff',
-                selectedDayTextColor: '#000',
-                todayTextColor: '#81ecff',
-                dayTextColor: '#e5e5e5',
-                textDisabledColor: '#444',
-                monthTextColor: '#ffffff',
-                indicatorColor: '#c899ff',
-                arrowColor: '#c899ff',
+                calendarBackground: colors.bgCard,
+                textSectionTitleColor: colors.secondary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: colors.bgPrimary,
+                todayTextColor: colors.secondary,
+                dayTextColor: colors.textSecondary,
+                textDisabledColor: colors.textDisabled,
+                monthTextColor: colors.textPrimary,
+                indicatorColor: colors.primary,
+                arrowColor: colors.primary,
               }}
-              onDayPress={(day) => {
-                setServiceDate(new Date(day.timestamp));
-              }}
-              markedDates={{
-                [serviceDate.toISOString().split('T')[0]]: { selected: true }
-              }}
+              onDayPress={(day) => { setServiceDate(new Date(day.timestamp)); }}
+              markedDates={{ [serviceDate.toISOString().split('T')[0]]: { selected: true } }}
             />
           </View>
         </View>
@@ -568,42 +547,44 @@ export default function AddJobScreen() {
 
       {/* Radial Time Picker Modal */}
       <Modal visible={showTimePicker} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="bg-[#1a1919] p-6 pb-12 rounded-t-3xl border-t border-white/10">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white font-bold uppercase tracking-widest">Set Appointment Time</Text>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Set Appointment Time</Text>
               <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <Text className="text-[#c899ff] font-bold">SET</Text>
+                <Text style={{ color: colors.primary, fontWeight: '700' }}>SET</Text>
               </TouchableOpacity>
             </View>
 
             <View className="items-center justify-center py-6">
                {/* Clock Face Toggle */}
-               <View className="flex-row bg-[#131313] rounded-full p-1 mb-10 border border-white/5">
+               <View className="flex-row rounded-full p-1 mb-10 border border-white/5" style={{ backgroundColor: colors.bgInput }}>
                   <TouchableOpacity 
                     onPress={() => setClockPickerMode("hour")}
-                    className={`px-6 py-1.5 rounded-full ${clockPickerMode === "hour" ? 'bg-[#c899ff]/20' : ''}`}
+                    className="px-6 py-1.5 rounded-full"
+                    style={{ backgroundColor: clockPickerMode === "hour" ? colors.primaryBgStrong : 'transparent' }}
                   >
-                    <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[10px] uppercase font-bold ${clockPickerMode === "hour" ? 'text-white' : 'text-[#737373]'}`}>Hour</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: clockPickerMode === "hour" ? colors.textPrimary : colors.textDisabled }} className="text-[10px] uppercase font-bold">Hour</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     onPress={() => setClockPickerMode("minute")}
-                    className={`px-6 py-1.5 rounded-full ${clockPickerMode === "minute" ? 'bg-[#81ecff]/20' : ''}`}
+                    className="px-6 py-1.5 rounded-full"
+                    style={{ backgroundColor: clockPickerMode === "minute" ? colors.secondaryBg : 'transparent' }}
                   >
-                    <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[10px] uppercase font-bold ${clockPickerMode === "minute" ? 'text-white' : 'text-[#737373]'}`}>Minute</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: clockPickerMode === "minute" ? colors.textPrimary : colors.textDisabled }} className="text-[10px] uppercase font-bold">Minute</Text>
                   </TouchableOpacity>
                </View>
 
                {/* Radial Clock Face */}
                <View className="w-64 h-64 items-center justify-center relative">
                   {/* AM/PM Toggle in Center */}
-                  <View className="z-20 w-16 h-16 rounded-full bg-[#1a1919] items-center justify-center border border-white/10" style={{ shadowColor: '#c899ff', shadowOpacity: 0.1, shadowRadius: 20 }}>
+                  <View className="z-20 w-16 h-16 rounded-full items-center justify-center border border-white/10" style={{ backgroundColor: colors.bgCard, shadowColor: colors.primary, shadowOpacity: 0.1, shadowRadius: 20 }}>
                      <TouchableOpacity onPress={() => setSelectedTime(prev => {
                        const t = prev || "10:00 AM";
                        const [timePart] = t.split(' ');
                        return `${timePart || "10:00"} ${t.endsWith('AM') ? 'PM' : 'AM'}`;
                      })}>
-                        <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#c899ff] text-xs font-bold">{(selectedTime || "10:00 AM").split(' ')[1]}</Text>
+                        <Text style={{ fontFamily: 'Space Grotesk', color: colors.primary }} className="text-xs font-bold">{(selectedTime || "10:00 AM").split(' ')[1]}</Text>
                      </TouchableOpacity>
                   </View>
 
@@ -614,8 +595,9 @@ export default function AddJobScreen() {
                     const angle = clockPickerMode === "hour" ? (val % 12) * 30 : val * 6;
                     return (
                       <View 
-                        className="absolute bg-[#c899ff]/40 w-1 rounded-full" 
+                        className="absolute w-1 rounded-full" 
                         style={{ 
+                          backgroundColor: colors.primaryBgStrong,
                           height: 90, 
                           bottom: '50%', 
                           left: '50%',
@@ -665,15 +647,17 @@ export default function AddJobScreen() {
                             });
                           }
                         }}
-                        className={`absolute w-10 h-10 items-center justify-center rounded-full ${isSelected ? 'bg-[#c899ff] border-2 border-[#ffffff]/20' : 'bg-[#131313]'}`}
+                        className={`absolute w-10 h-10 items-center justify-center rounded-full ${isSelected ? 'border-2' : ''}`}
                         style={{ 
+                          backgroundColor: isSelected ? colors.primary : colors.bgInput,
+                          borderColor: isSelected ? colors.borderLight : 'transparent',
                           transform: [{ translateX: x }, { translateY: y }],
-                          shadowColor: isSelected ? '#c899ff' : 'transparent',
+                          shadowColor: isSelected ? colors.primary : 'transparent',
                           shadowOpacity: 0.5,
                           shadowRadius: 10
                         }}
                       >
-                        <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-xs font-bold ${isSelected ? 'text-black' : 'text-[#a3a3a3]'}`}>
+                        <Text style={{ fontFamily: 'Space Grotesk', color: isSelected ? colors.bgPrimary : colors.textMuted }} className="text-xs font-bold">
                           {displayVal}
                         </Text>
                       </TouchableOpacity>
@@ -687,37 +671,34 @@ export default function AddJobScreen() {
 
       {/* Status Bottom Sheet Modal */}
       <Modal visible={showStatusSheet} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="bg-[#1a1919] p-6 pb-12 rounded-t-3xl border-t border-white/10">
-            <View className="flex-row justify-between items-center mb-6">
-              <Text style={{ fontFamily: 'Space Grotesk' }} className="text-white font-bold uppercase tracking-widest">Update Job Status</Text>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Update Job Status</Text>
               <TouchableOpacity onPress={() => setShowStatusSheet(false)}>
-                <ArrowLeft color="#737373" size={24} style={{ transform: [{ rotate: '-90deg'}] }} />
+                <ArrowLeft color={colors.textDisabled} size={24} style={{ transform: [{ rotate: '-90deg'}] }} />
               </TouchableOpacity>
             </View>
 
-            <View className="flex-col gap-3">
+            <View style={{ gap: 12 }}>
               {Object.entries(JobStatuses).map(([key, val]) => {
                 const isSelected = status === val;
                 const config = {
-                  pending: { color: "#a3a3a3", icon: <Clock color="#a3a3a3" size={18} /> },
-                  in_progress: { color: "#ff6e84", icon: <Zap color="#ff6e84" size={18} /> },
-                  completed: { color: "#81ecff", icon: <CheckSquare color="#81ecff" size={18} /> },
-                  cancelled: { color: "#737373", icon: <AlertCircle color="#737373" size={18} /> },
-                }[val] || { color: "#a3a3a3", icon: <Settings2 color="#a3a3a3" size={18} /> };
+                  pending: { color: colors.textMuted, icon: <Clock color={colors.textMuted} size={18} /> },
+                  in_progress: { color: colors.danger, icon: <Zap color={colors.danger} size={18} /> },
+                  completed: { color: colors.secondary, icon: <CheckSquare color={colors.secondary} size={18} /> },
+                  cancelled: { color: colors.textDisabled, icon: <AlertCircle color={colors.textDisabled} size={18} /> },
+                }[val] || { color: colors.textMuted, icon: <Settings2 color={colors.textMuted} size={18} /> };
 
                 return (
                   <TouchableOpacity 
                     key={val}
-                    onPress={() => {
-                      setStatus(val);
-                      setShowStatusSheet(false);
-                    }}
-                    className={`flex-row items-center gap-4 p-4 rounded-xl border transition-all ${isSelected ? 'bg-[rgba(255,255,255,0.05)] border-[#c899ff]/30' : 'bg-[#131313] border-white/5'}`}
+                    onPress={() => { setStatus(val); setShowStatusSheet(false); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 12, borderWidth: 1, backgroundColor: isSelected ? colors.bgSurface : colors.bgInput, borderColor: isSelected ? colors.primaryBorder : colors.border }}
                   >
                     {config.icon}
-                    <Text style={{ fontFamily: 'Inter' }} className={`text-sm font-bold capitalize ${isSelected ? 'text-white' : 'text-[#737373]'}`}>{val.replace('_', ' ')}</Text>
-                    {isSelected && <Zap color="#c899ff" size={14} className="ml-auto" />}
+                    <Text style={{ fontFamily: 'Inter', fontSize: 14, fontWeight: '700', textTransform: 'capitalize', color: isSelected ? colors.textPrimary : colors.textDisabled }}>{val.replace('_', ' ')}</Text>
+                    {isSelected && <Zap color={colors.primary} size={14} style={{ marginLeft: 'auto' }} />}
                   </TouchableOpacity>
                 );
               })}

@@ -23,6 +23,7 @@ export const verifyOtpSchema = z.object({
 export const upsertCustomerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
   phone: z.string().min(7, "Valid phone number is required"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   address: z.string().optional().default(""),
   location: z.string().optional().default(""),
 });

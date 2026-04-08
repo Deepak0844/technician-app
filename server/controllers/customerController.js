@@ -41,3 +41,23 @@ export const getCustomerById = asyncHandler(async (req, res) => {
   const customer = await CustomerService.getCustomerById(req.user._id, req.params.id);
   return ResponseUtils.success(res, customer, HttpStatus.OK, SuccessMessages.CUSTOMER_LOADED);
 });
+
+/**
+ * @desc    Update customer
+ * @route   PATCH /api/v1/customers/:id
+ * @access  Private
+ */
+export const updateCustomer = asyncHandler(async (req, res) => {
+  const customer = await CustomerService.updateCustomer(req.user._id, req.params.id, req.body);
+  return ResponseUtils.success(res, customer, HttpStatus.OK, SuccessMessages.CUSTOMER_UPDATED);
+});
+
+/**
+ * @desc    Delete customer
+ * @route   DELETE /api/v1/customers/:id
+ * @access  Private
+ */
+export const deleteCustomer = asyncHandler(async (req, res) => {
+  await CustomerService.deleteCustomer(req.user._id, req.params.id);
+  return ResponseUtils.success(res, null, HttpStatus.OK, SuccessMessages.CUSTOMER_DELETED);
+});

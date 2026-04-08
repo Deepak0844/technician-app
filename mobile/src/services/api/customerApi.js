@@ -22,6 +22,22 @@ export const customerApi = api.injectEndpoints({
       query: (id) => ({ url: ApiUrls.CUSTOMER_BY_ID(id) }),
       providesTags: (result, error, arg) => ApiUtils.entityTags(TagTypes.CUSTOMERS)(result, error, arg),
     }),
+    updateCustomer: builder.mutation({
+      query: ({ id, ...data }) => ({ url: ApiUrls.CUSTOMER_BY_ID(id), method: "patch", data }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: TagTypes.CUSTOMERS, id },
+        ...ApiUtils.listTags(TagTypes.CUSTOMERS),
+      ],
+    }),
+    deleteCustomer: builder.mutation({
+      query: (id) => ({ url: ApiUrls.CUSTOMER_BY_ID(id), method: "delete" }),
+      invalidatesTags: (result, error, id) => [
+        { type: TagTypes.CUSTOMERS, id },
+        ...ApiUtils.listTags(TagTypes.CUSTOMERS),
+        ...ApiUtils.listTags(TagTypes.JOBS), // Jobs might be affected if we delete customer
+        ...ApiUtils.listTags(TagTypes.DASHBOARD),
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -29,5 +45,7 @@ export const customerApi = api.injectEndpoints({
 export const {
   useGetCustomersQuery,
   useUpsertCustomerMutation,
+  useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
   useGetCustomerByIdQuery,
 } = customerApi;

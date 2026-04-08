@@ -20,6 +20,9 @@ import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 // Store
 import store from "./src/store/index";
 import { initializeAuth } from "./src/store/slices/authSlice";
+import { initializeTheme } from "./src/store/slices/themeSlice";
+
+// ... (skipping some imports for brevity in TargetContent matching)
 
 // Navigation
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -53,8 +56,9 @@ function AppBootstrap() {
   const tokenLoaded = useSelector((state) => state.auth.tokenLoaded);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
-  useEffect(function bootstrapAuth() {
+  useEffect(function bootstrap() {
     dispatch(initializeAuth());
+    dispatch(initializeTheme());
   }, [dispatch]);
 
   // Once authenticated, request OS notification permission (needed for local notifications on iOS)
@@ -63,7 +67,9 @@ function AppBootstrap() {
     NotificationUtils.requestPermissions();
   }, [isAuthenticated]);
 
-  if (!tokenLoaded) {
+  const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
+
+  if (!tokenLoaded || !isThemeInitialized) {
     return (
       <View style={styles.splash}>
         <ActivityIndicator size="large" color="#6366f1" />
@@ -74,13 +80,20 @@ function AppBootstrap() {
   return <AppNavigator />;
 }
 
+function RootApp() {
+  const mode = useSelector((state) => state.theme.mode);
+  return (
+    <GluestackUIProvider mode={mode}>
+      <AppBootstrap />
+    </GluestackUIProvider>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <Provider store={store}>
-        <GluestackUIProvider mode="dark">
-          <AppBootstrap />
-        </GluestackUIProvider>
+        <RootApp />
       </Provider>
     </ErrorBoundary>
   );

@@ -3,74 +3,107 @@ import { FlatList, TouchableOpacity, View, ActivityIndicator, Image } from "reac
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Search, UserPlus, Phone, MapPin, ChevronRight, User } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useGetCustomersQuery } from "../services/api/customerApi";
+import { useGetCustomersQuery } from "@services/api/customerApi";
 import { LinearGradient } from "expo-linear-gradient";
+import useTheme from "@hooks/useTheme";
 
 // Gluestack Primitives
-import { Box } from "../components/ui/box";
-import { Text } from "../components/ui/text";
-import { Input, InputField } from "../components/ui/input";
+import { Box } from "@components/ui/box";
+import { Text } from "@components/ui/text";
+import { Input, InputField } from "@components/ui/input";
 
 export default function CustomerListScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [query, setQuery] = useState("");
-  
+
   // RTK Query
   const { data: customersResponse, isLoading } = useGetCustomersQuery({ search: query });
   const customers = customersResponse?.data || [];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       {/* Top Header */}
-      <LinearGradient 
-        colors={['rgba(0,0,0,0.95)', 'rgba(14,14,14,0.95)']} 
-        className="w-full flex-row items-center justify-between px-4 h-14 z-50 border-b border-white/5"
+      <LinearGradient
+        colors={colors.gradientHeader}
+        style={{
+          width: "100%",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          height: 56,
+          zIndex: 50,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
       >
-        <View className="flex-row items-center gap-2">
-           <User color="#8B5CF6" size={20} />
-           <Text style={{ fontFamily: 'Inter' }} className="text-sm font-bold tracking-tighter text-[#8B5CF6]">Customers</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <User color={colors.indigo} size={20} />
+          <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+            Customers
+          </Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <TouchableOpacity 
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TouchableOpacity
             onPress={() => navigation.navigate("CustomerSearch")}
-            className="p-2 active:scale-95" 
+            style={{ padding: 8 }}
             activeOpacity={0.7}
           >
-            <UserPlus color="#81ecff" size={20} />
+            <UserPlus color={colors.secondary} size={20} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.navigate("Profile")}
-            activeOpacity={0.7} 
-            className="active:scale-95"
+            activeOpacity={0.7}
           >
-             <View className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.1)] overflow-hidden bg-[#1a1919]">
-                <Image 
-                  source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }} 
-                  className="w-full h-full object-cover" 
-                />
-             </View>
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                overflow: "hidden",
+                backgroundColor: colors.bgCard,
+              }}
+            >
+              <Image
+                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }}
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
           </TouchableOpacity>
         </View>
       </LinearGradient>
 
-      <Box className="flex-1 px-4 py-4">
+      <Box style={{ flex: 1, paddingHorizontal: 16, paddingTop: 16 }}>
         {/* Search Bar */}
-        <Input variant="outline" size="xl" className="border-2 border-white/10 bg-[#1a1919] rounded-2xl mb-6 focus:border-[#81ecff]">
-          <View className="pl-4 justify-center">
-            <Search color="#a3a3a3" size={18} />
+        <Input
+          variant="outline"
+          size="xl"
+          style={{
+            borderWidth: 2,
+            borderColor: colors.borderInput,
+            backgroundColor: colors.bgCard,
+            borderRadius: 16,
+            marginBottom: 24,
+          }}
+        >
+          <View style={{ paddingLeft: 16, justifyContent: "center" }}>
+            <Search color={colors.textMuted} size={18} />
           </View>
           <InputField
             placeholder="Search name or phone..."
-            placeholderTextColor="#737373"
+            placeholderTextColor={colors.textDisabled}
             value={query}
             onChangeText={setQuery}
-            className="text-white font-medium px-2 tracking-wide"
+            style={{ color: colors.textPrimary, fontFamily: "Inter", paddingHorizontal: 8 }}
           />
         </Input>
 
         {isLoading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#8B5CF6" />
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <ActivityIndicator color={colors.indigo} />
           </View>
         ) : (
           <FlatList
@@ -79,33 +112,53 @@ export default function CustomerListScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => navigation.navigate("CustomerDetails", { customerId: item._id })}
                 activeOpacity={0.7}
-                className="bg-[rgba(26,25,25,0.4)] p-5 rounded-2xl border border-white/5 mb-4 flex-row items-center"
+                style={{
+                  backgroundColor: colors.bgCardAlt,
+                  padding: 20,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  marginBottom: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
               >
-                {/* Avatar/Icon Area */}
-                <View className="w-12 h-12 rounded-full bg-[#c899ff]/10 items-center justify-center border border-[#c899ff]/20 mr-4">
-                  <User color="#c899ff" size={22} />
+                {/* Avatar */}
+                <View
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
+                    marginRight: 16,
+                  }}
+                >
+                  <User color={colors.primary} size={22} />
                 </View>
 
-                {/* Info Area */}
-                <View className="flex-1">
-                  <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#ffffff] font-bold text-base tracking-tight mb-1">
+                {/* Info */}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 }}>
                     {item.name}
                   </Text>
-                  
-                  <View className="flex-row items-center gap-3">
-                    <View className="flex-row items-center gap-1">
-                      <Phone color="#a3a3a3" size={12} />
-                      <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-xs">
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Phone color={colors.textMuted} size={12} />
+                      <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>
                         {item.phone}
                       </Text>
                     </View>
                     {item.address && (
-                      <View className="flex-row items-center gap-1 flex-1">
-                        <MapPin color="#a3a3a3" size={12} />
-                        <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-xs" numberOfLines={1}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
+                        <MapPin color={colors.textMuted} size={12} />
+                        <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }} numberOfLines={1}>
                           {item.address}
                         </Text>
                       </View>
@@ -113,14 +166,17 @@ export default function CustomerListScreen() {
                   </View>
                 </View>
 
-                {/* Action Arrow */}
-                <ChevronRight color="#404040" size={20} />
+                <ChevronRight color={colors.textDisabled} size={20} />
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <View className="items-center mt-10">
-                <Text style={{ fontFamily: 'Inter' }} className="text-[#737373] text-center font-bold tracking-widest uppercase text-[10px] mb-2">No customers found</Text>
-                <Text style={{ fontFamily: 'Inter' }} className="text-[#525252] text-center text-xs px-10">Use the &apos;+&apos; icon above to add a new customer from your phone contacts.</Text>
+              <View style={{ alignItems: "center", marginTop: 40 }}>
+                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, textAlign: "center", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", fontSize: 10, marginBottom: 8 }}>
+                  No customers found
+                </Text>
+                <Text style={{ fontFamily: "Inter", color: colors.textFaint, textAlign: "center", fontSize: 12, paddingHorizontal: 40 }}>
+                  Use the &apos;+&apos; icon above to add a new customer from your phone contacts.
+                </Text>
               </View>
             }
           />

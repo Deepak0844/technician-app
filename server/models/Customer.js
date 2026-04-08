@@ -18,6 +18,12 @@ const customerSchema = new mongoose.Schema(
       required: [true, "Customer phone is required"],
       trim: true,
     },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      default: "",
+    },
     address: {
       type: String,
       trim: true,

@@ -18,5 +18,7 @@ router.use(protect);
 router.get("/search", validateQuery(customerSearchSchema), customerController.searchCustomers);
 router.post("/upsert", validateBody(upsertCustomerSchema), customerController.upsertCustomer);
 router.get("/:id", customerController.getCustomerById);
+router.patch("/:id", validateBody(upsertCustomerSchema.partial()), customerController.updateCustomer);
+router.delete("/:id", customerController.deleteCustomer);
 
 export default router;

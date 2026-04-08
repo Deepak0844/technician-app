@@ -32,7 +32,8 @@ import {
 } from "lucide-react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
-import { Text } from "../components/ui/text";
+import { Text } from "@components/ui/text";
+import useTheme from "@hooks/useTheme";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -57,35 +58,21 @@ function generateInvoiceNumber(jobId) {
   return `INV-${jobId.slice(-6).toUpperCase()}`;
 }
 
-function getStatusConfig(status) {
-  switch (status) {
-    case "completed":
-      return { label: "PAID", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)" };
-    case "in_progress":
-      return { label: "IN PROGRESS", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)" };
-    case "cancelled":
-      return { label: "CANCELLED", color: "#ef4444", bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)" };
-    default:
-      return { label: "PENDING", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)" };
-  }
-}
+
 
 // ─────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────
-function SectionLabel({ children }) {
-  return (
-    <Text style={styles.sectionLabel}>{children}</Text>
-  );
-}
+
 
 function InfoRow({ icon, label, value, valueColor }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoRowIcon}>{icon}</View>
       <View style={styles.infoRowContent}>
-        <Text style={styles.infoRowLabel}>{label}</Text>
-        <Text style={[styles.infoRowValue, valueColor ? { color: valueColor } : null]}>
+        <Text style={[styles.infoRowLabel, { color: colors.textMuted }]}>{label}</Text>
+        <Text style={[styles.infoRowValue, { color: valueColor || colors.textSecondary }]}>
           {value || "—"}
         </Text>
       </View>
@@ -94,47 +81,49 @@ function InfoRow({ icon, label, value, valueColor }) {
 }
 
 function LineItemHeaderRow() {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.lineItemRow, styles.lineItemHeader]}>
-      <Text style={[styles.lineItemHeaderText, { flex: 1 }]}>Description</Text>
-      <Text style={[styles.lineItemHeaderText, styles.lineItemQtyCol]}>Qty</Text>
-      <Text style={[styles.lineItemHeaderText, styles.lineItemAmtCol]}>Amount</Text>
+    <View style={[styles.lineItemRow, styles.lineItemHeader, { backgroundColor: colors.bgSurface }]}>
+      <Text style={[styles.lineItemHeaderText, { flex: 1, color: colors.secondary }]}>Description</Text>
+      <Text style={[styles.lineItemHeaderText, styles.lineItemQtyCol, { color: colors.secondary }]}>Qty</Text>
+      <Text style={[styles.lineItemHeaderText, styles.lineItemAmtCol, { color: colors.secondary }]}>Amount</Text>
       <View style={styles.lineItemDelCol} />
     </View>
   );
 }
 
 function EditableLineItemRow({ item, onChangeDescription, onChangeQty, onChangeAmount, onDelete, isAlt }) {
+  const { colors } = useTheme();
   return (
     <View style={[styles.lineItemRow, isAlt && styles.lineItemAlt]}>
       <TextInput
-        style={[styles.lineItemInput, { flex: 1 }]}
+        style={[styles.lineItemInput, { flex: 1, color: colors.textPrimary }]}
         value={item.description}
         onChangeText={onChangeDescription}
         placeholder="Description"
-        placeholderTextColor="#494847"
+        placeholderTextColor={colors.textDisabled}
         multiline
       />
       <TextInput
-        style={[styles.lineItemInput, styles.lineItemQtyCol]}
+        style={[styles.lineItemInput, styles.lineItemQtyCol, { color: colors.textPrimary }]}
         value={String(item.qty)}
         onChangeText={onChangeQty}
         keyboardType="numeric"
         placeholder="1"
-        placeholderTextColor="#494847"
+        placeholderTextColor={colors.textDisabled}
         textAlign="center"
       />
       <TextInput
-        style={[styles.lineItemInput, styles.lineItemAmtCol]}
+        style={[styles.lineItemInput, styles.lineItemAmtCol, { color: colors.textPrimary }]}
         value={String(item.amount)}
         onChangeText={onChangeAmount}
         keyboardType="numeric"
         placeholder="0"
-        placeholderTextColor="#494847"
+        placeholderTextColor={colors.textDisabled}
         textAlign="right"
       />
       <TouchableOpacity onPress={onDelete} style={styles.lineItemDelBtn} activeOpacity={0.7}>
-        <Trash2 color="#ef4444" size={14} />
+        <Trash2 color={colors.danger} size={14} />
       </TouchableOpacity>
     </View>
   );
@@ -322,6 +311,21 @@ export default function InvoicePreviewScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { job } = route.params ?? {};
+  const { colors } = useTheme();
+
+  function getStatusConfig(status) {
+    switch (status) {
+      case "completed":
+      case "paid":
+        return { label: "PAID", color: colors.success, bg: colors.successBg, border: colors.successBorder };
+      case "in_progress":
+        return { label: "IN PROGRESS", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
+      case "cancelled":
+        return { label: "CANCELLED", color: colors.danger, bg: colors.dangerBg, border: colors.dangerBorder };
+      default:
+        return { label: "PENDING", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
+    }
+  }
 
   // ── Build initial line items from job data ──
   function buildInitialLineItems() {
@@ -344,10 +348,10 @@ export default function InvoicePreviewScreen() {
 
   if (!job) {
     return (
-      <SafeAreaView style={styles.center}>
-        <Receipt color="#c899ff" size={40} style={{ marginBottom: 16 }} />
-        <Text style={styles.errorTitle}>No Invoice Data</Text>
-        <Text style={styles.errorText}>Please open an invoice from a job.</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <Receipt color={colors.primary} size={40} style={{ marginBottom: 16 }} />
+        <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '700', fontFamily: 'Space Grotesk', marginBottom: 6 }}>No Invoice Data</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 13, fontFamily: 'Inter', textAlign: 'center' }}>Please open an invoice from a job.</Text>
       </SafeAreaView>
     );
   }
@@ -400,17 +404,17 @@ export default function InvoicePreviewScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+      <StatusBar barStyle={colors.bgPrimary === '#000000' ? 'light-content' : 'dark-content'} backgroundColor={colors.bgPrimary} />
 
       {/* ── Top Nav Bar ── */}
-      <View style={styles.navBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.navBackBtn} activeOpacity={0.7}>
-          <ArrowLeft color="#c899ff" size={20} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 56, backgroundColor: colors.bgPrimary, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
+          <ArrowLeft color={colors.primary} size={20} />
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Invoice Preview</Text>
-        <TouchableOpacity onPress={handlePrintPreview} style={styles.navActionBtn} activeOpacity={0.7}>
-          <FileText color="#81ecff" size={20} />
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', letterSpacing: 1, textTransform: 'uppercase' }}>Invoice Preview</Text>
+        <TouchableOpacity onPress={handlePrintPreview} style={{ padding: 8 }} activeOpacity={0.7}>
+          <FileText color={colors.secondary} size={20} />
         </TouchableOpacity>
       </View>
 
@@ -422,7 +426,7 @@ export default function InvoicePreviewScreen() {
 
         {/* ══ INVOICE HEADER CARD ══ */}
         <LinearGradient
-          colors={["#c899ff", "#6c1de0"]}
+          colors={colors.gradientPrimary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.invoiceHeaderCard}
@@ -437,8 +441,8 @@ export default function InvoicePreviewScreen() {
               <Wrench color="#ffffff" size={18} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.brandName}>TechServ Pro</Text>
-              <Text style={styles.brandTagline}>Professional Appliance Repair</Text>
+              <Text style={[styles.brandName, { color: '#ffffff' }]}>TechServ Pro</Text>
+              <Text style={[styles.brandTagline, { color: 'rgba(255,255,255,0.7)' }]}>Professional Appliance Repair</Text>
             </View>
             {/* Status Badge */}
             <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
@@ -448,117 +452,90 @@ export default function InvoicePreviewScreen() {
           </View>
 
           {/* Divider */}
-          <View style={styles.headerDivider} />
+          <View style={[styles.headerDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
 
           {/* Invoice Meta Row */}
           <View style={styles.headerMetaRow}>
             <View>
-              <Text style={styles.headerLabel}>Invoice Number</Text>
-              <Text style={styles.headerInvoiceNo}>{invoiceNumber}</Text>
+              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Invoice Number</Text>
+              <Text style={[styles.headerInvoiceNo, { color: '#ffffff' }]}>{invoiceNumber}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.headerLabel}>Issue Date</Text>
-              <Text style={styles.headerDateText}>{formatDate(job.serviceDate)}</Text>
+              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Issue Date</Text>
+              <Text style={[styles.headerDateText, { color: '#ffffff' }]}>{formatDate(job.serviceDate)}</Text>
             </View>
           </View>
 
           <View style={[styles.headerMetaRow, { marginTop: 12 }]}>
             <View>
-              <Text style={styles.headerLabel}>Payment Due</Text>
-              <Text style={styles.headerDateText}>On Completion</Text>
+              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Payment Due</Text>
+              <Text style={[styles.headerDateText, { color: '#ffffff' }]}>On Completion</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={styles.headerLabel}>Ref. Job ID</Text>
-              <Text style={styles.headerRefText}>#{job._id?.slice(-6).toUpperCase()}</Text>
+              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Ref. Job ID</Text>
+              <Text style={[styles.headerRefText, { color: '#ffffff' }]}>#{job._id?.slice(-6).toUpperCase()}</Text>
             </View>
           </View>
         </LinearGradient>
 
         {/* ══ BILLING SECTION ══ */}
-        <View style={styles.billingGrid}>
+        <View style={{ flexDirection: 'row', marginBottom: 12 }}>
           {/* FROM */}
-          <View style={[styles.billingCard, { marginRight: 8 }]}>
-            <Text style={[styles.billingCardTitle, { color: "#c899ff" }]}>FROM</Text>
-            <View style={styles.billingRow}>
-              <Building2 color="#c899ff" size={13} style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={styles.billingName} numberOfLines={1}>TechServ Pro</Text>
+          <View style={{ flex: 1, marginRight: 8, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', color: colors.primary, fontFamily: 'Inter', marginBottom: 8 }}>FROM</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Building2 color={colors.primary} size={13} style={{ marginRight: 6, marginTop: 1 }} />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>TechServ Pro</Text>
             </View>
-            <Text style={styles.billingDetail}>Certified Technician</Text>
-            <View style={{ height: 8 }} />
-            <View style={styles.billingRow}>
-              <Phone color="#81ecff" size={11} style={{ marginRight: 6 }} />
-              <Text style={styles.billingPhone}>Available 9AM–7PM</Text>
+            <Text style={{ fontSize: 11, color: colors.textDisabled, fontFamily: 'Inter', marginBottom: 8 }}>Certified Technician</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Phone color={colors.secondary} size={11} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Available 9AM–7PM</Text>
             </View>
           </View>
 
           {/* BILL TO */}
-          <View style={[styles.billingCard, { marginLeft: 8 }]}>
-            <Text style={[styles.billingCardTitle, { color: "#81ecff" }]}>BILL TO</Text>
-            <View style={styles.billingRow}>
-              <User color="#81ecff" size={13} style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={styles.billingName} numberOfLines={1}>{customerName}</Text>
+          <View style={{ flex: 1, marginLeft: 8, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 8 }}>BILL TO</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <User color={colors.secondary} size={13} style={{ marginRight: 6, marginTop: 1 }} />
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>{customerName}</Text>
             </View>
-            <View style={{ height: 8 }} />
-            <View style={styles.billingRow}>
-              <Phone color="#81ecff" size={11} style={{ marginRight: 6 }} />
-              <Text style={styles.billingPhone}>{customerPhone}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <Phone color={colors.secondary} size={11} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>{customerPhone}</Text>
             </View>
-            <View style={styles.billingRow}>
-              <MapPin color="#777575" size={11} style={{ marginRight: 6 }} />
-              <Text style={[styles.billingPhone, { color: "#777575" }]}>Local Service Area</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MapPin color={colors.textMuted} size={11} style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Local Service Area</Text>
             </View>
           </View>
         </View>
 
         {/* ══ SERVICE DATE & APPLIANCE INFO ══ */}
-        <View style={styles.card}>
-          <SectionLabel>Service Information</SectionLabel>
-          <InfoRow
-            icon={<Calendar color="#81ecff" size={14} />}
-            label="Service Date"
-            value={formatDate(job.serviceDate)}
-            valueColor="#ffffff"
-          />
-          <View style={styles.rowDivider} />
-          <InfoRow
-            icon={<Wrench color="#c899ff" size={14} />}
-            label="Appliance"
-            value={job.applianceType || "—"}
-            valueColor="#c899ff"
-          />
-          <View style={styles.rowDivider} />
-          <InfoRow
-            icon={<Hash color="#81ecff" size={14} />}
-            label="Issue Reported"
-            value={job.issue || "—"}
-          />
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 12 }}>Service Information</Text>
+          <InfoRow icon={<Calendar color={colors.secondary} size={14} />} label="Service Date" value={formatDate(job.serviceDate)} valueColor={colors.textPrimary} />
+          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
+          <InfoRow icon={<Wrench color={colors.primary} size={14} />} label="Appliance" value={job.applianceType || "—"} valueColor={colors.primary} />
+          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
+          <InfoRow icon={<Hash color={colors.secondary} size={14} />} label="Issue Reported" value={job.issue || "—"} />
           {!!job.serviceDone && (
             <>
-              <View style={styles.rowDivider} />
-              <InfoRow
-                icon={<CheckCircle2 color="#10b981" size={14} />}
-                label="Work Done"
-                value={job.serviceDone}
-                      valueColor="#10b981"
-            />
-          </>
-        )}
-        <View style={styles.rowDivider} />
-        <InfoRow
-          icon={<ShieldCheck color="#81ecff" size={14} />}
-          label="Warranty"
-          value={job.warranty || "No warranty specified"}
-          valueColor="#81ecff"
-        />
-      </View>
-+
+              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
+              <InfoRow icon={<CheckCircle2 color={colors.success} size={14} />} label="Work Done" value={job.serviceDone} valueColor={colors.success} />
+            </>
+          )}
+          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
+          <InfoRow icon={<ShieldCheck color={colors.secondary} size={14} />} label="Warranty" value={job.warranty || "No warranty specified"} valueColor={colors.secondary} />
+        </View>
         {/* ══ LINE ITEMS TABLE (EDITABLE) ══ */}
-        <View style={styles.card}>
-          <View style={styles.sectionLabelRow}>
-            <Text style={styles.sectionLabel}>Service Breakdown</Text>
-            <TouchableOpacity onPress={handleAddRow} style={styles.addRowBtn} activeOpacity={0.75}>
-              <Plus color="#c899ff" size={13} />
-              <Text style={styles.addRowBtnText}>Add Row</Text>
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter' }}>Service Breakdown</Text>
+            <TouchableOpacity onPress={handleAddRow} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.primaryBorder }} activeOpacity={0.75}>
+              <Plus color={colors.primary} size={13} />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary, fontFamily: 'Inter' }}>Add Row</Text>
             </TouchableOpacity>
           </View>
           <LineItemHeaderRow />
@@ -574,64 +551,54 @@ export default function InvoicePreviewScreen() {
             />
           ))}
           {lineItems.length === 0 && (
-            <Text style={styles.emptyRowsText}>No items. Tap &quot;Add Row&quot; to add a service line.</Text>
+            <Text style={{ fontSize: 12, color: colors.textDisabled, fontFamily: 'Inter', textAlign: 'center', paddingVertical: 16 }}>No items. Tap &quot;Add Row&quot; to add a service line.</Text>
           )}
         </View>
 
         {/* ══ TOTALS SECTION ══ */}
-        <View style={styles.card}>
-          <SectionLabel>Payment Summary</SectionLabel>
-          <View style={styles.totalsDivider} />
-          {/* Grand Total */}
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 12 }}>Payment Summary</Text>
+          <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 16 }} />
           <LinearGradient
-            colors={["rgba(200,153,255,0.15)", "rgba(129,236,255,0.1)"]}
+            colors={[colors.primaryBg, colors.secondaryBg]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.grandTotalCard}
+            style={{ borderRadius: 12, padding: 16, marginBottom: 12 }}
           >
-            <View style={styles.grandTotalRow}>
-              <Text style={styles.grandTotalLabel}>Grand Total</Text>
-              <Text style={styles.grandTotalValue}>{formatCurrency(grandTotal)}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textMuted, fontFamily: 'Inter', textTransform: 'uppercase', letterSpacing: 2 }}>Grand Total</Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, fontFamily: 'Space Grotesk' }}>{formatCurrency(grandTotal)}</Text>
             </View>
           </LinearGradient>
-          {/* Payment Method */}
-          <View style={styles.paymentMethodRow}>
-            <Clock color="#777575" size={12} />
-            <Text style={styles.paymentMethodText}>Accepted: Cash · UPI · Card</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Clock color={colors.textMuted} size={12} />
+            <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Accepted: Cash · UPI · Card</Text>
           </View>
         </View>
 
         {/* ══ THANK YOU FOOTER ══ */}
-        <View style={styles.thankYouBox}>
-          <Text style={styles.thankYouEmoji}>🙏</Text>
-          <Text style={styles.thankYouTitle}>Thank you for your business!</Text>
-          <Text style={styles.thankYouSub}>We look forward to serving you again.</Text>
+        <View style={{ alignItems: 'center', padding: 24, marginBottom: 12, backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ fontSize: 28, marginBottom: 8 }}>🙏</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', marginBottom: 4 }}>Thank you for your business!</Text>
+          <Text style={{ fontSize: 12, color: colors.textDisabled, fontFamily: 'Inter' }}>We look forward to serving you again.</Text>
         </View>
 
         {/* ══ ACTION BUTTONS ══ */}
-        <TouchableOpacity
-          onPress={handleGeneratePdf}
-          activeOpacity={0.85}
-          style={styles.primaryBtnWrap}
-        >
+        <TouchableOpacity onPress={handleGeneratePdf} activeOpacity={0.85} style={{ marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}>
           <LinearGradient
-            colors={["#c899ff", "#9c3dff"]}
+            colors={colors.gradientPrimary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.primaryBtn}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 18 }}
           >
-            <Download color="#ffffff" size={18} />
-            <Text style={styles.primaryBtnText}>Download & Share PDF</Text>
+            <Download color={colors.bgPrimary} size={18} />
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.bgPrimary, fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2 }}>Download & Share PDF</Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={handlePrintPreview}
-          activeOpacity={0.8}
-          style={styles.secondaryBtn}
-        >
-          <Share2 color="#81ecff" size={18} />
-          <Text style={styles.secondaryBtnText}>Print / Preview Invoice</Text>
+        <TouchableOpacity onPress={handlePrintPreview} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, marginBottom: 4 }}>
+          <Share2 color={colors.secondary} size={18} />
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.secondary, fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2 }}>Print / Preview Invoice</Text>
         </TouchableOpacity>
 
         <View style={{ height: 60 }} />
@@ -646,24 +613,24 @@ export default function InvoicePreviewScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "transparent",
   },
   center: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: "transparent",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
   },
   errorTitle: {
-    color: "#ffffff",
+    color: "transparent",
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "Space Grotesk",
     marginBottom: 6,
   },
   errorText: {
-    color: "#777575",
+    color: "transparent",
     fontSize: 13,
     fontFamily: "Inter",
     textAlign: "center",
@@ -676,16 +643,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     height: 56,
-    backgroundColor: "rgba(0,0,0,0.95)",
+    backgroundColor: "transparent",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(73,72,71,0.2)",
+    borderBottomColor: "transparent",
   },
   navBackBtn: { padding: 8 },
   navActionBtn: { padding: 8 },
   navTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#c899ff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     letterSpacing: 1,
     textTransform: "uppercase",
@@ -710,7 +677,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "transparent",
   },
   glowCircleBottom: {
     position: "absolute",
@@ -719,7 +686,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "transparent",
   },
   headerBrandRow: {
     flexDirection: "row",
@@ -730,7 +697,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
@@ -738,13 +705,13 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#ffffff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     letterSpacing: -0.3,
   },
   brandTagline: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.7)",
+    color: "transparent",
     fontFamily: "Inter",
     marginTop: 1,
   },
@@ -770,7 +737,7 @@ const styles = StyleSheet.create({
   },
   headerDivider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "transparent",
     marginBottom: 14,
   },
   headerMetaRow: {
@@ -779,7 +746,7 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     fontSize: 9,
-    color: "rgba(255,255,255,0.6)",
+    color: "transparent",
     fontFamily: "Inter",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -788,20 +755,20 @@ const styles = StyleSheet.create({
   headerInvoiceNo: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#ffffff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     letterSpacing: -0.3,
   },
   headerDateText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#ffffff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
   },
   headerRefText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.8)",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     letterSpacing: 0.5,
   },
@@ -813,11 +780,11 @@ const styles = StyleSheet.create({
   },
   billingCard: {
     flex: 1,
-    backgroundColor: "#1a1919",
+    backgroundColor: "transparent",
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: "transparent",
   },
   billingCardTitle: {
     fontSize: 8,
@@ -835,36 +802,36 @@ const styles = StyleSheet.create({
   billingName: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#ffffff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     flex: 1,
   },
   billingDetail: {
     fontSize: 10,
-    color: "#777575",
+    color: "transparent",
     fontFamily: "Inter",
     marginBottom: 2,
   },
   billingPhone: {
     fontSize: 10,
-    color: "#adaaaa",
+    color: "transparent",
     fontFamily: "Inter",
     flex: 1,
   },
 
   // Card
   card: {
-    backgroundColor: "#1a1919",
+    backgroundColor: "transparent",
     borderRadius: 16,
     padding: 16,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.055)",
+    borderColor: "transparent",
   },
   sectionLabel: {
     fontSize: 8,
     fontWeight: "800",
-    color: "#c899ff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     textTransform: "uppercase",
     letterSpacing: 1.5,
@@ -872,7 +839,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "transparent",
     marginVertical: 8,
   },
 
@@ -894,7 +861,7 @@ const styles = StyleSheet.create({
   },
   infoRowLabel: {
     fontSize: 10,
-    color: "#777575",
+    color: "transparent",
     fontFamily: "Inter",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -902,7 +869,7 @@ const styles = StyleSheet.create({
   },
   infoRowValue: {
     fontSize: 12,
-    color: "#e5e5e5",
+    color: "transparent",
     fontFamily: "Inter",
     fontWeight: "600",
     textAlign: "right",
@@ -929,43 +896,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(200,153,255,0.12)",
+    backgroundColor: "transparent",
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: "rgba(200,153,255,0.25)",
+    borderColor: "transparent",
   },
   addRowBtnText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#c899ff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     letterSpacing: 0.3,
   },
 
   // Line items (editable)
   lineItemHeader: {
-    backgroundColor: "rgba(200,153,255,0.08)",
+    backgroundColor: "transparent",
     borderRadius: 8,
     marginBottom: 4,
     paddingHorizontal: 8,
   },
   lineItemAlt: {
-    backgroundColor: "rgba(255,255,255,0.025)",
+    backgroundColor: "transparent",
     borderRadius: 6,
   },
   lineItemHeaderText: {
     fontSize: 9,
     fontWeight: "700",
     fontFamily: "Space Grotesk",
-    color: "#c899ff",
+    color: "transparent",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   lineItemInput: {
     fontSize: 11,
-    color: "#e5e5e5",
+    color: "transparent",
     fontFamily: "Inter",
     paddingVertical: 6,
     paddingHorizontal: 4,
@@ -990,7 +957,7 @@ const styles = StyleSheet.create({
   },
   emptyRowsText: {
     fontSize: 11,
-    color: "#494847",
+    color: "transparent",
     fontFamily: "Inter",
     textAlign: "center",
     paddingVertical: 16,
@@ -1006,18 +973,18 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 12,
-    color: "#adaaaa",
+    color: "transparent",
     fontFamily: "Inter",
   },
   totalValue: {
     fontSize: 12,
-    color: "#e5e5e5",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     fontWeight: "600",
   },
   totalsDivider: {
     height: 1,
-    backgroundColor: "rgba(200,153,255,0.2)",
+    backgroundColor: "transparent",
     marginVertical: 12,
   },
   grandTotalCard: {
@@ -1025,7 +992,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "rgba(200,153,255,0.2)",
+    borderColor: "transparent",
   },
   grandTotalRow: {
     flexDirection: "row",
@@ -1035,7 +1002,7 @@ const styles = StyleSheet.create({
   grandTotalLabel: {
     fontSize: 14,
     fontWeight: "800",
-    color: "#ffffff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -1043,7 +1010,7 @@ const styles = StyleSheet.create({
   grandTotalValue: {
     fontSize: 22,
     fontWeight: "900",
-    color: "#c899ff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
   },
   paymentMethodRow: {
@@ -1054,7 +1021,7 @@ const styles = StyleSheet.create({
   },
   paymentMethodText: {
     fontSize: 10,
-    color: "#777575",
+    color: "transparent",
     fontFamily: "Inter",
     letterSpacing: 0.3,
   },
@@ -1074,13 +1041,13 @@ const styles = StyleSheet.create({
   thankYouTitle: {
     fontSize: 15,
     fontWeight: "800",
-    color: "#c899ff",
+    color: "transparent",
     fontFamily: "Space Grotesk",
     marginBottom: 4,
   },
   thankYouSub: {
     fontSize: 11,
-    color: "#777575",
+    color: "transparent",
     fontFamily: "Inter",
   },
 
@@ -1089,7 +1056,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 12,
-    shadowColor: "#c899ff",
+    shadowColor: "transparent",
     shadowOpacity: 0.35,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 4 },
@@ -1103,7 +1070,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   primaryBtnText: {
-    color: "#ffffff",
+    color: "transparent",
     fontSize: 13,
     fontWeight: "800",
     fontFamily: "Space Grotesk",
@@ -1118,12 +1085,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(129,236,255,0.3)",
-    backgroundColor: "rgba(129,236,255,0.05)",
+    borderColor: "transparent",
+    backgroundColor: "transparent",
     marginBottom: 12,
   },
   secondaryBtnText: {
-    color: "#81ecff",
+    color: "transparent",
     fontSize: 13,
     fontWeight: "700",
     fontFamily: "Space Grotesk",

@@ -3,32 +3,39 @@ import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { ArrowLeft, User, Phone, MapPin, Wrench, Clock, FileText, CheckCircle2, MoreVertical, Edit2, ShieldCheck } from "lucide-react-native";
-import { useGetJobByIdQuery } from "../services/api/jobApi";
-import OfflineBanner from "../components/OfflineBanner";
-import { formatCurrency } from "../utils/formatUtils";
+import {
+  ArrowLeft, User, Phone, MapPin, Wrench, Clock, FileText,
+  CheckCircle2, MoreVertical, Edit2, ShieldCheck,
+} from "lucide-react-native";
+import { useGetJobByIdQuery } from "@services/api/jobApi";
+import OfflineBanner from "@components/OfflineBanner";
+import { formatCurrency } from "@utils/formatUtils";
+import useTheme from "@hooks/useTheme";
 
 export default function JobDetailsScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useTheme();
   const { job: initialJob } = route.params ?? {};
 
-  const { data: jobResponse, isLoading } = useGetJobByIdQuery(initialJob?._id, { skip: !initialJob?._id });
-  
+  const { data: jobResponse, isLoading } = useGetJobByIdQuery(initialJob?._id, {
+    skip: !initialJob?._id,
+  });
+
   const job = jobResponse?.data || initialJob;
 
   if (!job) {
     return (
-      <SafeAreaView className="flex-1 bg-[#000000] items-center justify-center">
-        <Text className="text-[#ffffff]">No job data provided.</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: colors.textPrimary }}>No job data provided.</Text>
       </SafeAreaView>
     );
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-[#000000] items-center justify-center">
-        <ActivityIndicator color="#8B5CF6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.indigo} />
       </SafeAreaView>
     );
   }
@@ -36,167 +43,314 @@ export default function JobDetailsScreen() {
   const isCompleted = job.status === "completed";
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <OfflineBanner />
-      
+
       {/* Top Header */}
-      <LinearGradient 
-        colors={['rgba(0,0,0,0.95)', 'rgba(14,14,14,0.95)']} 
-        className="w-full flex-row items-center justify-between px-4 h-14 z-50 border-b border-white/5"
+      <LinearGradient
+        colors={colors.gradientHeader}
+        style={{
+          width: "100%",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          height: 56,
+          zIndex: 50,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 mr-2 active:scale-95" activeOpacity={0.7}>
-          <ArrowLeft color="#8B5CF6" size={20} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 8 }} activeOpacity={0.7}>
+          <ArrowLeft color={colors.indigo} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: 'Inter' }} className="text-sm font-bold tracking-tighter text-[#8B5CF6]">Job Details</Text>
-        <TouchableOpacity className="p-2 active:scale-95" activeOpacity={0.7}>
-          <MoreVertical color="#8B5CF6" size={20} />
+        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+          Job Details
+        </Text>
+        <TouchableOpacity style={{ padding: 8 }} activeOpacity={0.7}>
+          <MoreVertical color={colors.indigo} size={20} />
         </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        
+
         {/* Job Header Card */}
-        <View className="bg-[#1a1919]/40 rounded-3xl p-6 border border-white/10 mb-6 overflow-hidden relative">
-          <View className="absolute -top-12 -right-12 w-32 h-32 bg-[#c899ff]/10 rounded-full" />
-          
-          <View className="flex-row justify-between items-start mb-4">
+        <View
+          style={{
+            backgroundColor: colors.bgCardAlt,
+            borderRadius: 24,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: colors.borderLight,
+            marginBottom: 24,
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              top: -48,
+              right: -48,
+              width: 128,
+              height: 128,
+              backgroundColor: colors.primaryBg,
+              borderRadius: 64,
+            }}
+          />
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
             <View>
-              <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#81ecff] text-[10px] font-bold uppercase tracking-widest mb-1">
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 10, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
                 Job ID: #{job?._id ? job._id.slice(-6).toUpperCase() : "..."}
               </Text>
-              <Text style={{ fontFamily: 'Space Grotesk' }} className="text-2xl font-bold text-[#ffffff]">{job?.applianceType || "General Service"}</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
+                {job?.applianceType || "General Service"}
+              </Text>
             </View>
-            <View className="flex-row items-center gap-2">
-               <View className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-[#10b981]' : 'bg-[#f59e0b]'}`} />
-               <Text style={{ fontFamily: 'Space Grotesk' }} className={`text-[10px] font-bold uppercase tracking-widest ${isCompleted ? 'text-[#10b981]' : 'text-[#f59e0b]'}`}>
-                 {job?.status || "Pending"}
-               </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: isCompleted ? colors.success : colors.warningIcon,
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 10,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  color: isCompleted ? colors.success : colors.warningIcon,
+                }}
+              >
+                {job?.status || "Pending"}
+              </Text>
             </View>
           </View>
 
-          <View className="flex-row items-center gap-2 mb-2">
-            <Clock color="#a3a3a3" size={14} />
-            <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-xs">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Clock color={colors.textMuted} size={14} />
+            <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>
               {job?.serviceDate ? new Date(job.serviceDate).toLocaleString() : "Date not set"}
             </Text>
           </View>
 
-          <View className="h-[1px] bg-white/5 w-full my-4" />
+          <View style={{ height: 1, backgroundColor: colors.border, width: "100%", marginVertical: 16 }} />
 
-          <View className="flex-row justify-between items-center">
-             <View>
-               <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-[10px] uppercase tracking-widest mb-1">Amount</Text>
-               <Text style={{ fontFamily: 'Space Grotesk' }} className="text-xl font-bold text-[#c899ff]">{formatCurrency(job?.amount)}</Text>
-             </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View>
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+                Amount
+              </Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.primary }}>
+                {formatCurrency(job?.amount)}
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Customer Details Section */}
-        <View className="mb-6">
-           <Text style={{ fontFamily: 'Space Grotesk' }} className="text-sm font-bold text-[#ffffff] mb-4 tracking-tight">Customer Details</Text>
-            <TouchableOpacity 
-              onPress={() => {
-                const customerId = job?.customerId?._id || job?.customerId;
-                if (customerId) {
-                  navigation.navigate("CustomerDetails", { customerId });
-                }
-              }}
-              activeOpacity={0.7}
-              className="bg-[#1a1919]/40 rounded-2xl p-5 border border-white/5"
-            >
-               <View className="flex-row items-center gap-4 mb-4">
-                  <View className="w-10 h-10 rounded-full bg-[#c899ff]/10 items-center justify-center border border-[#c899ff]/20">
-                     <User color="#c899ff" size={20} />
-                  </View>
-                  <View>
-                     <Text style={{ fontFamily: 'Inter' }} className="text-[#ffffff] font-bold text-sm">
-                       {job?.customerId?.name || job?.customerName || "Unknown Customer"}
-                     </Text>
-                     <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-xs">Regular Client</Text>
-                  </View>
-               </View>
-
-              <TouchableOpacity className="flex-row items-center gap-3 mb-4">
-                 <Phone color="#81ecff" size={16} />
-                  <Text style={{ fontFamily: 'Inter' }} className="text-[#e5e5e5] text-sm">
-                    {job?.customerId?.phone || job?.customerPhone || "N/A"}
-                  </Text>
-              </TouchableOpacity>
-
-              <View className="flex-row items-start gap-3">
-                 <MapPin color="#a3a3a3" size={16} className="mt-0.5" />
-                 <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-sm flex-1 leading-5">
-                    Job Location Details will appear here. No address stored for this job locally.
-                 </Text>
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
+            Customer Details
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              const customerId = job?.customerId?._id || job?.customerId;
+              if (customerId) navigation.navigate("CustomerDetails", { customerId });
+            }}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: colors.bgCardAlt,
+              borderRadius: 16,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.primaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.primaryBorder,
+                }}
+              >
+                <User color={colors.primary} size={20} />
               </View>
+              <View>
+                <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                  {job?.customerId?.name || job?.customerName || "Unknown Customer"}
+                </Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>Regular Client</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <Phone color={colors.secondary} size={16} />
+              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary }}>
+                {job?.customerId?.phone || job?.customerPhone || "N/A"}
+              </Text>
             </TouchableOpacity>
+
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+              <MapPin color={colors.textMuted} size={16} />
+              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textMuted, flex: 1, lineHeight: 20 }}>
+                Job Location Details will appear here. No address stored for this job locally.
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Job Details Section */}
-        <View className="mb-6">
-           <Text style={{ fontFamily: 'Space Grotesk' }} className="text-sm font-bold text-[#ffffff] mb-4 tracking-tight">Job Details</Text>
-           <View className="bg-[#1a1919]/40 rounded-2xl p-5 border border-white/5">
-              <View className="flex-row items-start gap-4 mb-6">
-                 <View className="w-10 h-10 rounded-full bg-[#81ecff]/10 items-center justify-center border border-[#81ecff]/20">
-                    <Wrench color="#81ecff" size={20} />
-                 </View>
-                 <View className="flex-1">
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-[10px] uppercase tracking-widest mb-1">Issue</Text>
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#ffffff] text-sm leading-6">{job?.issue || "None specified"}</Text>
-                 </View>
+        <View style={{ marginBottom: 24 }}>
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
+            Job Details
+          </Text>
+          <View
+            style={{
+              backgroundColor: colors.bgCardAlt,
+              borderRadius: 16,
+              padding: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.secondaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.secondaryBorder,
+                }}
+              >
+                <Wrench color={colors.secondary} size={20} />
               </View>
-
-              <View className="flex-row items-start gap-4">
-                 <View className="w-10 h-10 rounded-full bg-[#10b981]/10 items-center justify-center border border-[#10b981]/20">
-                    <CheckCircle2 color="#10b981" size={20} />
-                 </View>
-                 <View className="flex-1">
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-[10px] uppercase tracking-widest mb-1">Resolution</Text>
-                    <Text style={{ fontFamily: 'Inter' }} className="text-[#ffffff] text-sm leading-6">{job?.serviceDone || "No resolution details provided yet."}</Text>
-                 </View>
-              </View>
-
-              <View className="flex-row items-start gap-4 mt-6">
-                <View className="w-10 h-10 rounded-full bg-[#81ecff]/10 items-center justify-center border border-[#81ecff]/20">
-                  <ShieldCheck color="#81ecff" size={20} />
-                </View>
-                <View className="flex-1">
-                  <Text style={{ fontFamily: 'Inter' }} className="text-[#a3a3a3] text-[10px] uppercase tracking-widest mb-1">Warranty</Text>
-                  <Text style={{ fontFamily: 'Inter' }} className="text-[#ffffff] text-sm leading-6">{job?.warranty || "No warranty specified."}</Text>
-                </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+                  Issue
+                </Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, lineHeight: 24 }}>
+                  {job?.issue || "None specified"}
+                </Text>
               </View>
             </View>
+
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.successBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.successBorder,
+                }}
+              >
+                <CheckCircle2 color={colors.success} size={20} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+                  Resolution
+                </Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, lineHeight: 24 }}>
+                  {job?.serviceDone || "No resolution details provided yet."}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 16 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.secondaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: colors.secondaryBorder,
+                }}
+              >
+                <ShieldCheck color={colors.secondary} size={20} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+                  Warranty
+                </Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, lineHeight: 24 }}>
+                  {job?.warranty || "No warranty specified."}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Action Buttons */}
-        <View className="flex-row gap-4 mt-4">
-           <TouchableOpacity 
-             onPress={() => navigation.navigate("InvoicePreview", { job })}
-             activeOpacity={0.8}
-             className="flex-1 rounded-xl overflow-hidden"
-             style={{ shadowColor: '#c899ff', shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } }}
-           >
-              <LinearGradient 
-                colors={['#c899ff', '#9c3dff']} 
-                start={{ x: 0, y: 0 }} 
-                end={{ x: 1, y: 0 }} 
-                className="flex-1 flex-row items-center justify-center gap-2 py-4"
-              >
-                <FileText color="#ffffff" size={20} />
-                <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#ffffff] font-bold uppercase tracking-widest text-xs">View Invoice</Text>
-              </LinearGradient>
-           </TouchableOpacity>
+        <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("InvoicePreview", { job })}
+            activeOpacity={0.8}
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: colors.primary,
+              shadowOpacity: 0.3,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 0 },
+            }}
+          >
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 }}
+            >
+              <FileText color={colors.bgPrimary} size={20} />
+              <Text style={{ fontFamily: "Space Grotesk", color: colors.bgPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, fontSize: 12 }}>
+                View Invoice
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-           <TouchableOpacity 
-             onPress={() => navigation.navigate("AddJob", { job })}
-             activeOpacity={0.7}
-             className="bg-[#1a1919] border border-white/10 h-14 px-6 rounded-xl items-center justify-center flex-row gap-2"
-           >
-             <Edit2 color="#81ecff" size={20} />
-             <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#81ecff] font-bold uppercase tracking-widest text-xs text-center">Edit</Text>
-           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("AddJob", { job })}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: colors.bgCard,
+              borderWidth: 1,
+              borderColor: colors.borderLight,
+              height: 56,
+              paddingHorizontal: 24,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 8,
+            }}
+          >
+            <Edit2 color={colors.secondary} size={20} />
+            <Text style={{ fontFamily: "Space Grotesk", color: colors.secondary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, fontSize: 12 }}>
+              Edit
+            </Text>
+          </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

@@ -59,9 +59,34 @@ async function getCustomerById(userId, customerId) {
   return customer;
 }
 
+/**
+ * Update customer details by ID
+ */
+async function updateCustomer(userId, customerId, data) {
+  const customer = await Customer.findOneAndUpdate(
+    { _id: customerId, userId },
+    { $set: data },
+    { new: true, runValidators: true }
+  ).lean();
+  
+  if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  return customer;
+}
+
+/**
+ * Delete customer by ID
+ */
+async function deleteCustomer(userId, customerId) {
+  const customer = await Customer.findOneAndDelete({ _id: customerId, userId });
+  if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  return customer;
+}
+
 const CustomerService = {
   searchCustomers,
   upsertCustomer,
+  updateCustomer,
+  deleteCustomer,
   getCustomerById,
 };
 

@@ -7,6 +7,6 @@
  */
 const API_BASE_URL = __DEV__
   ? "http://192.168.29.236:9000/api/v1" // Match server .env port
-  : "https://your-api.yourdomain.com/api/v1";
+  : "https://technician-app-seven.vercel.app/api/v1";
 
 export { API_BASE_URL };

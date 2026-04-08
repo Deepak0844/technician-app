@@ -1,26 +1,33 @@
 import React from "react";
-import { NavigationContainer, DarkTheme } from "@react-navigation/native";
+import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
 import AuthStack from "./AuthStack";
 import MainTabs from "./MainTabs";
+import { DarkColors, LightColors } from "@constants/colors";
 
 const RootStack = createNativeStackNavigator();
 
-const ObsidianTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#000000',
-    card: '#000000',
-    border: 'rgba(73,72,71,0.2)',
-  },
-};
-
 export default function AppNavigator() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const mode = useSelector((state) => state.theme.mode);
+  const colors = mode === "dark" ? DarkColors : LightColors;
+  const BaseTheme = mode === "dark" ? DarkTheme : DefaultTheme;
+
+  const AppTheme = {
+    ...BaseTheme,
+    colors: {
+      ...BaseTheme.colors,
+      background: colors.navBackground,
+      card: colors.navCard,
+      border: colors.navBorder,
+      primary: colors.primary,
+      text: colors.textPrimary,
+    },
+  };
+
   return (
-    <NavigationContainer theme={ObsidianTheme}>
+    <NavigationContainer theme={AppTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <RootStack.Screen name="Main" component={MainTabs} />

@@ -3,20 +3,22 @@ import { FlatList, TouchableOpacity, Alert, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useGetCustomersQuery, useUpsertCustomerMutation } from "../services/api/customerApi";
-import useNetworkStatus from "../hooks/useNetworkStatus";
+import { useGetCustomersQuery, useUpsertCustomerMutation } from "@services/api/customerApi";
+import useNetworkStatus from "@hooks/useNetworkStatus";
+import useTheme from "@hooks/useTheme";
 import * as Contacts from "expo-contacts";
 
 // Gluestack Primitives
-import { Box } from "../components/ui/box";
-import { Heading } from "../components/ui/heading";
-import { Text } from "../components/ui/text";
-import { Input, InputField } from "../components/ui/input";
-import { Button, ButtonText } from "../components/ui/button";
+import { Box } from "@components/ui/box";
+import { Heading } from "@components/ui/heading";
+import { Text } from "@components/ui/text";
+import { Input, InputField } from "@components/ui/input";
+import { Button, ButtonText } from "@components/ui/button";
 
 export default function CustomerSearchScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { colors } = useTheme();
   const { onSelectCustomer } = route.params ?? {};
   const [query, setQuery] = useState("");
   const [deviceContacts, setDeviceContacts] = useState([]);
@@ -61,7 +63,6 @@ export default function CustomerSearchScreen() {
     }
   }
 
-  // Auto-search contacts and request permission on mount
   useEffect(() => {
     const requestInitialPermission = async () => {
       const { status } = await Contacts.getPermissionsAsync();
@@ -74,9 +75,9 @@ export default function CustomerSearchScreen() {
     if (query.length >= 2) {
       Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
-        name: query
+        name: query,
       }).then(({ data }) => {
-        setDeviceContacts(data.filter(c => c.phoneNumbers?.length).slice(0, 5));
+        setDeviceContacts(data.filter((c) => c.phoneNumbers?.length).slice(0, 5));
       }).catch(() => { });
     } else {
       setDeviceContacts([]);
@@ -104,56 +105,107 @@ export default function CustomerSearchScreen() {
           await selectDeviceContact(contact);
         }
       } catch (pickerError) {
-        console.log("System picker failed, fetching manually:", pickerError);
         setIsFetchingAll(true);
         const { data } = await Contacts.getContactsAsync({
           fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
           pageSize: 50,
         });
-        setDeviceContacts(data.filter(c => c.phoneNumbers?.length));
+        setDeviceContacts(data.filter((c) => c.phoneNumbers?.length));
         setIsFetchingAll(false);
         if (data.length === 0) {
           Alert.alert("No Contacts", "We couldn't find any contacts on your phone.");
         }
       }
     } catch (error) {
-      console.log("Overall contact error:", error);
       Alert.alert("Error", "Access to contacts was denied or failed. Please check your phone settings.");
     }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000000" }} edges={["top"]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       {/* Header Bar */}
-      <View className="w-full flex-row items-center px-4 h-14 border-b border-white/5 bg-[#000000]">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 mr-2 active:scale-95" activeOpacity={0.7}>
-          <ArrowLeft color="#81ecff" size={20} />
+      <View
+        style={{
+          width: "100%",
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          height: 56,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          backgroundColor: colors.bgPrimary,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 8, marginRight: 8 }}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft color={colors.secondary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: 'Inter' }} className="text-sm font-bold tracking-tighter text-[#81ecff]">Find or Add Customer</Text>
+        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.secondary, flex: 1 }}>
+          Find or Add Customer
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("CreateCustomer", { onSelectCustomer })}
+          style={{ 
+            backgroundColor: colors.secondaryBg, 
+            paddingHorizontal: 12, 
+            paddingVertical: 6, 
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.secondaryBorder
+          }}
+        >
+          <Text style={{ fontFamily: "Inter", color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Manual</Text>
+        </TouchableOpacity>
       </View>
 
-      <Box style={{ flex: 1, backgroundColor: "#0e0e0e" }} className="p-6">
-        <Heading size="2xl" className="text-white font-extrabold tracking-tight mb-6 mt-2 opacity-100 shadow-sm shadow-white/20">Find Customer</Heading>
+      <Box style={{ flex: 1, backgroundColor: colors.bgSecondary, padding: 24 }}>
+        <Heading
+          size="2xl"
+          style={{ fontFamily: "Space Grotesk", fontWeight: "800", color: colors.textPrimary, marginBottom: 24, marginTop: 8 }}
+        >
+          Find Customer
+        </Heading>
 
-        <Input variant="outline" size="xl" className="border-2 border-white/10 bg-[#1a1919] rounded-2xl mb-4 focus:border-[#81ecff]">
+        <Input
+          variant="outline"
+          size="xl"
+          style={{
+            borderWidth: 2,
+            borderColor: colors.borderInput,
+            backgroundColor: colors.bgCard,
+            borderRadius: 16,
+            marginBottom: 16,
+          }}
+        >
           <InputField
             placeholder="Search name or number..."
-            placeholderTextColor="#a3a3a3"
+            placeholderTextColor={colors.textMuted}
             value={query}
             onChangeText={setQuery}
             autoFocus
-            className="text-white font-medium px-4 tracking-wide"
+            style={{ color: colors.textPrimary, fontFamily: "Inter", paddingHorizontal: 16 }}
           />
         </Input>
 
-        <Button 
-          variant="outline" 
-          size="xl" 
+        <Button
+          variant="outline"
           onPress={handlePickContact}
           disabled={isFetchingAll}
-          className="border-2 border-[#81ecff]/30 bg-[#81ecff]/5 rounded-2xl mb-6 flex-row justify-center py-3 active:bg-[#81ecff]/20"
+          style={{
+            borderWidth: 2,
+            borderColor: colors.secondaryBorder,
+            backgroundColor: colors.secondaryBg,
+            borderRadius: 16,
+            marginBottom: 24,
+            height: 50,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
-          <ButtonText className="text-[#81ecff] font-extrabold tracking-wide">
+          <ButtonText style={{ fontFamily: "Inter", fontWeight: "800", color: colors.secondary, textAlignVertical: "center" }}>
             {isFetchingAll ? "Loading Contacts..." : "Pick from Contacts"}
           </ButtonText>
         </Button>
@@ -164,21 +216,53 @@ export default function CustomerSearchScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => item._id ? handleSelect(item) : selectDeviceContact(item)}>
-              <Box className="bg-[#1a1919] rounded-2xl p-5 mb-4 border border-white/10 shadow-lg">
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text style={{ fontFamily: 'Inter' }} className="font-extrabold text-white text-base tracking-tight">{item.name}</Text>
-                  {!item._id && <Text className="text-[9px] text-[#8B5CF6] font-bold uppercase tracking-widest bg-[#8B5CF6]/10 px-2 py-0.5 rounded-full">Phone Contact</Text>}
+              <Box
+                style={{
+                  backgroundColor: colors.bgCard,
+                  borderRadius: 16,
+                  padding: 20,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: colors.borderLight,
+                }}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <Text style={{ fontFamily: "Inter", fontWeight: "800", fontSize: 16, color: colors.textPrimary }}>
+                    {item.name}
+                  </Text>
+                  {!item._id && (
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 9,
+                        fontWeight: "700",
+                        textTransform: "uppercase",
+                        letterSpacing: 2,
+                        color: colors.indigo,
+                        backgroundColor: colors.primaryBg,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 999,
+                      }}
+                    >
+                      Phone Contact
+                    </Text>
+                  )}
                 </View>
-                <Text style={{ fontFamily: 'Space Grotesk' }} className="text-[#81ecff] font-bold tracking-[0.1em]">
-                  {item.phone || (item.phoneNumbers?.[0]?.number)}
+                <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.secondary, letterSpacing: 1 }}>
+                  {item.phone || item.phoneNumbers?.[0]?.number}
                 </Text>
               </Box>
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <View className="items-center mt-10">
-              <Text className="text-[#737373] text-center font-bold tracking-widest uppercase text-[10px] mb-2">No matching customers</Text>
-              <Text className="text-[#525252] text-center text-xs px-10">Type a name in the search box to find contacts from your phone.</Text>
+            <View style={{ alignItems: "center", marginTop: 40 }}>
+              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, textAlign: "center", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", fontSize: 10, marginBottom: 8 }}>
+                No matching customers
+              </Text>
+              <Text style={{ fontFamily: "Inter", color: colors.textFaint, textAlign: "center", fontSize: 12, paddingHorizontal: 40 }}>
+                Type a name in the search box to find contacts from your phone.
+              </Text>
             </View>
           }
         />
