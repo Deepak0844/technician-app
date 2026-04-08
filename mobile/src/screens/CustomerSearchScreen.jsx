@@ -25,7 +25,7 @@ export default function CustomerSearchScreen() {
   const { isConnected } = useNetworkStatus();
 
   // 1. RTK Query
-  const { data: customersResponse } = useGetCustomersQuery({ search: query });
+  const { data: customersResponse } = useGetCustomersQuery({ q: query });
   const localCustomers = customersResponse?.data || [];
 
   function handleSelect(customer) {
@@ -38,7 +38,13 @@ export default function CustomerSearchScreen() {
       Alert.alert("No Number", "This contact doesn't have a phone number.");
       return;
     }
-    const phone = contact.phoneNumbers[0].number.replace(/[\s\-]/g, "");
+    const rawPhone = contact.phoneNumbers[0].number;
+    const phone = rawPhone.replace(/[^\d+]/g, "").replace(/\+/g, (m, offset) => offset === 0 ? m : "");
+
+    if (phone.replace("+", "").length < 7) {
+      Alert.alert("Invalid Number", `The phone number "${rawPhone}" could not be cleaned to a valid format. Please edit the contact first.`);
+      return;
+    }
 
     if (isConnected) {
       try {
@@ -46,8 +52,9 @@ export default function CustomerSearchScreen() {
         const serverCustomer = res?.data;
         if (onSelectCustomer && serverCustomer) onSelectCustomer(serverCustomer);
         navigation.goBack();
-      } catch (_err) {
-        Alert.alert("Error", "Failed to sync contact with server.");
+      } catch (err) {
+        const message = err?.data?.message || err?.data?.error || "Failed to sync contact with server.";
+        Alert.alert("Sync Failed", message);
       }
     } else {
       Alert.alert("Offline", "You must be online to add a customer.");
