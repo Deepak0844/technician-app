@@ -21,6 +21,11 @@ const authEndpoints = {
       query: () => ({ url: ApiUrls.AUTH_ME }),
       providesTags: (result, error, arg) => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
     }),
+  updateMe: (builder) =>
+    builder.mutation({
+      query: (body) => ({ url: ApiUrls.AUTH_UPDATE_ME, method: "put", data: body }),
+      invalidatesTags: () => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
+    }),
 };
 
 export const authApi = api.injectEndpoints({
@@ -29,8 +34,9 @@ export const authApi = api.injectEndpoints({
     verifyOtp: authEndpoints.verifyOtp(builder),
     logout: authEndpoints.logout(builder),
     getMe: authEndpoints.getMe(builder),
+    updateMe: authEndpoints.updateMe(builder),
   }),
   overrideExisting: false,
 });
 
-export const { useSendOtpMutation, useVerifyOtpMutation, useLogoutMutation, useGetMeQuery } = authApi;
+export const { useSendOtpMutation, useVerifyOtpMutation, useLogoutMutation, useGetMeQuery, useUpdateMeMutation } = authApi;

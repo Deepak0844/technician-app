@@ -114,11 +114,13 @@ export default function AddJobScreen() {
   async function handleSubmit() {
     if (!selectedCustomer) { Alert.alert("Error", "Please select a customer"); return; }
     if (!issue.trim()) { Alert.alert("Error", "Please describe the issue"); return; }
-    if (!amount) { Alert.alert("Error", "Please enter the amount"); return; }
     if (!userId) { Alert.alert("Error", "Session expired. Please log in again."); return; }
 
-    const parsedAmount = parseFloat(amount);
-    if (isNaN(parsedAmount)) { Alert.alert("Error", "Please enter a valid amount"); return; }
+    let parsedAmount = 0;
+    if (amount && amount.toString().trim() !== '') {
+      parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount)) { Alert.alert("Error", "Please enter a valid amount"); return; }
+    }
     
     // Combine Date and Time
     let finalDate = new Date(serviceDate);
@@ -223,6 +225,21 @@ export default function AddJobScreen() {
           Alert.alert("Success", "Job created! (Note: Reminders could not be set on this device)");
         }
       }
+
+      // Reset state for new job
+      if (!editingJob) {
+        setSelectedCustomer(null);
+        setAppliance(ApplianceTypes[0]);
+        setIssue("");
+        setServiceDone("");
+        setAmount("");
+        setStatus(JobStatuses.PENDING);
+        setServiceDate(new Date());
+        setWarranty(WarrantyPresets[0]);
+        setCustomWarranty("");
+        setShowCustomWarranty(false);
+      }
+
       handleFinish();
     } catch (err) {
       console.error("Create job error:", err);

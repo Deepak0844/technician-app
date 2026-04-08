@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 
@@ -21,45 +21,47 @@ export default function RemindersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Reminders</Text>
-        <Text style={styles.subtitle}>Scheduled locally on your device for maximum reliability and privacy.</Text>
-      </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Reminders</Text>
+          <Text style={styles.subtitle}>Scheduled locally on your device for maximum reliability and privacy.</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Schedule Strategy</Text>
-        <Text style={styles.cardValue}>60 min · 30 min · 15 min</Text>
-        <Text style={styles.cardDescription}>
-          The app schedules three high-priority alerts directly on your device when a job is created or updated. These fire even if you are offline.
-        </Text>
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Schedule Strategy</Text>
+          <Text style={styles.cardValue}>60 min · 30 min · 15 min</Text>
+          <Text style={styles.cardDescription}>
+            The app schedules three high-priority alerts directly on your device when a job is created or updated. These fire even if you are offline.
+          </Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>System Permissions</Text>
-        {loading ? (
-          <ActivityIndicator color="#c899ff" size="small" style={{ marginTop: 8 }} />
-        ) : permissionStatus === "granted" ? (
-          <View style={styles.tokenBadge}>
-            <Text style={styles.tokenBadgeText}>✓ Notifications Active</Text>
-          </View>
-        ) : (
-          <View style={styles.errorBadge}>
-            <Text style={styles.errorBadgeText}>✗ Permission Denied — Enable in Settings</Text>
-          </View>
-        )}
-        <Text style={[styles.cardDescription, { marginTop: 8 }]}>
-          Reminders require &quot;Allow Notifications&quot; permission to wake your screen and play sounds.
-        </Text>
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>System Permissions</Text>
+          {loading ? (
+            <ActivityIndicator color="#c899ff" size="small" style={{ marginTop: 8 }} />
+          ) : permissionStatus === "granted" ? (
+            <View style={styles.tokenBadge}>
+              <Text style={styles.tokenBadgeText}>✓ Notifications Active</Text>
+            </View>
+          ) : (
+            <View style={styles.errorBadge}>
+              <Text style={styles.errorBadgeText}>✗ Permission Denied — Enable in Settings</Text>
+            </View>
+          )}
+          <Text style={[styles.cardDescription, { marginTop: 8 }]}>
+            Reminders require &quot;Allow Notifications&quot; permission to wake your screen and play sounds.
+          </Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>How It Works</Text>
-        <Text style={styles.cardStep}>① Save a new job or update an existing appointment</Text>
-        <Text style={styles.cardStep}>② App calculates reminder times (60, 30, 15m before)</Text>
-        <Text style={styles.cardStep}>③ Reminders are registered into the OS notification tray</Text>
-        <Text style={styles.cardStep}>④ Device wakes up and alerts you at the exact time</Text>
-        <Text style={styles.cardStep}>⑤ No internet or server connection needed to fire</Text>
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>How It Works</Text>
+          <Text style={styles.cardStep}>① Save a new job or update an existing appointment</Text>
+          <Text style={styles.cardStep}>② App calculates reminder times (60, 30, 15m before)</Text>
+          <Text style={styles.cardStep}>③ Reminders are registered into the OS notification tray</Text>
+          <Text style={styles.cardStep}>④ Device wakes up and alerts you at the exact time</Text>
+          <Text style={styles.cardStep}>⑤ No internet or server connection needed to fire</Text>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

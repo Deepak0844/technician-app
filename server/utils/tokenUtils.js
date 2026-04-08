@@ -42,6 +42,7 @@ function sendTokenResponse(user, statusCode, res, message = "Success") {
       _id: user._id,
       phone: user.phone,
       name: user.name,
+      isFirstLogin: !user.name, // true when user has never set their name
     },
   });
 }

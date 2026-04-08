@@ -164,7 +164,7 @@ export default function CustomerDetailsScreen() {
               <Text style={{ fontFamily: 'Space Grotesk' }} className="text-sm font-bold text-[#ffffff] uppercase tracking-widest">Job History</Text>
               <View className="w-2 h-2 rounded-full bg-[#81ecff]" style={{ shadowColor:'#81ecff', shadowOpacity:0.8, shadowRadius:12, shadowOffset:{width:0, height:0} }} />
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate("JobHistory", { customerId })} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => navigation.navigate("Tabs", { screen: "JobHistory", params: { customerId } })} activeOpacity={0.7}>
               <Text style={{ fontFamily: 'Inter' }} className="text-[#c899ff] tracking-[0.2em] font-bold uppercase text-[10px]">View All</Text>
             </TouchableOpacity>
           </View>

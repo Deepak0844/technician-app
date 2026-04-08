@@ -4,6 +4,7 @@
 export const RouteNames = {
   // Auth stack
   OTP_LOGIN: "OtpLogin",
+  SETUP_PROFILE: "SetupProfile",
 
   // Main tabs
   DASHBOARD: "Dashboard",

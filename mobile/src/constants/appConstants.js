@@ -13,6 +13,7 @@ export const ApiUrls = {
   AUTH_VERIFY_OTP: "/auth/verify-otp",
   AUTH_LOGOUT: "/auth/logout",
   AUTH_ME: "/auth/me",
+  AUTH_UPDATE_ME: "/auth/me",
 
   // Customers
   CUSTOMERS_SEARCH: "/customers/search",
