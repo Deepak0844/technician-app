@@ -274,6 +274,7 @@ export default function AddJobScreen() {
           applianceType: appliance, 
           issue: issue.trim(), 
           serviceDone: serviceDone.trim(), 
+          amount: parsedAmount,
           status: status,
           serviceDate: finalDate.toISOString(),
           warranty: showCustomWarranty ? customWarranty : warranty,
