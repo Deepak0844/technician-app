@@ -58,6 +58,12 @@ const jobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    location: {
+      label: String,
+      address: String,
+      latitude: Number,
+      longitude: Number,
+    },
   },
   { timestamps: true }
 );

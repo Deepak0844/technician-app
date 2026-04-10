@@ -1,13 +1,6 @@
 import React, { useState } from "react";
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  StatusBar,
-  TextInput,
-} from "react-native";
+import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from "react-native";
+import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -134,9 +127,12 @@ function EditableLineItemRow({ item, onChangeDescription, onChangeQty, onChangeA
 // ─────────────────────────────────────────────
 // PDF HTML Generator
 // ─────────────────────────────────────────────
-function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal }) {
+function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo }) {
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
+  
+  const techName = techInfo?.companyName || techInfo?.name || "TechServ Pro";
+  const techPhone = techInfo?.phone || "Available 9 AM – 7 PM";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -214,7 +210,7 @@ function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal 
     <div class="header">
       <div class="header-top">
         <div>
-          <div class="brand-name">TechServ Pro</div>
+          <div class="brand-name">${techName}</div>
           <div class="brand-tagline">Professional Appliance Repair &amp; Maintenance</div>
         </div>
         <div class="invoice-meta">
@@ -235,16 +231,16 @@ function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal 
     <div class="billing-grid">
       <div class="billing-card">
         <div class="billing-card-title">From</div>
-        <div class="billing-name">TechServ Pro</div>
-        <div class="billing-detail">Professional Technician</div>
-        <div class="billing-detail">📞 Available 9 AM – 7 PM</div>
+        <div class="billing-name">${techName}</div>
+        <div class="billing-detail">${techInfo?.name || 'Professional Technician'}</div>
+        <div class="billing-detail">📞 ${techPhone}</div>
         <div class="billing-detail">GST: 09ABCDE1234F1Z5</div>
       </div>
       <div class="billing-card">
         <div class="billing-card-title">Bill To</div>
         <div class="billing-name">${customerName}</div>
         <div class="billing-detail">📞 ${customerPhone}</div>
-        <div class="billing-detail">Client Reference</div>
+        <div class="billing-detail">${job.location && job.location.address ? job.location.address : 'Address not provided'}</div>
       </div>
     </div>
 
@@ -295,7 +291,7 @@ function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal 
 
     <!-- Footer -->
     <div class="footer">
-      <div class="footer-thanks">Thank you for choosing TechServ Pro! 🙏</div>
+      <div class="footer-thanks">Thank you for choosing ${techName}! 🙏</div>
       <div class="footer-sub">We appreciate your business and look forward to serving you again.</div>
     </div>
 
@@ -312,6 +308,9 @@ export default function InvoicePreviewScreen() {
   const route = useRoute();
   const { job } = route.params ?? {};
   const { colors } = useTheme();
+  const techUser = useSelector((state) => state.auth.user);
+  
+  const techName = techUser?.companyName || techUser?.name || "TechServ Pro";
 
   function getStatusConfig(status) {
     switch (status) {
@@ -385,7 +384,7 @@ export default function InvoicePreviewScreen() {
 
   // ── PDF Generation ──
   async function handleGeneratePdf() {
-    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal });
+    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo: techUser });
     try {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Invoice ${invoiceNumber}` });
@@ -395,7 +394,7 @@ export default function InvoicePreviewScreen() {
   }
 
   async function handlePrintPreview() {
-    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal });
+    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo: techUser });
     try {
       await Print.printAsync({ html });
     } catch {
@@ -441,7 +440,7 @@ export default function InvoicePreviewScreen() {
               <Wrench color="#ffffff" size={18} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.brandName, { color: '#ffffff' }]}>TechServ Pro</Text>
+              <Text style={[styles.brandName, { color: '#ffffff' }]}>{techName}</Text>
               <Text style={[styles.brandTagline, { color: 'rgba(255,255,255,0.7)' }]}>Professional Appliance Repair</Text>
             </View>
             {/* Status Badge */}
@@ -485,12 +484,12 @@ export default function InvoicePreviewScreen() {
             <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', color: colors.primary, fontFamily: 'Inter', marginBottom: 8 }}>FROM</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
               <Building2 color={colors.primary} size={13} style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>TechServ Pro</Text>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>{techName}</Text>
             </View>
-            <Text style={{ fontSize: 11, color: colors.textDisabled, fontFamily: 'Inter', marginBottom: 8 }}>Certified Technician</Text>
+            <Text style={{ fontSize: 11, color: colors.textDisabled, fontFamily: 'Inter', marginBottom: 8 }}>{techUser?.name || "Professional Technician"}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Phone color={colors.secondary} size={11} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Available 9AM–7PM</Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>{techUser?.phone || "Available 9AM–7PM"}</Text>
             </View>
           </View>
 
@@ -507,7 +506,9 @@ export default function InvoicePreviewScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MapPin color={colors.textMuted} size={11} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Local Service Area</Text>
+              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }} numberOfLines={2}>
+                {job?.location?.address || 'Address not provided'}
+              </Text>
             </View>
           </View>
         </View>
@@ -579,7 +580,7 @@ export default function InvoicePreviewScreen() {
         {/* ══ THANK YOU FOOTER ══ */}
         <View style={{ alignItems: 'center', padding: 24, marginBottom: 12, backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
           <Text style={{ fontSize: 28, marginBottom: 8 }}>🙏</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', marginBottom: 4 }}>Thank you for your business!</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', marginBottom: 4 }}>Thank you for choosing {techName}!</Text>
           <Text style={{ fontSize: 12, color: colors.textDisabled, fontFamily: 'Inter' }}>We look forward to serving you again.</Text>
         </View>
 

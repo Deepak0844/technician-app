@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "android": "expo run:android",
+    "android-prebuild": "npm run prebuild:android && expo run:android",
+    "android-release": "npm run prebuild:android && expo run:android --variant release",
+    "android-build:apk": "cd android && ./gradlew assembleRelease",
+    "android-build:aab": "cd android && ./gradlew bundleRelease",
     "ios": "expo run:ios",
+    "web": "expo start --web",
+    "prebuild:android": "expo prebuild -p android",
+    "prebuild:ios": "expo prebuild -p ios",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -24,6 +31,7 @@
     "expo-contacts": "~55.0.9",
     "expo-device": "~55.0.10",
     "expo-linear-gradient": "~55.0.9",
+    "expo-location": "~55.1.7",
     "expo-notifications": "~55.0.13",
     "expo-print": "~55.0.9",
     "expo-secure-store": "~55.0.9",

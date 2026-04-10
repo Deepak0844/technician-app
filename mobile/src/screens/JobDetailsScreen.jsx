@@ -1,5 +1,5 @@
-import React from "react";
-import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
+import React, { useState } from "react";
+import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator, Linking, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -18,7 +18,7 @@ export default function JobDetailsScreen() {
   const { colors } = useTheme();
   const { job: initialJob } = route.params ?? {};
 
-  const { data: jobResponse, isLoading } = useGetJobByIdQuery(initialJob?._id, {
+  const { data: jobResponse, isLoading, refetch, isFetching } = useGetJobByIdQuery(initialJob?._id, {
     skip: !initialJob?._id,
   });
 
@@ -32,10 +32,10 @@ export default function JobDetailsScreen() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading && !isFetching) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={colors.indigo} />
+        <ActivityIndicator color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -62,17 +62,28 @@ export default function JobDetailsScreen() {
         }}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8, marginRight: 8 }} activeOpacity={0.7}>
-          <ArrowLeft color={colors.indigo} size={20} />
+          <ArrowLeft color={colors.primary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.primary }}>
           Job Details
         </Text>
         <TouchableOpacity style={{ padding: 8 }} activeOpacity={0.7}>
-          <MoreVertical color={colors.indigo} size={20} />
+          <MoreVertical color={colors.primary} size={20} />
         </TouchableOpacity>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isFetching && !isLoading} 
+            onRefresh={refetch} 
+            tintColor={colors.primary} 
+            colors={[colors.primary]}
+          />
+        }
+      >
 
         {/* Job Header Card */}
         <View
@@ -157,12 +168,7 @@ export default function JobDetailsScreen() {
           <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 16 }}>
             Customer Details
           </Text>
-          <TouchableOpacity
-            onPress={() => {
-              const customerId = job?.customerId?._id || job?.customerId;
-              if (customerId) navigation.navigate("CustomerDetails", { customerId });
-            }}
-            activeOpacity={0.7}
+          <View
             style={{
               backgroundColor: colors.bgCardAlt,
               borderRadius: 16,
@@ -171,7 +177,14 @@ export default function JobDetailsScreen() {
               borderColor: colors.border,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 }}>
+            <TouchableOpacity 
+              onPress={() => {
+                const customerId = job?.customerId?._id || job?.customerId;
+                if (customerId) navigation.navigate("CustomerDetails", { customerId });
+              }}
+              activeOpacity={0.7}
+              style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 }}
+            >
               <View
                 style={{
                   width: 40,
@@ -190,24 +203,42 @@ export default function JobDetailsScreen() {
                 <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
                   {job?.customerId?.name || job?.customerName || "Unknown Customer"}
                 </Text>
-                <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>Regular Client</Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>Click to view profile</Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
-            <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}>
+            <TouchableOpacity 
+              onPress={() => {
+                const phone = job?.customerId?.phone || job?.customerPhone;
+                if (phone) Linking.openURL(`tel:${phone}`);
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 }}
+            >
               <Phone color={colors.secondary} size={16} />
               <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary }}>
                 {job?.customerId?.phone || job?.customerPhone || "N/A"}
               </Text>
             </TouchableOpacity>
 
-            <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
-              <MapPin color={colors.textMuted} size={16} />
-              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textMuted, flex: 1, lineHeight: 20 }}>
-                Job Location Details will appear here. No address stored for this job locally.
+            <TouchableOpacity 
+              onPress={() => {
+                const loc = job?.location;
+                if (!loc) return;
+                
+                if (loc.latitude && loc.longitude) {
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`);
+                } else if (loc.address) {
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address)}`);
+                }
+              }}
+              style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}
+            >
+              <MapPin color={job?.location ? colors.primary : colors.textMuted} size={16} />
+              <Text style={{ fontFamily: "Inter", fontSize: 14, color: job?.location ? colors.textPrimary : colors.textMuted, flex: 1, lineHeight: 20 }}>
+                {job?.location?.address || "Job Location Details will appear here. No address stored for this job locally."}
               </Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Job Details Section */}

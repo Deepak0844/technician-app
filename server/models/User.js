@@ -13,6 +13,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    companyName: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   { timestamps: true }
 );

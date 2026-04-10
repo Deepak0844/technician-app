@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { ScrollView, View, TouchableOpacity, ActivityIndicator, Image, RefreshControl } from "react-native";
+import { ScrollView, View, TouchableOpacity, ActivityIndicator, Image, RefreshControl, Alert, Linking } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
@@ -12,10 +12,23 @@ import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
 
-// Icons
-import { ArrowLeft, Edit, Trash2, Phone, CalendarPlus, CheckCircle2, MapPin, Wrench, User } from "lucide-react-native";
-import { Alert } from "react-native";
 import { useDeleteCustomerMutation } from "@services/api/customerApi";
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Phone,
+  CalendarPlus,
+  CheckCircle2,
+  Wrench,
+  User,
+  Navigation as NavIcon,
+  Globe,
+  MapPin,
+  ExternalLink
+} from "lucide-react-native";
+
+import { openDirections } from "@utils/locationUtils";
 
 export default function CustomerDetailsScreen() {
   const route = useRoute();
@@ -45,8 +58,8 @@ export default function CustomerDetailsScreen() {
       "Are you sure you want to delete this customer? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
+        {
+          text: "Delete",
           style: "destructive",
           onPress: async () => {
             try {
@@ -111,16 +124,16 @@ export default function CustomerDetailsScreen() {
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate("CreateCustomer", { customer })} 
-            style={{ padding: 8 }} 
+          <TouchableOpacity
+            onPress={() => navigation.navigate("CreateCustomer", { customer })}
+            style={{ padding: 8 }}
             activeOpacity={0.7}
           >
             <Edit color={colors.primary} size={22} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleDelete} 
-            style={{ padding: 8 }} 
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={{ padding: 8 }}
             activeOpacity={0.7}
           >
             <Trash2 color={colors.danger} size={22} />
@@ -233,24 +246,19 @@ export default function CustomerDetailsScreen() {
                   {customer.name || "Unknown Customer"}
                 </Text>
 
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8, width: "100%" }}>
+                <TouchableOpacity
+                  onPress={() => customer.phone && Linking.openURL(`tel:${customer.phone}`)}
+                  activeOpacity={0.7}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8, width: "100%" }}
+                >
                   <Phone color={colors.secondary} size={14} />
                   <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 14 }}>
                     {customer.phone || "No phone provided"}
                   </Text>
-                </View>
+                </TouchableOpacity>
 
-                {!!customer.address && (
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12, width: "100%", paddingHorizontal: 8 }}>
-                    <MapPin color={colors.textMuted} size={14} />
-                    <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 12, textAlign: "center", lineHeight: 18 }}>
-                      {customer.address}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Jobs Badge */}
-                <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 12, width: "100%" }}>
+                {/* Jobs Badge — stays inside profile card, below phone */}
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4 }}>
                   <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, flexDirection: "row", alignItems: "center", gap: 8 }}>
                     <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.primary, fontSize: 14 }}>
                       {jobs.length}
@@ -260,41 +268,138 @@ export default function CustomerDetailsScreen() {
                     </Text>
                   </View>
                 </View>
-              </View>
-            </View>
 
-            {/* Add Job Button */}
-            <View style={{ marginTop: 8, flexDirection: "row", width: "100%", zIndex: 10 }}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("AddJob", { customer })}
-                activeOpacity={0.8}
-                style={{
-                  flex: 1,
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  shadowColor: colors.primary,
-                  shadowOpacity: 0.2,
-                  shadowRadius: 20,
-                  shadowOffset: { width: 0, height: 4 },
-                }}
-              >
-                <LinearGradient
-                  colors={colors.gradientPrimary}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, paddingHorizontal: 16 }}
-                >
-                  <CalendarPlus color={colors.bgPrimary} size={18} />
-                  <Text style={{ fontFamily: "Space Grotesk", color: colors.bgPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, fontSize: 12 }}>
-                    Add Job
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
+        <View style={{ marginBottom: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <MapPin size={13} color={colors.textDisabled} />
+              <Text style={{
+                fontFamily: "Inter",
+                fontSize: 9,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 4,
+                color: colors.textDisabled,
+              }}>
+                Service Locations
+              </Text>
+            </View>
+            {Array.isArray(customer.locations) && customer.locations.length > 1 && (
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textDisabled }}>
+                {customer.locations.length} locations  •  swipe →
+              </Text>
+            )}
+          </View>
 
-        {/* Job History */}
+          {Array.isArray(customer.locations) && customer.locations.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
+              decelerationRate="fast"
+              snapToInterval={230}
+              snapToAlignment="start"
+            >
+              {customer.locations.map((loc) => (
+                <View
+                  key={loc._id || Math.random().toString()}
+                  style={{
+                    width: 220,
+                    backgroundColor: colors.bgCard,
+                    borderRadius: 18,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    gap: 10,
+                  }}
+                >
+                  {/* Top row: pin icon + label + navigate button */}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: colors.primaryBg, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <MapPin color={colors.primary} size={16} />
+                    </View>
+                    <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: colors.secondary, flex: 1 }}>
+                      {loc.label || "Primary"}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => openDirections(loc.latitude, loc.longitude, loc.address)}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 17,
+                        backgroundColor: colors.primary,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        shadowColor: colors.primary,
+                        shadowOpacity: 0.4,
+                        shadowRadius: 8,
+                        shadowOffset: { width: 0, height: 2 },
+                        elevation: 5,
+                      }}
+                    >
+                      <NavIcon color="#fff" size={15} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Address */}
+                  <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 12, lineHeight: 18 }} numberOfLines={3}>
+                    {loc.address || "—"}
+                  </Text>
+
+                  {/* Coordinates */}
+                  {loc.latitude && loc.longitude ? (
+                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>
+                      {loc.latitude.toFixed(4)}° N · {loc.longitude.toFixed(4)}° E
+                    </Text>
+                  ) : (
+                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>No GPS pin</Text>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          ) : customer.address ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.bgCard, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.border }}>
+              <MapPin color={colors.textMuted} size={16} />
+              <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 13, flex: 1, lineHeight: 19 }}>
+                {customer.address}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={{ marginBottom: 24 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("AddJob", { customer })}
+            activeOpacity={0.8}
+            style={{
+              borderRadius: 18,
+              overflow: "hidden",
+              shadowColor: colors.primary,
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 8,
+            }}
+          >
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16 }}
+            >
+              <CalendarPlus color="#fff" size={18} />
+              <Text style={{ fontFamily: "Space Grotesk", color: "#fff", fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, fontSize: 13 }}>
+                Add Job
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ marginBottom: 40, width: "100%" }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24, paddingHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>

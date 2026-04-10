@@ -41,10 +41,10 @@ async function searchCustomers(userId, { q = "", page = 1, pageSize = DefaultPag
 /**
  * Upsert customer — if phone exists for user, update; else create
  */
-async function upsertCustomer(userId, { name, phone, address, location }) {
+async function upsertCustomer(userId, { name, phone, email, locations }) {
   const customer = await Customer.findOneAndUpdate(
     { userId, phone },
-    { $set: { name, address, location } },
+    { $set: { name, email, locations } },
     { upsert: true, new: true, runValidators: true }
   );
   return customer;

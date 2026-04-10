@@ -1,6 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { ScrollView, View, TouchableOpacity, Image, Text, RefreshControl } from "react-native";
+import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import useNetworkStatus from "@hooks/useNetworkStatus";
@@ -17,6 +18,7 @@ import { Home, PlusCircle } from "lucide-react-native";
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const user = useSelector((state) => state.auth.user);
 
   // 1. RTK Query
   const {
@@ -136,7 +138,7 @@ export default function DashboardScreen() {
               marginBottom: 4,
             }}
           >
-            Welcome back
+            Welcome back, {user?.name?.split(" ")[0] || "Technician"}!
           </Text>
           <Text style={{ fontFamily: "Inter", fontSize: 13, color: colors.textSecondary }}>
             Status: {isConnected ? "Online" : "Connection Required"} • Session Active
@@ -363,13 +365,13 @@ export default function DashboardScreen() {
               );
             })}
 
-            {allJobs.length === 0 && (
+            {allJobs.length === 0 ? (
               <View style={{ padding: 20, alignItems: "center", justifyContent: "center" }}>
                 <Text style={{ fontFamily: "Inter", color: colors.textSecondary }}>
                   No recent jobs found.
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
         </View>
 

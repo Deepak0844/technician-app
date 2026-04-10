@@ -217,11 +217,11 @@ export default function CalendarScreen() {
                   <Text style={{ fontFamily: 'Space Grotesk', fontSize: 24, fontWeight: '700', color: colors.secondary }}>{metrics.remaining}</Text>
                   <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textFaint }}>to do</Text>
                 </View>
-                {metrics.remaining === 0 && metrics.total > 0 && (
+                {metrics.remaining === 0 && metrics.total > 0 ? (
                   <View style={{ position: 'absolute', top: 8, right: 8 }}>
                     <Zap size={10} color={colors.secondary} fill={colors.secondary} />
                   </View>
-                )}
+                ) : null}
               </LinearGradient>
             </View>
           </View>
@@ -317,12 +317,12 @@ export default function CalendarScreen() {
 
             {/* Timeline Content */}
             <View style={{ position: 'relative', marginBottom: 96 }}>
-              {selectedDateJobs.length > 0 && (
+              {selectedDateJobs.length > 0 ? (
                 <LinearGradient
                   colors={[colors.primary + '40', 'transparent']}
                   style={{ position: 'absolute', left: 19, top: 16, bottom: 0, width: 1.5 }}
                 />
-              )}
+              ) : null}
 
               {selectedDateJobs.length === 0 ? (
                 <View style={{ paddingVertical: 64, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bgCard + '4D', borderRadius: 32, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.border }}>
@@ -382,7 +382,7 @@ export default function CalendarScreen() {
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                           <MapPin color={colors.primary} size={12} style={{ opacity: 0.7 }} />
                           <Text style={{ fontFamily: 'Inter', fontSize: 12, color: colors.textDisabled }} numberOfLines={1}>
-                            {job.location || "Location pending"}
+                            {job.location?.address || (typeof job.location === 'string' ? job.location : "Location pending")}
                           </Text>
                         </View>
 

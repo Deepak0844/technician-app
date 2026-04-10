@@ -5,6 +5,7 @@ const { width, height } = Dimensions.get("window");
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
+import * as Location from "expo-location";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
 
 // Disable the strict mode warning for Reanimated reading from shared values during render
@@ -66,6 +67,20 @@ function AppBootstrap() {
     if (!isAuthenticated) return;
     NotificationUtils.requestPermissions();
   }, [isAuthenticated]);
+  
+  // Request Location Permissions on App Start
+  useEffect(function requestLocationPermission() {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permission denied at startup');
+        }
+      } catch (err) {
+        console.warn('Failed to request location permission at startup:', err);
+      }
+    })();
+  }, []);
 
   const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
 

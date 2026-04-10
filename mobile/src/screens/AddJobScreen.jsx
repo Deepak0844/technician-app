@@ -6,31 +6,36 @@ import { useSelector } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCreateJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
 import NotificationUtils from "@utils/notificationUtils";
-import { useGetCustomersQuery } from "@services/api/customerApi";
+import { useGetCustomersQuery, useGetCustomerByIdQuery, useUpdateCustomerMutation } from "@services/api/customerApi";
 import OfflineBanner from "@components/OfflineBanner";
 import { ApplianceTypes, JobStatuses } from "@constants/appConstants";
 import { Calendar } from "react-native-calendars";
 import useTheme from "@hooks/useTheme";
+import useLocationCapture from "@hooks/useLocationCapture";
+import MapLinkModal from "@components/MapLinkModal";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
 
 // Icons
-import { 
-  ArrowLeft, 
-  AlertCircle, 
-  CheckSquare, 
-  Zap, 
-  Settings2, 
-  Calendar as CalendarIcon, 
+import {
+  ArrowLeft,
+  AlertCircle,
+  CheckSquare,
+  Zap,
+  Settings2,
+  Calendar as CalendarIcon,
   Clock,
   Users,
   Phone,
   Settings,
   Activity,
-  ChevronDown,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  MapPin,
+  ChevronDown,
+  LocateFixed,
+  ExternalLink,
 } from "lucide-react-native";
 
 const WarrantyPresets = [
@@ -58,6 +63,18 @@ export default function AddJobScreen() {
         } 
       : (initialCustomer || null)
   );
+
+  const activeCustomerId = selectedCustomer?._id || selectedCustomer?.serverId;
+  const { data: customerDetailsResponse } = useGetCustomerByIdQuery(activeCustomerId, {
+    skip: !activeCustomerId || !!selectedCustomer?.locations,
+  });
+
+  React.useEffect(() => {
+    if (customerDetailsResponse?.data && selectedCustomer && !selectedCustomer.locations) {
+      setSelectedCustomer(prev => ({ ...prev, locations: customerDetailsResponse.data.locations }));
+    }
+  }, [customerDetailsResponse]);
+
   const [appliance, setAppliance] = useState(editingJob?.applianceType ?? ApplianceTypes[0]);
   const [issue, setIssue] = useState(editingJob?.issue ?? "");
   const [serviceDone, setServiceDone] = useState(editingJob?.serviceDone ?? "");
@@ -75,21 +92,42 @@ export default function AddJobScreen() {
   const [warranty, setWarranty] = useState(editingJob?.warranty ?? WarrantyPresets[0]);
   const [customWarranty, setCustomWarranty] = useState("");
   const [showCustomWarranty, setShowCustomWarranty] = useState(false);
-  
+
+  // Location State
+  const [selectedLocation, setSelectedLocation] = useState(editingJob?.location || null);
+
+  // Sync Location when customer changes
+  React.useEffect(() => {
+    if (selectedCustomer && !editingJob) {
+      const defaultLoc = selectedCustomer.locations?.find((l) => l.isDefault) || selectedCustomer.locations?.[0];
+      setSelectedLocation(defaultLoc || null);
+    }
+  }, [selectedCustomer?.locations, editingJob]);
+
   // Time state
   let initialTime = "10:00 AM";
   if (editingJob?.serviceDate) {
     const d = new Date(editingJob.serviceDate);
     if (!isNaN(d.getTime())) {
-      initialTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      initialTime = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
     }
   }
   const [selectedTime, setSelectedTime] = useState(initialTime);
-  
+
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [clockPickerMode, setClockPickerMode] = useState("hour"); // "hour" or "minute"
+
+  // Add Location modal state
+  const [showAddLocationModal, setShowAddLocationModal] = useState(false);
+  const [newLocationAddress, setNewLocationAddress] = useState("");
+  const [newLocationLabel, setNewLocationLabel] = useState("");
+  const [newLocationLat, setNewLocationLat] = useState(null);
+  const [newLocationLng, setNewLocationLng] = useState(null);
+  const addLocationCapture = useLocationCapture();
+  const [updateCustomer, { isLoading: isUpdatingCustomer }] = useUpdateCustomerMutation();
+
   
   const [isFocusedIssue, setIsFocusedIssue] = useState(false);
   const [isFocusedAmount, setIsFocusedAmount] = useState(false);
@@ -111,6 +149,71 @@ export default function AddJobScreen() {
       navigation.goBack();
     }
   };
+
+  /** Stable local ID generator for new locations (before server assigns _id). */
+  function generateLocalId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  async function handleAddLocation() {
+    if (!newLocationAddress.trim()) {
+      Alert.alert("Error", "Address is required");
+      return;
+    }
+    const newLoc = {
+      id: generateLocalId(),
+      label: newLocationLabel.trim() || "Site",
+      address: newLocationAddress.trim(),
+      latitude: newLocationLat,
+      longitude: newLocationLng,
+      isDefault: (selectedCustomer?.locations?.length ?? 0) === 0,
+    };
+
+    // Strip the local `id` before sending to server
+    const { id: _localId, ...serverLoc } = newLoc;
+
+    try {
+      const custId = selectedCustomer._id || selectedCustomer.serverId;
+      if (custId) {
+        await updateCustomer({
+          id: custId,
+          locations: [...(selectedCustomer.locations || []).map(({ id: _l, ...rest }) => rest), serverLoc],
+        }).unwrap();
+      }
+
+      setSelectedCustomer((prev) => ({
+        ...prev,
+        locations: [...(prev.locations || []), newLoc],
+      }));
+      setSelectedLocation(newLoc);
+
+      // Reset form
+      setShowAddLocationModal(false);
+      setNewLocationAddress("");
+      setNewLocationLabel("");
+      setNewLocationLat(null);
+      setNewLocationLng(null);
+      Alert.alert("Success", "Location added successfully to customer.");
+    } catch {
+      Alert.alert("Error", "Failed to add location");
+    }
+  }
+
+  function handleAddLocationGPS(coords) {
+    setNewLocationLat(coords.latitude);
+    setNewLocationLng(coords.longitude);
+    Alert.alert("Success", "Captured current location!");
+  }
+
+  function handleAddLocationLinkExtract(link) {
+    const coords = addLocationCapture.extractFromLink(link);
+    if (coords) {
+      setNewLocationLat(coords.latitude);
+      setNewLocationLng(coords.longitude);
+      addLocationCapture.closeLinkModal();
+      Alert.alert("Success", "Coordinates extracted from link!");
+    }
+  }
 
   async function handleSubmit() {
     if (!selectedCustomer) { Alert.alert("Error", "Please select a customer"); return; }
@@ -141,7 +244,6 @@ export default function AddJobScreen() {
       
       finalDate = new Date(year, month, day, hours, minutes, 0, 0);
     } else {
-      console.warn("Time parsing failed for:", selectedTime);
     }
 
     // Safety Check: If finalDate is invalid, fallback to original or show error
@@ -172,10 +274,10 @@ export default function AddJobScreen() {
           applianceType: appliance, 
           issue: issue.trim(), 
           serviceDone: serviceDone.trim(), 
-          amount: parsedAmount,
           status: status,
           serviceDate: finalDate.toISOString(),
-          warranty: showCustomWarranty ? customWarranty : warranty
+          warranty: showCustomWarranty ? customWarranty : warranty,
+          location: selectedLocation
         }).unwrap();
 
         // Always cancel existing reminders first
@@ -200,6 +302,7 @@ export default function AddJobScreen() {
       } catch (err) {
         Alert.alert("Error", err?.data?.message || "Failed to update job.");
       }
+
       return;
     }
 
@@ -208,12 +311,13 @@ export default function AddJobScreen() {
       const result = await createJob({ 
         customerId: selectedCustomer._id || selectedCustomer.serverId, 
         applianceType: appliance, 
-        issue: issue.trim(), 
-        serviceDone: serviceDone.trim(), 
-        amount: parsedAmount, 
+        issue: issue.trim(),
+        serviceDone: serviceDone.trim(),
+        amount: parsedAmount,
         status: status, 
         serviceDate: finalDate.toISOString(),
-        warranty: showCustomWarranty ? customWarranty : warranty
+        warranty: showCustomWarranty ? customWarranty : warranty,
+        location: selectedLocation
       }).unwrap();
 
       // Schedule local reminders for the newly created job
@@ -243,7 +347,6 @@ export default function AddJobScreen() {
 
       handleFinish();
     } catch (err) {
-      console.error("Create job error:", err);
       Alert.alert("Error", err?.data?.message || "Failed to create job. Please check your connection.");
     }
   }
@@ -323,6 +426,57 @@ export default function AddJobScreen() {
               </View>
             )}
           </View>
+
+          {/* Location Picker Sub-section */}
+          {selectedCustomer && (
+            <View style={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginLeft: 4 }}>Service At</Text>
+                <TouchableOpacity onPress={() => setShowAddLocationModal(true)}>
+                  <Text style={{ fontFamily: 'Inter', color: colors.primary, fontSize: 10, fontWeight: '700' }}>+ ADD LOCATION</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {selectedCustomer.locations?.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  {selectedCustomer.locations.map((loc) => {
+                    const locId = loc._id || loc.id;
+                    const selId = selectedLocation?._id || selectedLocation?.id;
+                    const isSelected = locId && selId ? locId === selId : selectedLocation?.address === loc.address;
+                    return (
+                      <TouchableOpacity 
+                        key={loc._id || loc.id || loc.address} 
+                        onPress={() => setSelectedLocation(loc)}
+                        style={{ 
+                          marginRight: 12, 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          gap: 8, 
+                          backgroundColor: isSelected ? colors.primaryBg : colors.bgCard, 
+                          borderWidth: 1, 
+                          borderColor: isSelected ? colors.primary : colors.border, 
+                          paddingHorizontal: 12, 
+                          paddingVertical: 8, 
+                          borderRadius: 12 
+                        }}
+                      >
+                        <MapPin size={10} color={isSelected ? colors.primary : colors.textDisabled} />
+                        <Text style={{ fontFamily: 'Space Grotesk', color: isSelected ? colors.textPrimary : colors.textDisabled, fontSize: 10, fontWeight: '700' }}>{loc.label || "Site"}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <Text style={{ fontFamily: 'Inter', color: colors.textMuted, fontSize: 10, fontStyle: 'italic', marginLeft: 4 }}>No locations saved for this customer.</Text>
+              )}
+              
+              {selectedLocation && selectedCustomer.locations?.length > 0 && (
+                <View style={{ marginTop: 12, padding: 12, backgroundColor: colors.bgCard, borderRadius: 12, borderWidth: 1, borderColor: colors.borderMuted }}>
+                  <Text style={{ fontFamily: 'Inter', color: colors.textMuted, fontSize: 10, lineHeight: 16 }}>{selectedLocation.address}</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Section: Job Parameters */}
@@ -544,6 +698,120 @@ export default function AddJobScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Location Modal */}
+      <Modal visible={showAddLocationModal} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <View style={{ backgroundColor: colors.bgPrimary, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2 }}>Add Location</Text>
+              <TouchableOpacity onPress={() => setShowAddLocationModal(false)}>
+                <Text style={{ color: colors.secondary, fontWeight: "700" }}>CANCEL</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 8, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Label (Optional)</Text>
+            <View style={{ marginBottom: 20, paddingHorizontal: 16, height: 56, borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, justifyContent: "center" }}>
+              <TextInput
+                placeholder="e.g. Home, Office"
+                placeholderTextColor={colors.placeholderText}
+                value={newLocationLabel}
+                onChangeText={setNewLocationLabel}
+                style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 14 }}
+              />
+            </View>
+
+            <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 8, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Full Address</Text>
+            <View style={{ marginBottom: 16, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border, minHeight: 100 }}>
+              <TextInput
+                placeholder="Enter complete address..."
+                placeholderTextColor={colors.placeholderText}
+                value={newLocationAddress}
+                onChangeText={setNewLocationAddress}
+                multiline
+                textAlignVertical="top"
+                style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 14, flex: 1 }}
+              />
+            </View>
+
+            <View style={{ marginBottom: 32, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 12 }}>
+              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 8, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2 }}>GPS Pinpoint (Latitude / Longitude)</Text>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1, backgroundColor: colors.bgInput, borderRadius: 12, paddingHorizontal: 12, height: 44, justifyContent: "center", borderWidth: 1, borderColor: colors.border }}>
+                  <TextInput
+                    placeholder="Latitude"
+                    placeholderTextColor={colors.placeholderText}
+                    value={newLocationLat?.toString() ?? ""}
+                    onChangeText={(val) => setNewLocationLat(parseFloat(val) || null)}
+                    keyboardType="decimal-pad"
+                    style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 12 }}
+                  />
+                </View>
+                <View style={{ flex: 1, backgroundColor: colors.bgInput, borderRadius: 12, paddingHorizontal: 12, height: 44, justifyContent: "center", borderWidth: 1, borderColor: colors.border }}>
+                  <TextInput
+                    placeholder="Longitude"
+                    placeholderTextColor={colors.placeholderText}
+                    value={newLocationLng?.toString() ?? ""}
+                    onChangeText={(val) => setNewLocationLng(parseFloat(val) || null)}
+                    keyboardType="decimal-pad"
+                    style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 12 }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  onPress={async () => {
+                    const coords = await addLocationCapture.captureGPS();
+                    if (coords) handleAddLocationGPS(coords);
+                  }}
+                  disabled={addLocationCapture.isFetching}
+                  style={{ flex: 1, backgroundColor: colors.primaryBg, height: 40, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: colors.primaryBorder, opacity: addLocationCapture.isFetching ? 0.6 : 1 }}
+                >
+                  {addLocationCapture.isFetching ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <LocateFixed size={14} color={colors.primary} />
+                      <Text style={{ fontFamily: "Space Grotesk", color: colors.primary, fontSize: 11, fontWeight: "700" }}>USE GPS</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={addLocationCapture.openLinkModal}
+                  style={{ flex: 1, backgroundColor: colors.secondaryBg, height: 40, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1, borderColor: colors.secondaryBorder }}
+                >
+                  <ExternalLink size={14} color={colors.secondary} />
+                  <Text style={{ fontFamily: "Space Grotesk", color: colors.secondary, fontSize: 11, fontWeight: "700" }}>MAP LINK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleAddLocation}
+              disabled={isUpdatingCustomer}
+              style={{ paddingVertical: 16, borderRadius: 16, backgroundColor: colors.primary, alignItems: "center", opacity: isUpdatingCustomer ? 0.7 : 1 }}
+            >
+              {isUpdatingCustomer ? (
+                <ActivityIndicator color={colors.bgPrimary} size="small" />
+              ) : (
+                <Text style={{ fontFamily: "Space Grotesk", color: colors.bgPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4 }}>Save Location</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Map Link Modal — for Add Location flow */}
+      <MapLinkModal
+        visible={addLocationCapture.linkModalVisible}
+        mapsLink={addLocationCapture.mapsLink}
+        onChangeLink={addLocationCapture.setMapsLink}
+        onExtract={handleAddLocationLinkExtract}
+        onClose={addLocationCapture.closeLinkModal}
+      />
 
       {/* Radial Time Picker Modal */}
       <Modal visible={showTimePicker} transparent animationType="slide">

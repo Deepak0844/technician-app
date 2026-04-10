@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,29 +12,56 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
-import { Wrench, User } from "lucide-react-native";
+import { Wrench, User, Briefcase, Phone } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
 
-import { useUpdateMeMutation } from "@services/api/authApi";
-import { completeFirstLoginSetup } from "@store/slices/authSlice";
+import { useUpdateMeMutation, useGetMeQuery } from "@services/api/authApi";
+import { completeFirstLoginSetup, updateUser } from "@store/slices/authSlice";
 
 export default function SetupProfileScreen() {
   const [name, setName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [phone, setPhone] = useState("");
   const dispatch = useDispatch();
   const { colors } = useTheme();
+  
+  const { data: meResponse } = useGetMeQuery();
   const [updateMe, { isLoading }] = useUpdateMeMutation();
+
+  useEffect(() => {
+    if (meResponse?.data) {
+      if (meResponse.data.name) setName(meResponse.data.name);
+      if (meResponse.data.companyName) setCompanyName(meResponse.data.companyName);
+      if (meResponse.data.phone) setPhone(meResponse.data.phone);
+    }
+  }, [meResponse]);
 
   async function handleContinue() {
     const trimmedName = name.trim();
+    const trimmedCompanyName = companyName.trim();
+    const trimmedPhone = phone.trim();
+    
     if (!trimmedName) {
       Alert.alert("Please enter your name", "Your name helps personalise your experience.");
       return;
     }
+    
     try {
-      await updateMe({ name: trimmedName }).unwrap();
+      const response = await updateMe({ 
+        name: trimmedName, 
+        companyName: trimmedCompanyName,
+        phone: trimmedPhone 
+      }).unwrap();
+      
+      // Update local state with latest user data
+      if (response?.data) {
+        dispatch(updateUser(response.data));
+      }
+      
       dispatch(completeFirstLoginSetup());
-    } catch {
-      Alert.alert("Oops!", "Could not save your name. You can update it later from Profile.");
+    } catch (err) {
+      console.error("Update profile error:", err);
+      Alert.alert("Oops!", "Could not save your details. You can update them later from Profile.");
       dispatch(completeFirstLoginSetup());
     }
   }
@@ -168,6 +195,91 @@ export default function SetupProfileScreen() {
                   fontFamily: "Inter",
                 }}
                 autoFocus
+                returnKeyType="next"
+              />
+            </View>
+
+            <Text
+              style={{
+                color: colors.textSubtle,
+                fontSize: 10,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                fontFamily: "Inter",
+                marginTop: 20,
+                marginBottom: 12,
+              }}
+            >
+              Company Name (Optional)
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.bgInputDeep,
+                borderRadius: 10,
+                paddingHorizontal: 14,
+                height: 52,
+                borderWidth: 1,
+                borderColor: companyName.trim() ? colors.primaryBorder : "transparent",
+              }}
+            >
+              <Briefcase color={colors.textSubtle} size={18} style={{ marginRight: 10 }} />
+              <TextInput
+                value={companyName}
+                onChangeText={setCompanyName}
+                placeholder="e.g. Acme Appliances"
+                placeholderTextColor={colors.textFaint}
+                style={{
+                  flex: 1,
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                  fontFamily: "Inter",
+                }}
+                returnKeyType="next"
+              />
+            </View>
+
+            <Text
+              style={{
+                color: colors.textSubtle,
+                fontSize: 10,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                fontFamily: "Inter",
+                marginTop: 20,
+                marginBottom: 12,
+              }}
+            >
+              Mobile Number
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.bgInputDeep,
+                borderRadius: 10,
+                paddingHorizontal: 14,
+                height: 52,
+                borderWidth: 1,
+                borderColor: phone.trim() ? colors.primaryBorder : "transparent",
+              }}
+            >
+              <Phone color={colors.textSubtle} size={18} style={{ marginRight: 10 }} />
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="e.g. +91 9876543210"
+                placeholderTextColor={colors.textFaint}
+                style={{
+                  flex: 1,
+                  color: colors.textPrimary,
+                  fontSize: 15,
+                  fontFamily: "Inter",
+                }}
+                keyboardType="phone-pad"
                 returnKeyType="done"
                 onSubmitEditing={handleContinue}
               />

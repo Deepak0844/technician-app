@@ -24,16 +24,32 @@ const customerSchema = new mongoose.Schema(
       lowercase: true,
       default: "",
     },
-    address: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-    location: {
-      type: String,
-      trim: true,
-      default: "",
-    },
+    locations: [
+      {
+        label: {
+          type: String,
+          trim: true,
+          default: "Primary",
+        },
+        address: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        latitude: {
+          type: Number,
+          default: null,
+        },
+        longitude: {
+          type: Number,
+          default: null,
+        },
+        isDefault: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

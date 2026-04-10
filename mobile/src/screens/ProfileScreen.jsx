@@ -1,15 +1,16 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { View, ScrollView, TouchableOpacity, Text, ActivityIndicator } from "react-native";
+import { View, ScrollView, TouchableOpacity, Text, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetMeQuery, useLogoutMutation } from "@services/api/authApi";
-import { clearCredentials } from "@store/slices/authSlice";
+import { useGetMeQuery, useLogoutMutation, useUpdateMeMutation } from "@services/api/authApi";
+import { clearCredentials, updateUser } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { LogOut, ArrowLeft, Bell } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
 import ThemeToggle from "@components/ThemeToggle";
+import { Check, X, Edit2 } from "lucide-react-native";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
@@ -18,7 +19,44 @@ export default function ProfileScreen() {
   const cachedUser = useSelector((state) => state.auth.user);
   const { data: meResponse, isLoading } = useGetMeQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
+  const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
   const user = meResponse?.data ?? cachedUser ?? {};
+
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editedName, setEditedName] = React.useState("");
+  const [editedCompanyName, setEditedCompanyName] = React.useState("");
+
+  React.useEffect(() => {
+    if (user) {
+      setEditedName(user.name || "");
+      setEditedCompanyName(user.companyName || "");
+    }
+  }, [user, isEditing]);
+
+  async function handleSave() {
+    if (!editedName.trim()) {
+      Alert.alert("Error", "Name cannot be empty");
+      return;
+    }
+    try {
+      const resp = await updateMe({
+        name: editedName.trim(),
+        companyName: editedCompanyName.trim(),
+      }).unwrap();
+      if (resp?.data) {
+        dispatch(updateUser(resp.data));
+      }
+      setIsEditing(false);
+    } catch (err) {
+      Alert.alert("Error", "Failed to update profile. Please try again.");
+    }
+  }
+
+  function handleCancel() {
+    setIsEditing(false);
+    setEditedName(user.name || "");
+    setEditedCompanyName(user.companyName || "");
+  }
 
   async function handleLogout() {
     await logout().catch(() => {});
@@ -58,9 +96,20 @@ export default function ProfileScreen() {
         >
           <ArrowLeft color={colors.secondary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.secondary }}>
+        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.secondary, flex: 1 }}>
           Profile Settings
         </Text>
+        <TouchableOpacity
+          onPress={isEditing ? handleCancel : () => setIsEditing(true)}
+          style={{ padding: 8 }}
+          activeOpacity={0.7}
+        >
+          {isEditing ? (
+            <X color={colors.danger} size={20} />
+          ) : (
+            <Edit2 color={colors.secondary} size={20} />
+          )}
+        </TouchableOpacity>
       </LinearGradient>
 
       <ScrollView
@@ -79,7 +128,7 @@ export default function ProfileScreen() {
               borderColor: colors.secondary,
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 8,
+              marginBottom: 12,
               shadowColor: colors.secondary,
               shadowOpacity: 0.3,
               shadowRadius: 16,
@@ -94,33 +143,48 @@ export default function ProfileScreen() {
                 color: colors.textPrimary,
               }}
             >
-              {(user.name || user.phone || "T")[0].toUpperCase()}
+              {(isEditing ? editedName : user.name || user.phone || "T")[0]?.toUpperCase() || "T"}
             </Text>
           </View>
-          <Text
-            style={{
-              fontFamily: "Space Grotesk",
-              color: colors.secondary,
-              fontSize: 9,
-              letterSpacing: 3,
-              textTransform: "uppercase",
-              marginBottom: 4,
-            }}
-          >
-            Technician
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Space Grotesk",
-              color: colors.textPrimary,
-              fontSize: 18,
-              fontWeight: "800",
-              marginBottom: 2,
-            }}
-          >
-            {user.name || "Technician"}
-          </Text>
-          <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 11, letterSpacing: 1 }}>
+          
+          {isEditing ? (
+            <View style={{ height: 28, justifyContent: "center" }}>
+              <TextInput
+                value={editedName}
+                onChangeText={setEditedName}
+                placeholder="Your Name"
+                placeholderTextColor={colors.textDisabled}
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: "800",
+                  textAlign: "center",
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.primary,
+                  padding: 0,
+                  minWidth: 150,
+                  height: 28,
+                }}
+                autoFocus
+              />
+            </View>
+          ) : (
+            <View style={{ height: 28, justifyContent: "center" }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: "800",
+                  textAlign: "center",
+                }}
+              >
+                {user.name || "Technician"}
+              </Text>
+            </View>
+          )}
+          <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 11, letterSpacing: 1, marginTop: 4 }}>
             {user.phone}
           </Text>
         </View>
@@ -151,13 +215,50 @@ export default function ProfileScreen() {
           >
             Profile Information
           </Text>
+          <ProfileRow 
+            label="Company Name" 
+            value={user.companyName} 
+            colors={colors} 
+            isEditing={isEditing}
+            editedValue={editedCompanyName}
+            onValueChange={setEditedCompanyName}
+            placeholder="e.g. Acme Repair"
+          />
           <ProfileRow label="Mobile Number" value={user.phone} colors={colors} />
           <ProfileRow
             label="Member Since"
             value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
             colors={colors}
           />
-          <ProfileRow label="Role" value="Field Technician" colors={colors} />
+
+          <View style={{ height: isEditing ? 64 : 0, overflow: 'hidden', marginTop: isEditing ? 10 : 0 }}>
+            {isEditing && (
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={isUpdating}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: colors.primary,
+                  borderRadius: 8,
+                  height: 44,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <>
+                    <Text style={{ color: "#FFFFFF", fontWeight: "800", fontFamily: "Space Grotesk", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginRight: 8 }}>
+                      Save Changes
+                    </Text>
+                    <Check color="#FFFFFF" size={16} />
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* App Settings Card */}
@@ -275,15 +376,37 @@ export default function ProfileScreen() {
   );
 }
 
-function ProfileRow({ label, value, colors }) {
+function ProfileRow({ label, value, colors, isEditing, editedValue, onValueChange, placeholder }) {
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-      <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5 }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", height: 32, marginBottom: 12 }}>
+      <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, flex: 0.4 }}>
         {label}
       </Text>
-      <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", fontSize: 12 }}>
-        {value ?? "—"}
-      </Text>
+      <View style={{ flex: 0.6, height: 32, justifyContent: 'center' }}>
+        {isEditing ? (
+          <TextInput
+            value={editedValue}
+            onChangeText={onValueChange}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textDisabled}
+            style={{
+              fontFamily: "Space Grotesk",
+              color: colors.textPrimary,
+              fontWeight: "700",
+              fontSize: 12,
+              textAlign: "right",
+              borderBottomWidth: 1,
+              borderBottomColor: colors.primaryBorder,
+              padding: 0,
+              height: 32,
+            }}
+          />
+        ) : (
+          <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", fontSize: 12, textAlign: "right" }}>
+            {value ?? "—"}
+          </Text>
+        )}
+      </View>
     </View>
   );
 }

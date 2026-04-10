@@ -18,14 +18,34 @@ export const verifyOtpSchema = z.object({
 });
 
 /**
+ * Customer: Location entry
+ */
+const locationSchema = z.object({
+  label: z.string().trim().default("Primary"),
+  address: z.string().trim().min(1, "Location address is required"),
+  latitude: z.number().nullable().optional().default(null),
+  longitude: z.number().nullable().optional().default(null),
+  isDefault: z.boolean().optional().default(false),
+});
+
+/**
  * Customer: Upsert
  */
 export const upsertCustomerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
   phone: z.string().min(7, "Valid phone number is required"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  address: z.string().optional().default(""),
-  location: z.string().optional().default(""),
+  locations: z.array(locationSchema).min(1, "At least one location is required"),
+});
+
+/**
+ * Customer: Update (all fields optional except locations items still validated)
+ */
+export const updateCustomerSchema = z.object({
+  name: z.string().min(1).optional(),
+  phone: z.string().min(7).optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  locations: z.array(locationSchema).min(1).optional(),
 });
 
 /**
@@ -49,6 +69,13 @@ export const createJobSchema = z.object({
   status: z.enum(["pending", "in_progress", "completed", "cancelled"]).optional().default("pending"),
   serviceDate: z.string().min(1, "Service date is required"),
   nextReminderDate: z.string().optional().nullable(),
+  warranty: z.string().optional().default(""),
+  location: z.object({
+    label: z.string().optional(),
+    address: z.string().optional(),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
+  }).optional().nullable(),
 });
 
 /**

@@ -21,7 +21,8 @@
       "bundleIdentifier": "com.technicianapp.mobile",
       "infoPlist": {
         "NSContactsUsageDescription": "We need access to your contacts to find customers.",
-        "NSUserNotificationsUsageDescription": "We use notifications to remind you about upcoming service jobs."
+        "NSUserNotificationsUsageDescription": "We use notifications to remind you about upcoming service jobs.",
+        "NSLocationWhenInUseUsageDescription": "We use your location to help you find and navigate to customer sites."
       }
     },
     "android": {
@@ -37,7 +38,9 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "POST_NOTIFICATIONS",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
@@ -51,6 +54,13 @@
         "expo-notifications",
         {
           "sounds": []
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysPermission": "Allow Technician App to access your location even when the app is in the background.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ]
     ]
