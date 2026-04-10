@@ -247,7 +247,7 @@ export default function CreateCustomerScreen({ route }) {
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.bgCard, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 32 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontWeight: "700", fontSize: 13, marginBottom: 4 }}>Save to Contacts</Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>Add this customer to your phone's address book</Text>
+              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>Add this customer to your phone&apos;s address book</Text>
             </View>
             <Switch
               value={saveToPhone}

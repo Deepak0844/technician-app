@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, ScrollView, TouchableOpacity, StyleSheet, Alert, StatusBar, TextInput } from "react-native";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  StatusBar,
+  TextInput,
+} from "react-native";
 import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -15,13 +22,17 @@ import {
   Wrench,
   CheckCircle2,
   Calendar,
-  Hash,
   Receipt,
-  Clock,
   Building2,
   Plus,
   Trash2,
-  ShieldCheck
+  ShieldCheck,
+  Mail,
+  Hash,
+  ChevronDown,
+  ChevronRight,
+  Info,
+  Bell,
 } from "lucide-react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -34,16 +45,13 @@ import useTheme from "@hooks/useTheme";
 function formatDate(dateStr) {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function formatCurrency(amount) {
   const num = parseFloat(amount) || 0;
-  return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 0 })}`;
+  return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
 function generateInvoiceNumber(jobId) {
@@ -51,21 +59,37 @@ function generateInvoiceNumber(jobId) {
   return `INV-${jobId.slice(-6).toUpperCase()}`;
 }
 
-
+function computeLineTotal(item) {
+  const qty = parseFloat(item.qty) || 0;
+  const rate = parseFloat(item.rate) || 0;
+  return qty * rate;
+}
 
 // ─────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────
 
-
-function InfoRow({ icon, label, value, valueColor }) {
-  const { colors } = useTheme();
+function SectionLabel({ title, colors }) {
   return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoRowIcon}>{icon}</View>
-      <View style={styles.infoRowContent}>
-        <Text style={[styles.infoRowLabel, { color: colors.textMuted }]}>{label}</Text>
-        <Text style={[styles.infoRowValue, { color: valueColor || colors.textSecondary }]}>
+    <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: colors.secondary, marginBottom: 14 }}>
+      {title}
+    </Text>
+  );
+}
+
+function Divider({ colors }) {
+  return <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />;
+}
+
+function InfoRow({ icon, label, value, valueColor, colors }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+      <View style={{ width: 30, alignItems: "center", paddingTop: 1 }}>{icon}</View>
+      <View style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 1 }}>
+          {label}
+        </Text>
+        <Text style={{ fontFamily: "Inter", fontSize: 12, color: valueColor || colors.textSecondary, fontWeight: "600", textAlign: "right", maxWidth: "55%", lineHeight: 18 }}>
           {value || "—"}
         </Text>
       </View>
@@ -73,66 +97,42 @@ function InfoRow({ icon, label, value, valueColor }) {
   );
 }
 
-function LineItemHeaderRow() {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.lineItemRow, styles.lineItemHeader, { backgroundColor: colors.bgSurface }]}>
-      <Text style={[styles.lineItemHeaderText, { flex: 1, color: colors.secondary }]}>Description</Text>
-      <Text style={[styles.lineItemHeaderText, styles.lineItemQtyCol, { color: colors.secondary }]}>Qty</Text>
-      <Text style={[styles.lineItemHeaderText, styles.lineItemAmtCol, { color: colors.secondary }]}>Amount</Text>
-      <View style={styles.lineItemDelCol} />
-    </View>
-  );
-}
-
-function EditableLineItemRow({ item, onChangeDescription, onChangeQty, onChangeAmount, onDelete, isAlt }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.lineItemRow, isAlt && styles.lineItemAlt]}>
-      <TextInput
-        style={[styles.lineItemInput, { flex: 1, color: colors.textPrimary }]}
-        value={item.description}
-        onChangeText={onChangeDescription}
-        placeholder="Description"
-        placeholderTextColor={colors.textDisabled}
-        multiline
-      />
-      <TextInput
-        style={[styles.lineItemInput, styles.lineItemQtyCol, { color: colors.textPrimary }]}
-        value={String(item.qty)}
-        onChangeText={onChangeQty}
-        keyboardType="numeric"
-        placeholder="1"
-        placeholderTextColor={colors.textDisabled}
-        textAlign="center"
-      />
-      <TextInput
-        style={[styles.lineItemInput, styles.lineItemAmtCol, { color: colors.textPrimary }]}
-        value={String(item.amount)}
-        onChangeText={onChangeAmount}
-        keyboardType="numeric"
-        placeholder="0"
-        placeholderTextColor={colors.textDisabled}
-        textAlign="right"
-      />
-      <TouchableOpacity onPress={onDelete} style={styles.lineItemDelBtn} activeOpacity={0.7}>
-        <Trash2 color={colors.danger} size={14} />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-
-
 // ─────────────────────────────────────────────
-// PDF HTML Generator
+// PDF HTML Builder
 // ─────────────────────────────────────────────
-function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo }) {
+function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, subtotal }) {
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
-  
+  const customerAddress = job.location?.address || "—";
+
   const techName = techInfo?.companyName || techInfo?.name || "TechServ Pro";
-  const techPhone = techInfo?.phone || "Available 9 AM – 7 PM";
+  const techPersonName = techInfo?.name || "Professional Technician";
+  const techPhone = techInfo?.phone || "N/A";
+  const techEmail = techInfo?.email || "";
+  const techAddress = techInfo?.address || "";
+
+  const statusColors = {
+    completed: { bg: "#d1fae5", text: "#065f46", border: "#6ee7b7" },
+    in_progress: { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
+    pending: { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
+    cancelled: { bg: "#fee2e2", text: "#991b1b", border: "#fca5a5" },
+  };
+  const sc = statusColors[job.status] || statusColors.pending;
+  const statusLabel = (job.status || "pending").replace("_", " ").toUpperCase();
+
+  const lineItemRows = lineItems.map((item, i) => {
+    const lineTotal = computeLineTotal(item);
+    return `
+      <tr class="${i % 2 === 1 ? "alt" : ""}">
+        <td>
+          <div class="item-name">${item.description || "—"}</div>
+          ${item.note ? `<div class="item-note">${item.note}</div>` : ""}
+        </td>
+        <td class="right">${item.qty}</td>
+        <td class="right">₹${parseFloat(item.rate || 0).toLocaleString("en-IN")}</td>
+        <td class="right bold">₹${lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+      </tr>`;
+  }).join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -142,160 +142,264 @@ function buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal,
   <title>Invoice ${invoiceNumber}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #ffffff; color: #1a1a2e; font-size: 13px; }
-    .page { max-width: 740px; margin: 0 auto; padding: 40px; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #fff; color: #111827; font-size: 13px; line-height: 1.5; }
+    .page { max-width: 794px; margin: 0 auto; padding: 36px 40px; }
 
-    /* Header */
-    .header { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 32px 36px; border-radius: 16px; color: white; margin-bottom: 28px; }
-    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
-    .brand-name { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-    .brand-tagline { font-size: 11px; opacity: 0.8; margin-top: 4px; letter-spacing: 0.5px; }
+    /* ── Header ── */
+    .header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #9333ea 100%); padding: 30px 32px; border-radius: 18px; color: #fff; margin-bottom: 24px; position: relative; overflow: hidden; }
+    .header-orb1 { position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,0.07); }
+    .header-orb2 { position: absolute; bottom: -30px; left: 20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .brand-block {}
+    .brand-icon { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 12px; margin-bottom: 8px; font-size: 22px; }
+    .brand-name { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+    .brand-tagline { font-size: 10px; opacity: 0.75; margin-top: 2px; letter-spacing: 0.5px; }
     .invoice-meta { text-align: right; }
-    .invoice-number { font-size: 20px; font-weight: 700; }
-    .invoice-label { font-size: 10px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-    .header-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); }
-    .date-block { font-size: 12px; opacity: 0.9; }
-    .date-block span { font-weight: 600; }
-    .status-badge { background: rgba(16,185,129,0.2); color: #d1fae5; border: 1px solid rgba(16,185,129,0.4); padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
-    .status-badge.pending { background: rgba(245,158,11,0.2); color: #fef3c7; border-color: rgba(245,158,11,0.4); }
-    .status-badge.cancelled { background: rgba(239,68,68,0.2); color: #fee2e2; border-color: rgba(239,68,68,0.4); }
+    .invoice-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+    .invoice-number { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .header-divider { border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 0 0 18px; }
+    .header-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .date-label { font-size: 9px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .date-value { font-size: 13px; font-weight: 600; }
+    .meta-group { display: flex; gap: 32px; }
+    .status-pill { padding: 5px 16px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; border: 1px solid; }
 
-    /* Billing Grid */
-    .billing-grid { display: flex; gap: 20px; margin-bottom: 28px; }
-    .billing-card { flex: 1; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
-    .billing-card-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #6366f1; margin-bottom: 12px; }
-    .billing-name { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
-    .billing-detail { font-size: 12px; color: #6b7280; margin-bottom: 3px; }
+    /* ── Billing Grid ── */
+    .billing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .billing-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; }
+    .billing-tag { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+    .billing-tag.from { color: #4f46e5; }
+    .billing-tag.to { color: #7c3aed; }
+    .billing-name { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 6px; }
+    .billing-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+    .billing-row .icon { font-size: 12px; }
 
-    /* Service Table */
-    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #374151; margin-bottom: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    thead tr { background: #f3f4f6; }
-    thead th { padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
-    thead th:not(:first-child) { text-align: right; }
-    tbody tr { border-bottom: 1px solid #f3f4f6; }
-    tbody tr:nth-child(even) { background: #fafafa; }
-    tbody td { padding: 12px 14px; font-size: 12px; color: #374151; }
-    tbody td:not(:first-child) { text-align: right; font-weight: 500; }
-    .item-name { font-weight: 600; color: #1a1a2e; }
-    .item-desc { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    /* ── Service Info ── */
+    .section-title { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #6b7280; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #f3f4f6; }
+    .service-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; margin-bottom: 20px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .info-item label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; display: block; margin-bottom: 3px; }
+    .info-item .val { font-size: 12px; font-weight: 600; color: #111827; }
+    .info-item .val.purple { color: #4f46e5; }
+    .info-item .val.green { color: #059669; }
+    .text-block { margin-top: 14px; padding-top: 14px; border-top: 1px solid #f3f4f6; }
+    .text-block label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; display: block; margin-bottom: 5px; }
+    .text-block .val { font-size: 12px; color: #374151; line-height: 1.6; }
+    .text-block .val.green { color: #059669; font-weight: 600; }
 
-    /* Totals */
-    .totals-section { display: flex; justify-content: flex-end; margin-bottom: 28px; }
-    .totals-table { width: 300px; }
-    .total-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #6b7280; border-bottom: 1px solid #f3f4f6; }
-    .total-row:last-child { border-bottom: none; }
-    .grand-total-row { display: flex; justify-content: space-between; padding: 12px 16px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border-radius: 10px; margin-top: 10px; font-weight: 800; font-size: 16px; }
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    th { padding: 10px 12px; background: #f8f7ff; text-align: left; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+    th.right { text-align: right; }
+    td { padding: 11px 12px; font-size: 12px; color: #374151; border-bottom: 1px solid #f3f4f6; }
+    td.right { text-align: right; }
+    td.bold { font-weight: 700; color: #111827; }
+    td.muted { color: #9ca3af; font-size: 11px; }
+    tr.alt td { background: #fafafe; }
+    .item-name { font-weight: 600; color: #111827; }
+    .item-note { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    .table-card { border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; margin-bottom: 20px; }
 
-    /* Notes */
-    .notes-section { background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 24px; border-left: 4px solid #6366f1; }
-    .notes-section p { font-size: 12px; color: #4b5563; line-height: 1.6; margin-top: 4px; }
+    /* ── Totals ── */
+    .totals-row { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    .totals-inner { width: 340px; }
+    .grand-total-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 12px; color: #fff; margin-top: 10px; }
+    .grand-total-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .grand-total-value { font-size: 22px; font-weight: 900; }
 
-    /* Footer */
-    .footer { text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb; }
-    .footer-thanks { font-size: 16px; font-weight: 700; color: #6366f1; margin-bottom: 6px; }
-    .footer-sub { font-size: 11px; color: #9ca3af; }
+    /* ── Warranty ── */
+    .warranty-card { border: 2px dashed #c4b5fd; border-radius: 14px; padding: 18px; background: #faf5ff; margin-bottom: 20px; }
+    .warranty-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .warranty-icon { font-size: 20px; }
+    .warranty-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #4f46e5; }
+    .warranty-text { font-size: 13px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px; }
+    .warranty-note { font-size: 10px; color: #6d28d9; font-style: italic; line-height: 1.5; }
 
-    /* Warranty Section */
-    .warranty-section { margin-top: 24px; padding: 18px; border: 1.5px dashed #6366f1; border-radius: 12px; background: #f5f3ff; }
-    .warranty-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #6366f1; margin-bottom: 8px; display: flex; align-items: center; }
-    .warranty-text { font-size: 12px; color: #1e1b4b; font-weight: 600; }
-    .warranty-note { font-size: 9px; color: #6366f1; opacity: 0.8; margin-top: 6px; font-style: italic; }
+    /* ── Reminder ── */
+    .reminder-card { border: 1px solid #d1fae5; border-radius: 14px; padding: 14px 18px; background: #f0fdf4; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+    .reminder-text { font-size: 12px; font-weight: 600; color: #065f46; }
+    .reminder-date { font-size: 13px; font-weight: 800; color: #059669; }
+
+    /* ── Terms ── */
+    .terms-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; margin-bottom: 24px; }
+    .terms-list { list-style: none; padding: 0; }
+    .terms-list li { font-size: 10px; color: #9ca3af; margin-bottom: 6px; padding-left: 14px; position: relative; line-height: 1.5; }
+    .terms-list li::before { content: "•"; position: absolute; left: 0; color: #c4b5fd; font-size: 12px; top: -1px; }
+
+    /* ── Signature ── */
+    .signature-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+    .sig-block { text-align: center; }
+    .sig-line { width: 160px; height: 1px; background: #374151; margin-bottom: 6px; }
+    .sig-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
+    .sig-name { font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 2px; }
+
+    /* ── Footer ── */
+    .footer { text-align: center; padding-top: 20px; border-top: 2px solid #f3f4f6; }
+    .footer-brand { font-size: 15px; font-weight: 800; color: #4f46e5; margin-bottom: 4px; }
+    .footer-sub { font-size: 10px; color: #9ca3af; margin-bottom: 8px; }
+    .footer-line { width: 40px; height: 3px; background: linear-gradient(90deg, #4f46e5, #9333ea); border-radius: 2px; margin: 0 auto; }
+    .page-num { font-size: 9px; color: #d1d5db; margin-top: 14px; }
   </style>
 </head>
 <body>
-  <div class="page">
+<div class="page">
 
-    <!-- Header -->
-    <div class="header">
-      <div class="header-top">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-orb1"></div>
+    <div class="header-orb2"></div>
+    <div class="header-top">
+      <div class="brand-block">
+        <div class="brand-icon">🔧</div>
+        <div class="brand-name">${techName}</div>
+        <div class="brand-tagline">Professional Appliance Repair &amp; Maintenance</div>
+      </div>
+      <div class="invoice-meta">
+        <div class="invoice-label">Invoice Number</div>
+        <div class="invoice-number">${invoiceNumber}</div>
+      </div>
+    </div>
+    <hr class="header-divider" />
+    <div class="header-bottom">
+      <div class="meta-group">
         <div>
-          <div class="brand-name">${techName}</div>
-          <div class="brand-tagline">Professional Appliance Repair &amp; Maintenance</div>
+          <div class="date-label">Issue Date</div>
+          <div class="date-value">${formatDate(job.serviceDate)}</div>
         </div>
-        <div class="invoice-meta">
-          <div class="invoice-label">Invoice Number</div>
-          <div class="invoice-number">${invoiceNumber}</div>
+        <div>
+          <div class="date-label">Payment Due</div>
+          <div class="date-value">On Completion</div>
         </div>
+        ${job._id ? `<div><div class="date-label">Job Ref #</div><div class="date-value">${job._id.slice(-6).toUpperCase()}</div></div>` : ""}
       </div>
-      <div class="header-bottom">
-        <div class="date-block">
-          Date: <span>${formatDate(job.serviceDate)}</span> &nbsp;|&nbsp; 
-          Due: <span>On Completion</span>
-        </div>
-        <div class="status-badge ${job.status === 'pending' ? 'pending' : job.status === 'cancelled' ? 'cancelled' : ''}">${statusConfig.label}</div>
+      <div class="status-pill" style="background:${sc.bg};color:${sc.text};border-color:${sc.border};">${statusLabel}</div>
+    </div>
+  </div>
+
+  <!-- Billing Grid -->
+  <div class="billing-grid">
+    <div class="billing-card">
+      <div class="billing-tag from">From / Service Provider</div>
+      <div class="billing-name">${techName}</div>
+      ${techPersonName !== techName ? `<div class="billing-row">👤 ${techPersonName}</div>` : ""}
+      <div class="billing-row">📞 ${techPhone}</div>
+      ${techEmail ? `<div class="billing-row">✉️ ${techEmail}</div>` : ""}
+      ${techAddress ? `<div class="billing-row">📍 ${techAddress}</div>` : ""}
+    </div>
+    <div class="billing-card">
+      <div class="billing-tag to">Bill To / Customer</div>
+      <div class="billing-name">${customerName}</div>
+      <div class="billing-row">📞 ${customerPhone}</div>
+      ${customerAddress !== "—" ? `<div class="billing-row">📍 ${customerAddress}</div>` : ""}
+    </div>
+  </div>
+
+  <!-- Service Information -->
+  <div class="service-card">
+    <div class="section-title">Service Information</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <label>Appliance Type</label>
+        <div class="val purple">${job.applianceType || "—"}</div>
+      </div>
+      <div class="info-item">
+        <label>Service Date</label>
+        <div class="val">${formatDate(job.serviceDate)}</div>
+      </div>
+      <div class="info-item">
+        <label>Job Status</label>
+        <div class="val" style="color:${sc.text}">${statusLabel}</div>
+      </div>
+      <div class="info-item">
+        <label>Warranty</label>
+        <div class="val">${job.warranty || "No Warranty"}</div>
       </div>
     </div>
+    ${job.issue ? `<div class="text-block"><label>Issue Reported</label><div class="val">${job.issue}</div></div>` : ""}
+    ${job.serviceDone ? `<div class="text-block"><label>Work Done / Resolution</label><div class="val green">${job.serviceDone}</div></div>` : ""}
+  </div>
 
-    <!-- Billing Grid -->
-    <div class="billing-grid">
-      <div class="billing-card">
-        <div class="billing-card-title">From</div>
-        <div class="billing-name">${techName}</div>
-        <div class="billing-detail">${techInfo?.name || 'Professional Technician'}</div>
-        <div class="billing-detail">📞 ${techPhone}</div>
-        <div class="billing-detail">GST: 09ABCDE1234F1Z5</div>
-      </div>
-      <div class="billing-card">
-        <div class="billing-card-title">Bill To</div>
-        <div class="billing-name">${customerName}</div>
-        <div class="billing-detail">📞 ${customerPhone}</div>
-        <div class="billing-detail">${job.location && job.location.address ? job.location.address : 'Address not provided'}</div>
-      </div>
-    </div>
-
-    <!-- Service Details Table -->
-    <div class="section-title">Service Details</div>
+  <!-- Line Items Table -->
+  <div class="table-card">
     <table>
       <thead>
         <tr>
-          <th>Description</th>
-          <th>Qty</th>
-          <th>Rate (₹)</th>
-          <th>Amount (₹)</th>
+          <th style="width:50%">Description</th>
+          <th class="right" style="width:10%">Qty</th>
+          <th class="right" style="width:16%">Rate (₹)</th>
+          <th class="right" style="width:18%">Amount (₹)</th>
         </tr>
       </thead>
       <tbody>
-        ${lineItems
-          .map(
-            (item) => `
-          <tr>
-            <td>
-              <div class="item-name">${item.description}</div>
-              ${item.note ? `<div class="item-desc">${item.note}</div>` : ""}
-            </td>
-            <td>${item.qty}</td>
-            <td>${item.rate}</td>
-            <td>₹${item.amount.toLocaleString("en-IN")}</td>
-          </tr>`
-          )
-          .join("")}
+        ${lineItemRows}
+        <tr>
+          <td colspan="3" style="padding:14px 12px; text-align:right;"><strong style="font-size:13px;color:#111827;">Grand Total</strong></td>
+          <td class="right bold" style="font-size:16px;color:#4f46e5;padding:14px 12px;">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        </tr>
       </tbody>
     </table>
-
-    <!-- Totals -->
-    <div class="totals-section">
-      <div class="totals-table">
-        <div class="grand-total-row"><span>Grand Total</span><span>₹${grandTotal.toLocaleString("en-IN")}</span></div>
-      </div>
-    </div>
-
-    <!-- Warranty Certificate -->
-    ${job.warranty ? `
-    <div class="warranty-section">
-      <div class="warranty-title">🛡️ Service Warranty Certificate</div>
-      <div class="warranty-text">This service is covered by a <strong>${job.warranty}</strong> limited warranty.</div>
-      <div class="warranty-note">*Warranty covers labor and parts replaced as listed above. Physical damage or misuse is not covered.</div>
-    </div>
-    ` : ""}
-
-    <!-- Footer -->
-    <div class="footer">
-      <div class="footer-thanks">Thank you for choosing ${techName}! 🙏</div>
-      <div class="footer-sub">We appreciate your business and look forward to serving you again.</div>
-    </div>
-
   </div>
+
+  <!-- Warranty Certificate -->
+  ${job.warranty && job.warranty !== "No Warranty" ? `
+  <div class="warranty-card">
+    <div class="warranty-header">
+      <div class="warranty-icon">🛡️</div>
+      <div class="warranty-title">Service Warranty Certificate</div>
+    </div>
+    <div class="warranty-text">This service is covered by a <strong>${job.warranty}</strong> limited warranty from ${formatDate(job.serviceDate)}.</div>
+    <div class="warranty-note">* Warranty covers the labour and replaced parts listed in this invoice. Warranty is void in case of physical damage, tampering, power surge damage, or misuse by the customer. Contact us immediately if issues recur within the warranty period.</div>
+  </div>` : ""}
+
+  <!-- Next Service Reminder -->
+  ${job.nextReminderDate ? `
+  <div class="reminder-card">
+    <div style="font-size:22px;">🔔</div>
+    <div>
+      <div style="font-size:9px;color:#065f46;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Next Service Reminder</div>
+      <div class="reminder-date">${formatDate(job.nextReminderDate)}</div>
+      <div class="reminder-text">We recommend scheduling your next service visit on or before this date.</div>
+    </div>
+  </div>` : ""}
+
+  <!-- Signature Row -->
+  <div class="signature-row">
+    <div class="sig-block">
+      <div style="height:40px;"></div>
+      <div class="sig-line"></div>
+      <div class="sig-label">Customer Signature</div>
+    </div>
+    <div class="sig-block" style="text-align:right;">
+      <div style="height:40px;"></div>
+      <div class="sig-line" style="margin-left:auto;"></div>
+      <div class="sig-name">${techName}</div>
+      <div class="sig-label">Authorised Signatory</div>
+    </div>
+  </div>
+
+  <!-- Terms & Conditions -->
+  <div class="terms-card">
+    <div class="section-title">Terms &amp; Conditions</div>
+    <ul class="terms-list">
+      <li>Payment is due on completion of service unless otherwise agreed in writing.</li>
+      <li>Warranty is valid only for the specific fault repaired and parts replaced as listed above.</li>
+      <li>Warranty is void if the appliance has been tampered with, subjected to power fluctuations, or physically damaged after service.</li>
+      <li>Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.</li>
+      <li>This invoice is computer-generated and constitutes a valid tax document where GST is applicable.</li>
+      <li>Disputes, if any, are subject to the jurisdiction of local courts only.</li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-brand">Thank you for choosing ${techName}! 🙏</div>
+    <div class="footer-sub">We appreciate your trust and look forward to serving you again.</div>
+    <div class="footer-line"></div>
+    ${techPhone ? `<div class="page-num" style="margin-top:8px;">📞 ${techPhone}${techEmail ? `  ✉️ ${techEmail}` : ""}</div>` : ""}
+    <div class="page-num">Invoice ${invoiceNumber} • Generated ${new Date().toLocaleDateString("en-IN")}</div>
+  </div>
+
+</div>
 </body>
 </html>`;
 }
@@ -309,9 +413,10 @@ export default function InvoicePreviewScreen() {
   const { job } = route.params ?? {};
   const { colors } = useTheme();
   const techUser = useSelector((state) => state.auth.user);
-  
+
   const techName = techUser?.companyName || techUser?.name || "TechServ Pro";
 
+  // ── Status config ──
   function getStatusConfig(status) {
     switch (status) {
       case "completed":
@@ -326,31 +431,32 @@ export default function InvoicePreviewScreen() {
     }
   }
 
-  // ── Build initial line items from job data ──
+  // ── Initial line items from job total ──
   function buildInitialLineItems() {
     if (!job) return [];
-    const baseAmount = parseFloat(job.amount) || 0;
-    const diagAmount = Math.max(50, Math.round(baseAmount * 0.20));
-    const repairAmount = Math.max(50, Math.round(baseAmount * 0.60));
-    const partsAmount = Math.max(0, baseAmount - diagAmount - repairAmount);
+    const base = parseFloat(job.amount) || 0;
+    const diagRate = Math.max(50, Math.round(base * 0.20));
+    const repairRate = Math.max(50, Math.round(base * 0.60));
+    const partsAmt = Math.max(0, base - diagRate - repairRate);
     const items = [
-      { id: "1", description: "Appliance Diagnosis & Inspection", qty: 1, amount: diagAmount },
-      { id: "2", description: `Repair Service — ${job.applianceType}`, qty: 1, amount: repairAmount },
+      { id: "1", description: "Appliance Diagnosis & Inspection", qty: "1", rate: String(diagRate), note: "" },
+      { id: "2", description: `Repair Service — ${job?.applianceType || "Appliance"}`, qty: "1", rate: String(repairRate), note: job?.serviceDone ? "Refer: Work Done section" : "" },
     ];
-    if (partsAmount > 0) {
-      items.push({ id: "3", description: "Spare Parts & Consumables", qty: 1, amount: partsAmount });
+    if (partsAmt > 0) {
+      items.push({ id: "3", description: "Spare Parts & Consumables", qty: "1", rate: String(partsAmt), note: "" });
     }
     return items;
   }
 
   const [lineItems, setLineItems] = useState(buildInitialLineItems);
+  const [showTerms, setShowTerms] = useState(false);
 
   if (!job) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center", padding: 24 }} edges={["top"]}>
         <Receipt color={colors.primary} size={40} style={{ marginBottom: 16 }} />
-        <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '700', fontFamily: 'Space Grotesk', marginBottom: 6 }}>No Invoice Data</Text>
-        <Text style={{ color: colors.textMuted, fontSize: 13, fontFamily: 'Inter', textAlign: 'center' }}>Please open an invoice from a job.</Text>
+        <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700", fontFamily: "Space Grotesk", marginBottom: 6 }}>No Invoice Data</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 13, fontFamily: "Inter", textAlign: "center" }}>Please open an invoice from a job.</Text>
       </SafeAreaView>
     );
   }
@@ -360,14 +466,13 @@ export default function InvoicePreviewScreen() {
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
 
-  const grandTotal = lineItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+  // ── Tax computation ──
+  const subtotal = lineItems.reduce((s, i) => s + computeLineTotal(i), 0);
+  const grandTotal = subtotal;
 
   // ── Line item handlers ──
   function handleAddRow() {
-    setLineItems((prev) => [
-      ...prev,
-      { id: String(Date.now()), description: "", qty: 1, amount: 0 },
-    ]);
+    setLineItems((prev) => [...prev, { id: String(Date.now()), description: "", qty: "1", rate: "0", note: "" }]);
   }
 
   function handleDeleteRow(id) {
@@ -375,18 +480,14 @@ export default function InvoicePreviewScreen() {
   }
 
   function handleChangeField(id, field, value) {
-    setLineItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, [field]: field === "description" ? value : value } : item
-      )
-    );
+    setLineItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }
 
-  // ── PDF Generation ──
+  // ── PDF actions ──
   async function handleGeneratePdf() {
-    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo: techUser });
+    const html = buildPdfHtml({ job, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
     try {
-      const { uri } = await Print.printToFileAsync({ html });
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
       await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Invoice ${invoiceNumber}` });
     } catch {
       Alert.alert("Error", "Failed to generate PDF. Please try again.");
@@ -394,7 +495,7 @@ export default function InvoicePreviewScreen() {
   }
 
   async function handlePrintPreview() {
-    const html = buildPdfHtml({ job, invoiceNumber, statusConfig, lineItems, grandTotal, techInfo: techUser });
+    const html = buildPdfHtml({ job, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
     try {
       await Print.printAsync({ html });
     } catch {
@@ -402,204 +503,310 @@ export default function InvoicePreviewScreen() {
     }
   }
 
+  // ── Card wrapper ──
+  function Card({ children, style }) {
+    return (
+      <View style={[{ backgroundColor: colors.bgCard, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }, style]}>
+        {children}
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
-      <StatusBar barStyle={colors.bgPrimary === '#000000' ? 'light-content' : 'dark-content'} backgroundColor={colors.bgPrimary} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.bgPrimary} />
 
-      {/* ── Top Nav Bar ── */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 56, backgroundColor: colors.bgPrimary, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
+      {/* ── Nav Bar ── */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, height: 56, backgroundColor: colors.bgPrimary, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
           <ArrowLeft color={colors.primary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', letterSpacing: 1, textTransform: 'uppercase' }}>Invoice Preview</Text>
+        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary, fontFamily: "Space Grotesk", letterSpacing: 2, textTransform: "uppercase" }}>
+          Invoice Preview
+        </Text>
         <TouchableOpacity onPress={handlePrintPreview} style={{ padding: 8 }} activeOpacity={0.7}>
           <FileText color={colors.secondary} size={20} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
 
-        {/* ══ INVOICE HEADER CARD ══ */}
-        <LinearGradient
-          colors={colors.gradientPrimary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.invoiceHeaderCard}
-        >
-          {/* Decorative glow circles */}
-          <View style={styles.glowCircleTop} />
-          <View style={styles.glowCircleBottom} />
+        {/* ══ GRADIENT HEADER CARD ══ */}
+        <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 22, marginBottom: 12, overflow: "hidden", position: "relative" }}>
+          {/* Orb accents */}
+          <View style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.07)" }} />
+          <View style={{ position: "absolute", bottom: -20, left: -20, width: 90, height: 90, borderRadius: 45, backgroundColor: "rgba(255,255,255,0.05)" }} />
 
-          {/* Brand Row */}
-          <View style={styles.headerBrandRow}>
-            <View style={styles.brandIconWrap}>
-              <Wrench color="#ffffff" size={18} />
+          {/* Brand + Status */}
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+              <Wrench color="#fff" size={18} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.brandName, { color: '#ffffff' }]}>{techName}</Text>
-              <Text style={[styles.brandTagline, { color: 'rgba(255,255,255,0.7)' }]}>Professional Appliance Repair</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "800", color: "#fff", letterSpacing: -0.3 }}>{techName}</Text>
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: "rgba(255,255,255,0.7)", marginTop: 1 }}>Professional Appliance Services</Text>
             </View>
-            {/* Status Badge */}
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
-              <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
-              <Text style={[styles.statusBadgeText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
-            </View>
-          </View>
-
-          {/* Divider */}
-          <View style={[styles.headerDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-
-          {/* Invoice Meta Row */}
-          <View style={styles.headerMetaRow}>
-            <View>
-              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Invoice Number</Text>
-              <Text style={[styles.headerInvoiceNo, { color: '#ffffff' }]}>{invoiceNumber}</Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Issue Date</Text>
-              <Text style={[styles.headerDateText, { color: '#ffffff' }]}>{formatDate(job.serviceDate)}</Text>
+            <View style={{ backgroundColor: statusConfig.bg, borderWidth: 1, borderColor: statusConfig.border, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: statusConfig.color }} />
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "800", color: statusConfig.color, letterSpacing: 0.8 }}>{statusConfig.label}</Text>
             </View>
           </View>
 
-          <View style={[styles.headerMetaRow, { marginTop: 12 }]}>
+          <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 16 }} />
+
+          {/* Invoice number + dates */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
             <View>
-              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Payment Due</Text>
-              <Text style={[styles.headerDateText, { color: '#ffffff' }]}>On Completion</Text>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Invoice Number</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "800", color: "#fff" }}>{invoiceNumber}</Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={[styles.headerLabel, { color: 'rgba(255,255,255,0.6)' }]}>Ref. Job ID</Text>
-              <Text style={[styles.headerRefText, { color: '#ffffff' }]}>#{job._id?.slice(-6).toUpperCase()}</Text>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Issue Date</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "600", color: "#fff" }}>{formatDate(job.serviceDate)}</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+            <View>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Payment Due</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 12, fontWeight: "600", color: "#fff" }}>On Completion</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Job Ref</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 12, fontWeight: "600", color: "#fff" }}>#{job._id?.slice(-6).toUpperCase()}</Text>
             </View>
           </View>
         </LinearGradient>
 
-        {/* ══ BILLING SECTION ══ */}
-        <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+        {/* ══ BILLING CARDS ══ */}
+        <View style={{ flexDirection: "row", marginBottom: 12, gap: 10 }}>
           {/* FROM */}
-          <View style={{ flex: 1, marginRight: 8, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', color: colors.primary, fontFamily: 'Inter', marginBottom: 8 }}>FROM</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Building2 color={colors.primary} size={13} style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>{techName}</Text>
+          <Card style={{ flex: 1, margin: 0 }}>
+            <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.primary, marginBottom: 10 }}>FROM</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <Building2 size={12} color={colors.primary} />
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.textPrimary, flex: 1 }} numberOfLines={1}>{techName}</Text>
             </View>
-            <Text style={{ fontSize: 11, color: colors.textDisabled, fontFamily: 'Inter', marginBottom: 8 }}>{techUser?.name || "Professional Technician"}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Phone color={colors.secondary} size={11} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>{techUser?.phone || "Available 9AM–7PM"}</Text>
+            {techUser?.name && techUser.name !== techName && (
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, marginBottom: 3 }}>{techUser.name}</Text>
+            )}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+              <Phone size={10} color={colors.secondary} />
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>{techUser?.phone || "—"}</Text>
             </View>
-          </View>
+            {techUser?.email ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                <Mail size={10} color={colors.secondary} />
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }} numberOfLines={1}>{techUser.email}</Text>
+              </View>
+            ) : null}
+            {techUser?.gstNumber ? (
+              <View style={{ marginTop: 6, backgroundColor: colors.primaryBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", color: colors.primary }}>GSTIN: {techUser.gstNumber}</Text>
+              </View>
+            ) : null}
+          </Card>
 
           {/* BILL TO */}
-          <View style={{ flex: 1, marginLeft: 8, backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 8 }}>BILL TO</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <User color={colors.secondary} size={13} style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textPrimary, fontFamily: 'Space Grotesk', flex: 1 }} numberOfLines={1}>{customerName}</Text>
+          <Card style={{ flex: 1, margin: 0 }}>
+            <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.secondary, marginBottom: 10 }}>BILL TO</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <User size={12} color={colors.secondary} />
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.textPrimary, flex: 1 }} numberOfLines={1}>{customerName}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Phone color={colors.secondary} size={11} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>{customerPhone}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+              <Phone size={10} color={colors.secondary} />
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>{customerPhone}</Text>
             </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MapPin color={colors.textMuted} size={11} style={{ marginRight: 6 }} />
-              <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }} numberOfLines={2}>
-                {job?.location?.address || 'Address not provided'}
-              </Text>
-            </View>
-          </View>
+            {job?.location?.address ? (
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 5, marginTop: 2 }}>
+                <MapPin size={10} color={colors.textMuted} style={{ marginTop: 1 }} />
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, flex: 1, lineHeight: 15 }} numberOfLines={3}>{job.location.address}</Text>
+              </View>
+            ) : null}
+          </Card>
         </View>
 
-        {/* ══ SERVICE DATE & APPLIANCE INFO ══ */}
-        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 12 }}>Service Information</Text>
-          <InfoRow icon={<Calendar color={colors.secondary} size={14} />} label="Service Date" value={formatDate(job.serviceDate)} valueColor={colors.textPrimary} />
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
-          <InfoRow icon={<Wrench color={colors.primary} size={14} />} label="Appliance" value={job.applianceType || "—"} valueColor={colors.primary} />
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
-          <InfoRow icon={<Hash color={colors.secondary} size={14} />} label="Issue Reported" value={job.issue || "—"} />
-          {!!job.serviceDone && (
+        {/* ══ SERVICE INFORMATION ══ */}
+        <Card>
+          <SectionLabel title="Service Information" colors={colors} />
+          <InfoRow icon={<Wrench size={14} color={colors.primary} />} label="Appliance" value={job.applianceType} valueColor={colors.primary} colors={colors} />
+          <Divider colors={colors} />
+          <InfoRow icon={<Calendar size={14} color={colors.secondary} />} label="Service Date" value={formatDate(job.serviceDate)} valueColor={colors.textPrimary} colors={colors} />
+          <Divider colors={colors} />
+          <InfoRow icon={<Hash size={14} color={colors.secondary} />} label="Issue Reported" value={job.issue} colors={colors} />
+          {job.serviceDone ? (
             <>
-              <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
-              <InfoRow icon={<CheckCircle2 color={colors.success} size={14} />} label="Work Done" value={job.serviceDone} valueColor={colors.success} />
+              <Divider colors={colors} />
+              <InfoRow icon={<CheckCircle2 size={14} color={colors.success} />} label="Work Done" value={job.serviceDone} valueColor={colors.success} colors={colors} />
             </>
-          )}
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />
-          <InfoRow icon={<ShieldCheck color={colors.secondary} size={14} />} label="Warranty" value={job.warranty || "No warranty specified"} valueColor={colors.secondary} />
-        </View>
-        {/* ══ LINE ITEMS TABLE (EDITABLE) ══ */}
-        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter' }}>Service Breakdown</Text>
-            <TouchableOpacity onPress={handleAddRow} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.primaryBorder }} activeOpacity={0.75}>
-              <Plus color={colors.primary} size={13} />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary, fontFamily: 'Inter' }}>Add Row</Text>
+          ) : null}
+          <Divider colors={colors} />
+          <InfoRow icon={<ShieldCheck size={14} color={colors.secondary} />} label="Warranty" value={job.warranty || "No Warranty"} valueColor={colors.secondary} colors={colors} />
+          {job.nextReminderDate ? (
+            <>
+              <Divider colors={colors} />
+              <InfoRow icon={<Bell size={14} color={colors.success} />} label="Next Service" value={formatDate(job.nextReminderDate)} valueColor={colors.success} colors={colors} />
+            </>
+          ) : null}
+        </Card>
+
+        {/* ══ LINE ITEMS TABLE ══ */}
+        <Card>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <SectionLabel title="Service Breakdown" colors={colors} />
+            <TouchableOpacity onPress={handleAddRow} style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.primaryBorder }} activeOpacity={0.75}>
+              <Plus size={12} color={colors.primary} />
+              <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>Add Row</Text>
             </TouchableOpacity>
           </View>
-          <LineItemHeaderRow />
-          {lineItems.map((item, idx) => (
-            <EditableLineItemRow
-              key={item.id}
-              item={item}
-              isAlt={idx % 2 === 1}
-              onChangeDescription={(v) => handleChangeField(item.id, "description", v)}
-              onChangeQty={(v) => handleChangeField(item.id, "qty", v)}
-              onChangeAmount={(v) => handleChangeField(item.id, "amount", v)}
-              onDelete={() => handleDeleteRow(item.id)}
-            />
-          ))}
-          {lineItems.length === 0 && (
-            <Text style={{ fontSize: 12, color: colors.textDisabled, fontFamily: 'Inter', textAlign: 'center', paddingVertical: 16 }}>No items. Tap &quot;Add Row&quot; to add a service line.</Text>
-          )}
-        </View>
 
-        {/* ══ TOTALS SECTION ══ */}
-        <View style={{ backgroundColor: colors.bgCard, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ fontSize: 9, fontWeight: '700', letterSpacing: 3, textTransform: 'uppercase', color: colors.secondary, fontFamily: 'Inter', marginBottom: 12 }}>Payment Summary</Text>
-          <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 16 }} />
-          <LinearGradient
-            colors={[colors.primaryBg, colors.secondaryBg]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ borderRadius: 12, padding: 16, marginBottom: 12 }}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textMuted, fontFamily: 'Inter', textTransform: 'uppercase', letterSpacing: 2 }}>Grand Total</Text>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.textPrimary, fontFamily: 'Space Grotesk' }}>{formatCurrency(grandTotal)}</Text>
+          {/* Table Header */}
+          <View style={{ flexDirection: "row", backgroundColor: colors.bgSurface, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 6, marginBottom: 4 }}>
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, flex: 1, textTransform: "uppercase", letterSpacing: 0.5 }}>Description</Text>
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 36, textAlign: "center", textTransform: "uppercase" }}>Qty</Text>
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 68, textAlign: "right", textTransform: "uppercase" }}>Rate ₹</Text>
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 68, textAlign: "right", textTransform: "uppercase" }}>Amt ₹</Text>
+            <View style={{ width: 28 }} />
+          </View>
+
+          {lineItems.map((item, idx) => {
+            const lineTotal = computeLineTotal(item);
+            return (
+              <View key={item.id} style={{ flexDirection: "row", paddingVertical: 8, paddingHorizontal: 4, alignItems: "center", borderRadius: 6, backgroundColor: idx % 2 === 1 ? colors.bgSurface : "transparent" }}>
+                <TextInput
+                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, flex: 1, paddingVertical: 4, paddingHorizontal: 2, minHeight: 32 }}
+                  value={item.description}
+                  onChangeText={(v) => handleChangeField(item.id, "description", v)}
+                  placeholder="Service description"
+                  placeholderTextColor={colors.textDisabled}
+                  multiline
+                />
+                <TextInput
+                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 36, textAlign: "center", paddingVertical: 4 }}
+                  value={String(item.qty)}
+                  onChangeText={(v) => handleChangeField(item.id, "qty", v)}
+                  keyboardType="numeric"
+                  placeholder="1"
+                  placeholderTextColor={colors.textDisabled}
+                />
+                <TextInput
+                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 68, textAlign: "right", paddingVertical: 4 }}
+                  value={String(item.rate)}
+                  onChangeText={(v) => handleChangeField(item.id, "rate", v)}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor={colors.textDisabled}
+                />
+                <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, color: colors.textPrimary, fontWeight: "700", width: 68, textAlign: "right", paddingRight: 2 }}>
+                  {lineTotal.toFixed(0)}
+                </Text>
+                <TouchableOpacity onPress={() => handleDeleteRow(item.id)} style={{ width: 28, alignItems: "center", justifyContent: "center" }} activeOpacity={0.7}>
+                  <Trash2 size={13} color={colors.danger} />
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+
+          {lineItems.length === 0 && (
+            <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center", paddingVertical: 16, fontStyle: "italic" }}>
+              No items. Tap &quot;Add Row&quot; to add a service line.
+            </Text>
+          )}
+        </Card>
+
+        {/* ══ TAX & TOTALS ══ */}
+        <Card>
+          <SectionLabel title="Payment Summary" colors={colors} />
+
+          {/* Grand Total */}
+          <LinearGradient colors={[colors.primaryBg, colors.secondaryBg]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ borderRadius: 14, padding: 16 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <View>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, textTransform: "uppercase", letterSpacing: 2 }}>Grand Total</Text>
+              </View>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 26, fontWeight: "900", color: colors.textPrimary }}>{formatCurrency(grandTotal)}</Text>
             </View>
           </LinearGradient>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Clock color={colors.textMuted} size={12} />
-            <Text style={{ fontSize: 11, color: colors.textMuted, fontFamily: 'Inter' }}>Accepted: Cash · UPI · Card</Text>
-          </View>
-        </View>
+        </Card>
 
-        {/* ══ THANK YOU FOOTER ══ */}
-        <View style={{ alignItems: 'center', padding: 24, marginBottom: 12, backgroundColor: colors.bgCard, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
-          <Text style={{ fontSize: 28, marginBottom: 8 }}>🙏</Text>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.primary, fontFamily: 'Space Grotesk', marginBottom: 4 }}>Thank you for choosing {techName}!</Text>
-          <Text style={{ fontSize: 12, color: colors.textDisabled, fontFamily: 'Inter' }}>We look forward to serving you again.</Text>
+        {/* ══ WARRANTY CERTIFICATE ══ */}
+        {job.warranty && job.warranty !== "No Warranty" ? (
+          <View style={{ borderRadius: 18, padding: 18, marginBottom: 12, borderWidth: 2, borderColor: colors.primaryBorder, borderStyle: "dashed", backgroundColor: colors.primaryBg }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
+                <ShieldCheck size={18} color="#fff" />
+              </View>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 1.5 }}>
+                Service Warranty Certificate
+              </Text>
+            </View>
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 6 }}>
+              {job.warranty} Limited Warranty
+            </Text>
+            <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textMuted, lineHeight: 17 }}>
+              From: {formatDate(job.serviceDate)} · Covers labour & parts replaced as listed above.{"\n"}Void in case of physical damage, power fluctuations, or tampering.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* ══ TERMS & CONDITIONS ══ */}
+        <Card>
+          <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }} onPress={() => setShowTerms(!showTerms)} activeOpacity={0.7}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Info size={14} color={colors.textDisabled} />
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, fontWeight: "700", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 1 }}>
+                Terms &amp; Conditions
+              </Text>
+            </View>
+            {showTerms ? <ChevronDown size={14} color={colors.textDisabled} /> : <ChevronRight size={14} color={colors.textDisabled} />}
+          </TouchableOpacity>
+
+          {showTerms && (
+            <View style={{ marginTop: 14, gap: 8 }}>
+              {[
+                "Payment is due on completion of service unless otherwise agreed in writing.",
+                "Warranty is valid only for the specific fault repaired and parts replaced as listed in this invoice.",
+                "Warranty is void if the appliance is tampered with, subjected to power fluctuations, or physically damaged after service.",
+                "Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.",
+                "This is a computer-generated invoice and constitutes a valid tax document where GST is applicable.",
+                "Disputes, if any, are subject to the jurisdiction of local courts only.",
+              ].map((term, i) => (
+                <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primaryBorder, marginTop: 5, flexShrink: 0 }} />
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, lineHeight: 16, flex: 1 }}>{term}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </Card>
+
+        {/* ══ THANK YOU ══ */}
+        <View style={{ alignItems: "center", padding: 24, marginBottom: 12, backgroundColor: colors.bgCard, borderRadius: 18, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={{ fontSize: 30, marginBottom: 8 }}>🙏</Text>
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.primary, marginBottom: 4 }}>
+            Thank you, {customerName.split(" ")[0]}!
+          </Text>
+          <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center" }}>
+            Thank you for choosing {techName}.{"\n"}We look forward to serving you again.
+          </Text>
         </View>
 
         {/* ══ ACTION BUTTONS ══ */}
-        <TouchableOpacity onPress={handleGeneratePdf} activeOpacity={0.85} style={{ marginBottom: 12, borderRadius: 14, overflow: 'hidden' }}>
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 18 }}
-          >
-            <Download color={colors.bgPrimary} size={18} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.bgPrimary, fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2 }}>Download & Share PDF</Text>
+        <TouchableOpacity onPress={handleGeneratePdf} activeOpacity={0.85} style={{ marginBottom: 12, borderRadius: 16, overflow: "hidden", shadowColor: colors.primary, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 }}>
+          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 18 }}>
+            <Download color="#fff" size={18} />
+            <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: "#fff", textTransform: "uppercase", letterSpacing: 2 }}>
+              Download &amp; Share PDF
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handlePrintPreview} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, marginBottom: 4 }}>
+        <TouchableOpacity onPress={handlePrintPreview} activeOpacity={0.8} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, marginBottom: 4 }}>
           <Share2 color={colors.secondary} size={18} />
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.secondary, fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2 }}>Print / Preview Invoice</Text>
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
+            Print / Preview Invoice
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 60 }} />
@@ -607,495 +814,3 @@ export default function InvoicePreviewScreen() {
     </SafeAreaView>
   );
 }
-
-// ─────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "transparent",
-  },
-  center: {
-    flex: 1,
-    backgroundColor: "transparent",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  errorTitle: {
-    color: "transparent",
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "Space Grotesk",
-    marginBottom: 6,
-  },
-  errorText: {
-    color: "transparent",
-    fontSize: 13,
-    fontFamily: "Inter",
-    textAlign: "center",
-  },
-
-  // Nav
-  navBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    height: 56,
-    backgroundColor: "transparent",
-    borderBottomWidth: 1,
-    borderBottomColor: "transparent",
-  },
-  navBackBtn: { padding: 8 },
-  navActionBtn: { padding: 8 },
-  navTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-
-  // Scroll
-  scroll: { flex: 1 },
-  scrollContent: { padding: 16 },
-
-  // Invoice Header Card (gradient)
-  invoiceHeaderCard: {
-    borderRadius: 20,
-    padding: 22,
-    marginBottom: 14,
-    overflow: "hidden",
-    position: "relative",
-  },
-  glowCircleTop: {
-    position: "absolute",
-    top: -30,
-    right: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "transparent",
-  },
-  glowCircleBottom: {
-    position: "absolute",
-    bottom: -20,
-    left: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "transparent",
-  },
-  headerBrandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  brandIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "transparent",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  brandName: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    letterSpacing: -0.3,
-  },
-  brandTagline: {
-    fontSize: 10,
-    color: "transparent",
-    fontFamily: "Inter",
-    marginTop: 1,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    marginRight: 5,
-  },
-  statusBadgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 0.8,
-  },
-  headerDivider: {
-    height: 1,
-    backgroundColor: "transparent",
-    marginBottom: 14,
-  },
-  headerMetaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  headerLabel: {
-    fontSize: 9,
-    color: "transparent",
-    fontFamily: "Inter",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 3,
-  },
-  headerInvoiceNo: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    letterSpacing: -0.3,
-  },
-  headerDateText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-  },
-  headerRefText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 0.5,
-  },
-
-  // Billing Grid
-  billingGrid: {
-    flexDirection: "row",
-    marginBottom: 14,
-  },
-  billingCard: {
-    flex: 1,
-    backgroundColor: "transparent",
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  billingCardTitle: {
-    fontSize: 8,
-    fontWeight: "800",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  billingRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 4,
-  },
-  billingName: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    flex: 1,
-  },
-  billingDetail: {
-    fontSize: 10,
-    color: "transparent",
-    fontFamily: "Inter",
-    marginBottom: 2,
-  },
-  billingPhone: {
-    fontSize: 10,
-    color: "transparent",
-    fontFamily: "Inter",
-    flex: 1,
-  },
-
-  // Card
-  card: {
-    backgroundColor: "transparent",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  sectionLabel: {
-    fontSize: 8,
-    fontWeight: "800",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    textTransform: "uppercase",
-    letterSpacing: 1.5,
-    marginBottom: 14,
-  },
-  rowDivider: {
-    height: 1,
-    backgroundColor: "transparent",
-    marginVertical: 8,
-  },
-
-  // Info Row
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  infoRowIcon: {
-    width: 30,
-    alignItems: "center",
-    paddingTop: 1,
-  },
-  infoRowContent: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  infoRowLabel: {
-    fontSize: 10,
-    color: "transparent",
-    fontFamily: "Inter",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginTop: 1,
-  },
-  infoRowValue: {
-    fontSize: 12,
-    color: "transparent",
-    fontFamily: "Inter",
-    fontWeight: "600",
-    textAlign: "right",
-    maxWidth: "55%",
-    lineHeight: 18,
-  },
-
-  // Line Items
-  lineItemRow: {
-    flexDirection: "row",
-    paddingVertical: 9,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    borderRadius: 6,
-  },
-  // Section label row (with Add Row button)
-  sectionLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 14,
-  },
-  addRowBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "transparent",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  addRowBtnText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 0.3,
-  },
-
-  // Line items (editable)
-  lineItemHeader: {
-    backgroundColor: "transparent",
-    borderRadius: 8,
-    marginBottom: 4,
-    paddingHorizontal: 8,
-  },
-  lineItemAlt: {
-    backgroundColor: "transparent",
-    borderRadius: 6,
-  },
-  lineItemHeaderText: {
-    fontSize: 9,
-    fontWeight: "700",
-    fontFamily: "Space Grotesk",
-    color: "transparent",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  lineItemInput: {
-    fontSize: 11,
-    color: "transparent",
-    fontFamily: "Inter",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    minHeight: 34,
-  },
-  lineItemQtyCol: {
-    width: 36,
-    textAlign: "center",
-  },
-  lineItemAmtCol: {
-    width: 72,
-    textAlign: "right",
-  },
-  lineItemDelCol: {
-    width: 28,
-  },
-  lineItemDelBtn: {
-    width: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 6,
-  },
-  emptyRowsText: {
-    fontSize: 11,
-    color: "transparent",
-    fontFamily: "Inter",
-    textAlign: "center",
-    paddingVertical: 16,
-    fontStyle: "italic",
-  },
-
-  // Totals
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  totalLabel: {
-    fontSize: 12,
-    color: "transparent",
-    fontFamily: "Inter",
-  },
-  totalValue: {
-    fontSize: 12,
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    fontWeight: "600",
-  },
-  totalsDivider: {
-    height: 1,
-    backgroundColor: "transparent",
-    marginVertical: 12,
-  },
-  grandTotalCard: {
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  grandTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  grandTotalLabel: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  grandTotalValue: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-  },
-  paymentMethodRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  paymentMethodText: {
-    fontSize: 10,
-    color: "transparent",
-    fontFamily: "Inter",
-    letterSpacing: 0.3,
-  },
-
-
-
-  // Thank You
-  thankYouBox: {
-    alignItems: "center",
-    paddingVertical: 20,
-    marginBottom: 10,
-  },
-  thankYouEmoji: {
-    fontSize: 28,
-    marginBottom: 8,
-  },
-  thankYouTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "transparent",
-    fontFamily: "Space Grotesk",
-    marginBottom: 4,
-  },
-  thankYouSub: {
-    fontSize: 11,
-    color: "transparent",
-    fontFamily: "Inter",
-  },
-
-  // Buttons
-  primaryBtnWrap: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 12,
-    shadowColor: "transparent",
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
-  },
-  primaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 16,
-  },
-  primaryBtnText: {
-    color: "transparent",
-    fontSize: 13,
-    fontWeight: "800",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  secondaryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "transparent",
-    backgroundColor: "transparent",
-    marginBottom: 12,
-  },
-  secondaryBtnText: {
-    color: "transparent",
-    fontSize: 13,
-    fontWeight: "700",
-    fontFamily: "Space Grotesk",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-});

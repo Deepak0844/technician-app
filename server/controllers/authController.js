@@ -60,11 +60,13 @@ export const getMe = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { name, companyName, phone } = req.body;
+  const { name, companyName, phone, email, address } = req.body;
   const updateFields = {};
   if (name !== undefined) updateFields.name = name;
   if (companyName !== undefined) updateFields.companyName = companyName;
   if (phone !== undefined) updateFields.phone = phone;
+  if (email !== undefined) updateFields.email = email;
+  if (address !== undefined) updateFields.address = address;
 
   const user = await AuthService.updateProfile(req.user.id, updateFields);
   return ResponseUtils.success(res, user, HttpStatus.OK, SuccessMessages.PROFILE_UPDATED);
