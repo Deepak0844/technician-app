@@ -38,6 +38,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { Text } from "@components/ui/text";
 import useTheme from "@hooks/useTheme";
+import { useUpdateJobMutation } from "@services/api/jobApi";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -93,6 +94,14 @@ function InfoRow({ icon, label, value, valueColor, colors }) {
           {value || "—"}
         </Text>
       </View>
+    </View>
+  );
+}
+
+function Card({ children, style, colors }) {
+  return (
+    <View style={[{ backgroundColor: colors.bgCard, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }, style]}>
+      {children}
     </View>
   );
 }
@@ -434,22 +443,38 @@ export default function InvoicePreviewScreen() {
   // ── Initial line items from job total ──
   function buildInitialLineItems() {
     if (!job) return [];
-    const base = parseFloat(job.amount) || 0;
-    const diagRate = Math.max(50, Math.round(base * 0.20));
-    const repairRate = Math.max(50, Math.round(base * 0.60));
-    const partsAmt = Math.max(0, base - diagRate - repairRate);
-    const items = [
-      { id: "1", description: "Appliance Diagnosis & Inspection", qty: "1", rate: String(diagRate), note: "" },
-      { id: "2", description: `Repair Service — ${job?.applianceType || "Appliance"}`, qty: "1", rate: String(repairRate), note: job?.serviceDone ? "Refer: Work Done section" : "" },
-    ];
-    if (partsAmt > 0) {
-      items.push({ id: "3", description: "Spare Parts & Consumables", qty: "1", rate: String(partsAmt), note: "" });
+    
+    if (job.lineItems && job.lineItems.length > 0) {
+      return job.lineItems;
     }
-    return items;
+
+    const base = parseFloat(job.amount) || 0;
+    if (base > 0) {
+      const diagRate = Math.max(50, Math.round(base * 0.20));
+      const repairRate = Math.max(50, Math.round(base * 0.60));
+      const partsAmt = Math.max(0, base - diagRate - repairRate);
+      const items = [
+        { id: "1", description: "Appliance Diagnosis & Inspection", qty: "1", rate: String(diagRate), note: "" },
+        { id: "2", description: `Repair Service — ${job?.applianceType || "Appliance"}`, qty: "1", rate: String(repairRate), note: job?.serviceDone ? "Refer: Work Done section" : "" },
+      ];
+      if (partsAmt > 0) {
+        items.push({ id: "3", description: "Spare Parts & Consumables", qty: "1", rate: String(partsAmt), note: "" });
+      }
+      return items;
+    }
+
+    if (job.diagnosticFee > 0) {
+      return [
+        { id: "1", description: "Diagnostic / Visiting Fee", qty: "1", rate: String(job.diagnosticFee), note: "" },
+      ];
+    }
+
+    return [];
   }
 
   const [lineItems, setLineItems] = useState(buildInitialLineItems);
   const [showTerms, setShowTerms] = useState(false);
+  const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
   if (!job) {
     return (
@@ -483,6 +508,19 @@ export default function InvoicePreviewScreen() {
     setLineItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }
 
+  async function handleSaveInvoice() {
+    try {
+      await updateJob({
+        id: job._id,
+        lineItems,
+        amount: grandTotal,
+      }).unwrap();
+      Alert.alert("Success", "Invoice details saved successfully.");
+    } catch {
+      Alert.alert("Error", "Failed to save invoice. Please try again.");
+    }
+  }
+
   // ── PDF actions ──
   async function handleGeneratePdf() {
     const html = buildPdfHtml({ job, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
@@ -504,13 +542,7 @@ export default function InvoicePreviewScreen() {
   }
 
   // ── Card wrapper ──
-  function Card({ children, style }) {
-    return (
-      <View style={[{ backgroundColor: colors.bgCard, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }, style]}>
-        {children}
-      </View>
-    );
-  }
+  // (Moved outside the component to prevent unmounting and focus loss in TextInputs)
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
@@ -581,7 +613,7 @@ export default function InvoicePreviewScreen() {
         {/* ══ BILLING CARDS ══ */}
         <View style={{ flexDirection: "row", marginBottom: 12, gap: 10 }}>
           {/* FROM */}
-          <Card style={{ flex: 1, margin: 0 }}>
+          <Card colors={colors} style={{ flex: 1, margin: 0 }}>
             <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.primary, marginBottom: 10 }}>FROM</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <Building2 size={12} color={colors.primary} />
@@ -608,7 +640,7 @@ export default function InvoicePreviewScreen() {
           </Card>
 
           {/* BILL TO */}
-          <Card style={{ flex: 1, margin: 0 }}>
+          <Card colors={colors} style={{ flex: 1, margin: 0 }}>
             <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.secondary, marginBottom: 10 }}>BILL TO</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <User size={12} color={colors.secondary} />
@@ -628,7 +660,7 @@ export default function InvoicePreviewScreen() {
         </View>
 
         {/* ══ SERVICE INFORMATION ══ */}
-        <Card>
+        <Card colors={colors}>
           <SectionLabel title="Service Information" colors={colors} />
           <InfoRow icon={<Wrench size={14} color={colors.primary} />} label="Appliance" value={job.applianceType} valueColor={colors.primary} colors={colors} />
           <Divider colors={colors} />
@@ -652,7 +684,7 @@ export default function InvoicePreviewScreen() {
         </Card>
 
         {/* ══ LINE ITEMS TABLE ══ */}
-        <Card>
+        <Card colors={colors}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <SectionLabel title="Service Breakdown" colors={colors} />
             <TouchableOpacity onPress={handleAddRow} style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.primaryBorder }} activeOpacity={0.75}>
@@ -716,7 +748,7 @@ export default function InvoicePreviewScreen() {
         </Card>
 
         {/* ══ TAX & TOTALS ══ */}
-        <Card>
+        <Card colors={colors}>
           <SectionLabel title="Payment Summary" colors={colors} />
 
           {/* Grand Total */}
@@ -751,7 +783,7 @@ export default function InvoicePreviewScreen() {
         ) : null}
 
         {/* ══ TERMS & CONDITIONS ══ */}
-        <Card>
+        <Card colors={colors}>
           <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }} onPress={() => setShowTerms(!showTerms)} activeOpacity={0.7}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Info size={14} color={colors.textDisabled} />
@@ -793,6 +825,13 @@ export default function InvoicePreviewScreen() {
         </View>
 
         {/* ══ ACTION BUTTONS ══ */}
+        <TouchableOpacity onPress={handleSaveInvoice} disabled={isSaving} activeOpacity={0.8} style={{ marginBottom: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.primaryBorder, backgroundColor: colors.primaryBg, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <CheckCircle2 color={colors.primary} size={18} />
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 2 }}>
+            {isSaving ? "Saving..." : "Save Invoice Details"}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={handleGeneratePdf} activeOpacity={0.85} style={{ marginBottom: 12, borderRadius: 16, overflow: "hidden", shadowColor: colors.primary, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 }}>
           <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 18 }}>
             <Download color="#fff" size={18} />

@@ -6,11 +6,10 @@ import { useGetMeQuery, useLogoutMutation, useUpdateMeMutation } from "@services
 import { clearCredentials, updateUser } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
-import { LogOut, ArrowLeft, Bell, Receipt } from "lucide-react-native";
+import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
 import ThemeToggle from "@components/ThemeToggle";
-import { Check, X, Edit2 } from "lucide-react-native";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
@@ -20,7 +19,7 @@ export default function ProfileScreen() {
   const { data: meResponse, isLoading } = useGetMeQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
-  const user = meResponse?.data ?? cachedUser ?? {};
+  const user = React.useMemo(() => meResponse?.data ?? cachedUser ?? {}, [meResponse?.data, cachedUser]);
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedName, setEditedName] = React.useState("");

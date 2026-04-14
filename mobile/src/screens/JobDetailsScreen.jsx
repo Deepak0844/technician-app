@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator, Linking, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -159,6 +159,11 @@ export default function JobDetailsScreen() {
               <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.primary }}>
                 {formatCurrency(job?.amount)}
               </Text>
+              {job?.amount === 0 && !!job?.diagnosticFee && (
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
+                  (Diag. Fee: {formatCurrency(job?.diagnosticFee)})
+                </Text>
+              )}
             </View>
           </View>
         </View>

@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
-import { ScrollView, Alert, View, TouchableOpacity, TextInput, ActivityIndicator, Modal } from "react-native";
+import { ScrollView, Alert, View, TouchableOpacity, TextInput, ActivityIndicator, Modal, Pressable } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -33,7 +33,7 @@ import {
   Search,
   ShieldCheck,
   MapPin,
-  ChevronDown,
+  ChevronRight,
   LocateFixed,
   ExternalLink,
 } from "lucide-react-native";
@@ -73,12 +73,12 @@ export default function AddJobScreen() {
     if (customerDetailsResponse?.data && selectedCustomer && !selectedCustomer.locations) {
       setSelectedCustomer(prev => ({ ...prev, locations: customerDetailsResponse.data.locations }));
     }
-  }, [customerDetailsResponse]);
+  }, [customerDetailsResponse, selectedCustomer]);
 
   const [appliance, setAppliance] = useState(editingJob?.applianceType ?? ApplianceTypes[0]);
   const [issue, setIssue] = useState(editingJob?.issue ?? "");
   const [serviceDone, setServiceDone] = useState(editingJob?.serviceDone ?? "");
-  const [amount, setAmount] = useState(editingJob?.amount?.toString() ?? "");
+  const [diagnosticFee, setDiagnosticFee] = useState(editingJob?.diagnosticFee?.toString() ?? "");
   const [status, setStatus] = useState(editingJob?.status ?? JobStatuses.PENDING);
   const [serviceDate, setServiceDate] = useState(() => {
     if (editingJob?.serviceDate) return new Date(editingJob.serviceDate);
@@ -102,7 +102,7 @@ export default function AddJobScreen() {
       const defaultLoc = selectedCustomer.locations?.find((l) => l.isDefault) || selectedCustomer.locations?.[0];
       setSelectedLocation(defaultLoc || null);
     }
-  }, [selectedCustomer?.locations, editingJob]);
+  }, [selectedCustomer, editingJob]);
 
   // Time state
   let initialTime = "10:00 AM";
@@ -130,7 +130,7 @@ export default function AddJobScreen() {
 
   
   const [isFocusedIssue, setIsFocusedIssue] = useState(false);
-  const [isFocusedAmount, setIsFocusedAmount] = useState(false);
+  const [isFocusedFee, setIsFocusedFee] = useState(false);
   const [isFocusedResolution, setIsFocusedResolution] = useState(false);
 
   const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
@@ -220,10 +220,10 @@ export default function AddJobScreen() {
     if (!issue.trim()) { Alert.alert("Error", "Please describe the issue"); return; }
     if (!userId) { Alert.alert("Error", "Session expired. Please log in again."); return; }
 
-    let parsedAmount = 0;
-    if (amount && amount.toString().trim() !== '') {
-      parsedAmount = parseFloat(amount);
-      if (isNaN(parsedAmount)) { Alert.alert("Error", "Please enter a valid amount"); return; }
+    let parsedFee = 0;
+    if (diagnosticFee && diagnosticFee.toString().trim() !== '') {
+      parsedFee = parseFloat(diagnosticFee);
+      if (isNaN(parsedFee)) { Alert.alert("Error", "Please enter a valid amount for the diagnostic fee"); return; }
     }
     
     // Combine Date and Time
@@ -274,7 +274,7 @@ export default function AddJobScreen() {
           applianceType: appliance, 
           issue: issue.trim(), 
           serviceDone: serviceDone.trim(), 
-          amount: parsedAmount,
+          diagnosticFee: parsedFee,
           status: status,
           serviceDate: finalDate.toISOString(),
           warranty: showCustomWarranty ? customWarranty : warranty,
@@ -314,7 +314,7 @@ export default function AddJobScreen() {
         applianceType: appliance, 
         issue: issue.trim(),
         serviceDone: serviceDone.trim(),
-        amount: parsedAmount,
+        diagnosticFee: parsedFee,
         status: status, 
         serviceDate: finalDate.toISOString(),
         warranty: showCustomWarranty ? customWarranty : warranty,
@@ -338,7 +338,7 @@ export default function AddJobScreen() {
         setAppliance(ApplianceTypes[0]);
         setIssue("");
         setServiceDone("");
-        setAmount("");
+        setDiagnosticFee("");
         setStatus(JobStatuses.PENDING);
         setServiceDate(new Date());
         setWarranty(WarrantyPresets[0]);
@@ -535,21 +535,22 @@ export default function AddJobScreen() {
               />
             </View>
 
-            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Service Fee</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: isFocusedAmount ? colors.primary : colors.border }}>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>Diagnostic / Visiting Fee</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, backgroundColor: colors.bgCard, borderWidth: 1, borderColor: isFocusedFee ? colors.primary : colors.border }}>
                <Text style={{ fontFamily: 'Space Grotesk', color: colors.textMuted, fontSize: 12, marginRight: 8, fontWeight: '700', textTransform: 'uppercase' }}>Amt</Text>
                <TextInput
                  keyboardType="numeric"
                  placeholder="0.00"
                  placeholderTextColor={colors.placeholderText}
-                 value={amount}
-                 onFocus={() => setIsFocusedAmount(true)}
-                 onBlur={() => setIsFocusedAmount(false)}
-                 onChangeText={setAmount}
+                 value={diagnosticFee}
+                 onFocus={() => setIsFocusedFee(true)}
+                 onBlur={() => setIsFocusedFee(false)}
+                 onChangeText={setDiagnosticFee}
                  style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 18, fontWeight: '700', flex: 1 }}
                />
                <Text style={{ color: colors.primary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4 }}>INR</Text>
             </View>
+            <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 10, marginTop: 8, marginLeft: 4 }}>* Optional upfront charge to cover your visit.</Text>
           </View>
         </View>
 
@@ -605,39 +606,58 @@ export default function AddJobScreen() {
           </View>
           
           <View style={{ padding: 20 }}>
-            <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
+            <View style={{ gap: 12 }}>
+              {/* Service Date Row */}
               <TouchableOpacity 
                 onPress={() => setShowCalendar(true)}
-                style={{ flex: 1, backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}
               >
-                <CalendarIcon size={16} color={colors.secondary} />
-                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginTop: 8, marginBottom: 4 }}>Service Date</Text>
-                <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{serviceDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.secondaryBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.secondaryBorder }}>
+                    <CalendarIcon size={18} color={colors.secondary} />
+                  </View>
+                  <View>
+                    <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 3, marginBottom: 4 }}>Service Date</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' }}>{serviceDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color={colors.textDisabled} />
               </TouchableOpacity>
 
+              {/* Service Time Row */}
               <TouchableOpacity 
                 onPress={() => setShowTimePicker(true)}
-                style={{ flex: 1, backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}
               >
-                <Clock size={16} color={colors.primary} />
-                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginTop: 8, marginBottom: 4 }}>Time</Text>
-                <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>{selectedTime}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.primaryBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryBorder }}>
+                    <Clock size={18} color={colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 3, marginBottom: 4 }}>Service Time</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' }}>{selectedTime}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color={colors.textDisabled} />
+              </TouchableOpacity>
+
+              {/* Current Status Row */}
+              <TouchableOpacity 
+                onPress={() => setShowStatusSheet(true)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                   <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: status === 'pending' ? colors.warningBg : status === 'in_progress' ? colors.secondaryBg : status === 'completed' ? colors.successBg : colors.dangerBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: status === 'pending' ? colors.warningBorder : status === 'in_progress' ? colors.secondaryBorder : status === 'completed' ? colors.successBorder : colors.dangerBorder }}>
+                      <Activity size={18} color={status === 'pending' ? colors.warningIcon : status === 'in_progress' ? colors.secondary : status === 'completed' ? colors.success : colors.danger} />
+                   </View>
+                  <View>
+                    <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 8, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 3, marginBottom: 4 }}>Current Status</Text>
+                    <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>{status.replace('_', ' ')}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color={colors.textDisabled} />
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity 
-              onPress={() => setShowStatusSheet(true)}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.bgCard, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}
-            >
-              <View>
-                <Text style={{ fontFamily: 'Inter', color: colors.textDisabled, fontSize: 7, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 4, marginBottom: 4 }}>Current Status</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: status === 'pending' ? colors.warning : status === 'in_progress' ? colors.secondary : status === 'completed' ? colors.success : colors.danger }} />
-                  <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>{status.replace('_', ' ')}</Text>
-                </View>
-              </View>
-              <ChevronDown size={12} color={colors.textDisabled} />
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -670,9 +690,9 @@ export default function AddJobScreen() {
       </ScrollView>
 
       {/* Calendar Modal */}
-      <Modal visible={showCalendar} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+      <Modal visible={showCalendar} transparent animationType="slide" onRequestClose={() => setShowCalendar(false)}>
+        <Pressable onPress={() => setShowCalendar(false)} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <Pressable style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Select Date</Text>
               <TouchableOpacity onPress={() => setShowCalendar(false)}>
@@ -696,14 +716,14 @@ export default function AddJobScreen() {
               onDayPress={(day) => { setServiceDate(new Date(day.timestamp)); }}
               markedDates={{ [serviceDate.toISOString().split('T')[0]]: { selected: true } }}
             />
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Add Location Modal */}
-      <Modal visible={showAddLocationModal} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" }}>
-          <View style={{ backgroundColor: colors.bgPrimary, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+      <Modal visible={showAddLocationModal} transparent animationType="slide" onRequestClose={() => setShowAddLocationModal(false)}>
+        <Pressable onPress={() => setShowAddLocationModal(false)} style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" }}>
+          <Pressable style={{ backgroundColor: colors.bgPrimary, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
               <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2 }}>Add Location</Text>
               <TouchableOpacity onPress={() => setShowAddLocationModal(false)}>
@@ -801,8 +821,8 @@ export default function AddJobScreen() {
                 <Text style={{ fontFamily: "Space Grotesk", color: colors.bgPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4 }}>Save Location</Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Map Link Modal — for Add Location flow */}
@@ -815,9 +835,9 @@ export default function AddJobScreen() {
       />
 
       {/* Radial Time Picker Modal */}
-      <Modal visible={showTimePicker} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+      <Modal visible={showTimePicker} transparent animationType="slide" onRequestClose={() => setShowTimePicker(false)}>
+        <Pressable onPress={() => setShowTimePicker(false)} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <Pressable style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Set Appointment Time</Text>
               <TouchableOpacity onPress={() => setShowTimePicker(false)}>
@@ -934,14 +954,14 @@ export default function AddJobScreen() {
                   })}
                </View>
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Status Bottom Sheet Modal */}
-      <Modal visible={showStatusSheet} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          <View style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+      <Modal visible={showStatusSheet} transparent animationType="slide" onRequestClose={() => setShowStatusSheet(false)}>
+        <Pressable onPress={() => setShowStatusSheet(false)} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <Pressable style={{ backgroundColor: colors.bgCard, padding: 24, paddingBottom: 48, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <Text style={{ fontFamily: 'Space Grotesk', color: colors.textPrimary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2 }}>Update Job Status</Text>
               <TouchableOpacity onPress={() => setShowStatusSheet(false)}>
@@ -972,8 +992,8 @@ export default function AddJobScreen() {
                 );
               })}
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </SafeAreaView>
   );

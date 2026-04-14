@@ -67,7 +67,7 @@ export const openDirections = async (latitude, longitude, address) => {
     } else {
       Alert.alert("Error", "Could not open Maps application.");
     }
-  } catch (error) {
+  } catch {
     Alert.alert("Error", "An error occurred while opening navigation.");
   }
 };

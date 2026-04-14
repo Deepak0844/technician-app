@@ -2,7 +2,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef } from "react";
 import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity, Image } from "react-native";
 import { useDispatch } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
 import { useSendOtpMutation, useVerifyOtpMutation } from "@services/api/authApi";
 import { setCredentials } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";

@@ -37,6 +37,18 @@ const jobSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    diagnosticFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lineItems: [{
+      id: String,
+      description: String,
+      qty: String,
+      rate: String,
+      note: String,
+    }],
     status: {
       type: String,
       enum: Object.values(JobStatus),

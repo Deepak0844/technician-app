@@ -104,7 +104,7 @@ export default function CustomerSearchScreen() {
         if (contact) {
           await selectDeviceContact(contact);
         }
-      } catch (pickerError) {
+      } catch {
         setIsFetchingAll(true);
         const { data } = await Contacts.getContactsAsync({
           fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
@@ -116,7 +116,7 @@ export default function CustomerSearchScreen() {
           Alert.alert("No Contacts", "We couldn't find any contacts on your phone.");
         }
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Access to contacts was denied or failed. Please check your phone settings.");
     }
   }

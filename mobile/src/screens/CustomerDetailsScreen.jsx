@@ -6,13 +6,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
 
 // Services
-import { useGetCustomerByIdQuery } from "@services/api/customerApi";
+import { useGetCustomerByIdQuery, useDeleteCustomerMutation } from "@services/api/customerApi";
 import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
-
-import { useDeleteCustomerMutation } from "@services/api/customerApi";
 import {
   ArrowLeft,
   Edit,
@@ -23,9 +21,7 @@ import {
   Wrench,
   User,
   Navigation as NavIcon,
-  Globe,
-  MapPin,
-  ExternalLink
+  MapPin
 } from "lucide-react-native";
 
 import { openDirections } from "@utils/locationUtils";
