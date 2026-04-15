@@ -1,4 +1,5 @@
 import React from "react";
+import { useSelector } from "react-redux";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 
@@ -9,6 +10,7 @@ import { Text } from "@components/ui/text";
 export default function OfflineBanner() {
   const { isConnected } = useNetworkStatus();
   const { colors } = useTheme();
+  const queueCount = useSelector((state) => state.sync.queueCount);
 
   if (isConnected === null || isConnected === true) return null;
 
@@ -35,7 +37,9 @@ export default function OfflineBanner() {
           fontFamily: "Inter",
         }}
       >
-        📡 Offline / Viewing Cached Data
+        {queueCount > 0
+          ? `📡 Offline • ${queueCount} job${queueCount !== 1 ? "s" : ""} queued`
+          : "📡 Offline / Viewing Cached Data"}
       </Text>
     </Box>
   );

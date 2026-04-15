@@ -20,7 +20,8 @@ export default function DashboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
-  const drafts = useSelector((state) => state.draft.drafts);
+  const queueCount = useSelector((state) => state.sync.queueCount);
+  const isSyncing = useSelector((state) => state.sync.isSyncing);
 
   // 1. RTK Query
   const {
@@ -133,11 +134,9 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
-        {/* Local Drafts Banner */}
-        {drafts.length > 0 && (
-          <TouchableOpacity
-            onPress={() => navigation.navigate("DraftsList")}
-            activeOpacity={0.9}
+        {/* Offline Sync Banner */}
+        {queueCount > 0 && (
+          <View
             style={{
               backgroundColor: colors.primaryBg,
               padding: 16,
@@ -156,15 +155,14 @@ export default function DashboardScreen() {
               </View>
               <View>
                 <Text style={{ fontFamily: 'Space Grotesk', fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
-                  {drafts.length} Local {drafts.length === 1 ? 'Draft' : 'Drafts'} Pending
+                  {queueCount} {queueCount === 1 ? 'Job' : 'Jobs'} Pending Sync
                 </Text>
-                <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textSecondary }}>Saved locally. Tap to review & upload.</Text>
+                <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textSecondary }}>
+                  {isSyncing ? 'Syncing now...' : 'Will sync automatically when online.'}
+                </Text>
               </View>
             </View>
-            <View style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-              <Text style={{ color: colors.bgPrimary, fontSize: 10, fontWeight: '800', fontFamily: 'Space Grotesk' }}>VIEW</Text>
-            </View>
-          </TouchableOpacity>
+          </View>
         )}
 
         {/* Summary Card - Financial Intelligence */}

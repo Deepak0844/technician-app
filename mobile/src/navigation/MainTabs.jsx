@@ -117,7 +117,6 @@ export default function MainTabs() {
       <Stack.Screen name="InvoicePreview" component={InvoicePreviewScreen} />
       <Stack.Screen name="Reminders" component={RemindersScreen} />
       <Stack.Screen name="CreateCustomer" component={CreateCustomerScreen} />
-      <Stack.Screen name="DraftsList" component={DraftsListScreen} />
       <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
     </Stack.Navigator>
   );

@@ -1,9 +1,8 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import { ScrollView, Alert, View, TouchableOpacity, ActivityIndicator } from "react-native";
-import { v4 as uuidv4 } from "uuid";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
 import { useGetCustomerByIdQuery, useUpdateCustomerMutation, useGetCustomersQuery } from "@services/api/customerApi";
 import OfflineBanner from "@components/OfflineBanner";
@@ -20,8 +19,6 @@ import TimelineSection from "@components/CreateJob/TimelineSection";
 import StatusSelectionModal from "@components/CreateJob/StatusSelectionModal";
 import PartsSection from "@components/CreateJob/PartsSection";
 import AddJobModals from "@components/CreateJob/AddJobModals";
-import { addDraft, updateDraft, removeDraft } from "../store/slices/draftSlice";
-
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
 
@@ -31,12 +28,9 @@ import { ArrowLeft, Zap } from "lucide-react-native";
 export default function AddJobScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { job: editingJob, customer: initialCustomer, initialDate, origin, draftId } = route.params ?? {};
+  const { job: editingJob, customer: initialCustomer, initialDate, origin } = route.params ?? {};
   const { colors } = useTheme();
-  const dispatch = useDispatch();
   const userId = useSelector((state) => state.auth.user?._id);
-  const drafts = useSelector((state) => state.draft.drafts);
-  const [currentDraftId, setCurrentDraftId] = useState(draftId || null);
   
   // -- State --
   const [selectedCustomer, setSelectedCustomer] = useState(
@@ -50,31 +44,7 @@ export default function AddJobScreen() {
   );
 
   React.useEffect(() => {
-    if (!currentDraftId && !editingJob && (appliance || issue || amount || selectedCustomer)) {
-      const data = {
-        applianceType: appliance,
-        issue,
-        amount,
-        selectedCustomer,
-        lastSaved: new Date().toISOString()
-      };
-      const newId = uuidv4();
-      dispatch(addDraft({ id: newId, data }));
-      setCurrentDraftId(newId);
-    } else if (currentDraftId) {
-      const data = {
-        applianceType: appliance,
-        issue,
-        amount,
-        selectedCustomer,
-        lastSaved: new Date().toISOString()
-      };
-      dispatch(updateDraft({ id: currentDraftId, data }));
-    }
-  }, [appliance, issue, amount, selectedCustomer, currentDraftId, editingJob, dispatch, drafts]);
-
-  React.useEffect(() => {
-    if (editingJob && !currentDraftId) {
+    if (editingJob) {
       setAppliance(editingJob.applianceType || ApplianceTypes[0]);
       setIssue(editingJob.issue || "");
       
@@ -109,7 +79,7 @@ export default function AddJobScreen() {
         }
       }
     }
-  }, [editingJob, currentDraftId, dispatch]);
+  }, [editingJob]);
 
   const activeCustomerId = selectedCustomer?._id || selectedCustomer?.serverId;
   const { data: customerDetailsResponse } = useGetCustomerByIdQuery(activeCustomerId, {
@@ -182,87 +152,19 @@ export default function AddJobScreen() {
 
   const [updateCustomer, { isLoading: isUpdatingCustomer }] = useUpdateCustomerMutation();
 
+  const handleFinish = () => {
+    if (origin === 'Calendar') {
+      navigation.navigate("Calendar");
+    } else {
+      navigation.goBack();
+    }
+  };
+
   const { submitJob, isSyncing } = useJobSubmission({
     userId,
     editingJob,
-    onSuccess: () => {
-      if (currentDraftId) dispatch(removeDraft(currentDraftId));
-      handleFinish();
-    }
+    onSuccess: handleFinish,
   });
-
-  // -- Auto-calculation for total amount --
-  React.useEffect(() => {
-    // If we have parts, the amount (Service Charge) + parts total = final amount
-    // But since 'amount' is controlled by input, we might need to handle this carefully.
-    // Let's assume 'amount' state IS the service charge, and we calculate a total.
-    // However, the backend 'amount' field is the TOTAL.
-    // For now, I'll leave the 'amount' field as the base service charge and add the parts on top during submission.
-  }, [partsUsed]);
-
-  // -- Draft Loading --
-  React.useEffect(() => {
-    if (draftId) {
-      const draft = drafts.find(d => d.id === draftId);
-      if (draft && draft.data) {
-        const d = draft.data;
-        // Map draft data to state
-        setAppliance(d.applianceType || ApplianceTypes[0]);
-        setIssue(d.issue || "");
-        setServiceDone(d.serviceDone || "");
-        setDiagnosticFee(d.diagnosticFee?.toString() || "");
-        setAmount(d.amount?.toString() || "");
-        setStatus(d.status || JobStatuses.PENDING);
-        if (d.serviceDate) setServiceDate(new Date(d.serviceDate));
-        setWarranty(d.warranty || "No Warranty");
-        setSelectedLocation(d.location || null);
-        setIsPaid(d.isPaid ?? false);
-        setPaymentMethod(d.paymentMethod ?? "cash");
-      }
-    }
-  }, [draftId]);
-
-  // -- Auto-save logic --
-  React.useEffect(() => {
-    const hasData = issue.trim() || serviceDone.trim() || amount || (selectedCustomer && !editingJob);
-    if (!hasData || editingJob) return;
-
-    const timer = setInterval(() => {
-      const draftPayload = {
-        customerId: selectedCustomer?._id || selectedCustomer?.serverId,
-        applianceType: appliance,
-        issue: issue.trim(),
-        serviceDone: serviceDone.trim(),
-        diagnosticFee: parseFloat(diagnosticFee) || 0,
-        amount: parseFloat(amount) || 0,
-        status: status,
-        serviceDate: serviceDate.toISOString(),
-        warranty: showCustomWarranty ? customWarranty : warranty,
-        location: selectedLocation,
-        isPaid: isPaid,
-        paymentMethod: paymentMethod
-      };
-
-      if (currentDraftId) {
-        dispatch(updateDraft({
-          id: currentDraftId,
-          data: draftPayload,
-          customerName: selectedCustomer?.name,
-          applianceType: appliance
-        }));
-      } else {
-        const newId = Date.now().toString();
-        dispatch(addDraft({
-          data: draftPayload,
-          customerName: selectedCustomer?.name,
-          applianceType: appliance
-        }));
-        setCurrentDraftId(newId);
-      }
-    }, 15000); // Auto-save every 15 seconds
-
-    return () => clearInterval(timer);
-  }, [issue, serviceDone, amount, selectedCustomer, currentDraftId, appliance, diagnosticFee, status, serviceDate, warranty, customWarranty, showCustomWarranty, selectedLocation, isPaid, paymentMethod]);
 
   // External Data
   const { data: customersResponse } = useGetCustomersQuery({ limit: 10 });
@@ -275,14 +177,6 @@ export default function AddJobScreen() {
       setSelectedLocation(defaultLoc || null);
     }
   }, [selectedCustomer, editingJob]);
-
-  const handleFinish = () => {
-    if (origin === 'Calendar') {
-      navigation.navigate("Calendar");
-    } else {
-      navigation.goBack();
-    }
-  };
 
   async function handleAddLocation() {
     if (!newLocationAddress.trim()) { Alert.alert("Error", "Address is required"); return; }
@@ -362,44 +256,6 @@ export default function AddJobScreen() {
     });
   }
 
-  const handleSaveDraft = () => {
-    const draftPayload = {
-      customerId: selectedCustomer?._id || selectedCustomer?.serverId,
-      applianceType: appliance,
-      issue: issue.trim(),
-      serviceDone: serviceDone.trim(),
-      diagnosticFee: parseFloat(diagnosticFee) || 0,
-      amount: parseFloat(amount) || 0,
-      status: status,
-      serviceDate: serviceDate.toISOString(),
-      warranty: showCustomWarranty ? customWarranty : warranty,
-      location: selectedLocation,
-      priority: priority,
-      internalNotes: internalNotes,
-      isPaid: isPaid,
-      paymentMethod: paymentMethod
-    };
-
-    if (currentDraftId) {
-      dispatch(updateDraft({
-        id: currentDraftId,
-        data: draftPayload,
-        customerName: selectedCustomer?.name,
-        applianceType: appliance
-      }));
-      Alert.alert("Draft Updated", "Your changes have been saved locally.");
-    } else {
-      const newId = Date.now().toString();
-      dispatch(addDraft({
-        data: draftPayload,
-        customerName: selectedCustomer?.name,
-        applianceType: appliance
-      }));
-      setCurrentDraftId(newId);
-      Alert.alert("Draft Saved", "This job is now saved in your local drafts.");
-    }
-  };
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <OfflineBanner />
@@ -412,12 +268,6 @@ export default function AddJobScreen() {
           </TouchableOpacity>
           <Text style={{ fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12, color: colors.primary, fontWeight: '700' }} numberOfLines={1}>{editingJob ? "Edit Job" : "Add New Job"}</Text>
         </View>
-        
-        {!editingJob && (
-          <TouchableOpacity onPress={handleSaveDraft} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 9, fontWeight: '700', color: colors.primary, textTransform: 'uppercase' }}>Save Draft</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>

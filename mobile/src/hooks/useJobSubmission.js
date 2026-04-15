@@ -1,7 +1,13 @@
 import { Alert } from "react-native";
+import { v4 as uuidv4 } from "uuid";
 import { useCreateJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
 import NotificationUtils from "@utils/notificationUtils";
 import { JobStatuses } from "@constants/appConstants";
+import useNetworkStatus from "@hooks/useNetworkStatus";
+import { useDispatch } from "react-redux";
+import { setSyncQueueCount } from "@store/slices/syncSlice";
+import { db } from "@db";
+import { syncQueue } from "@db/schema";
 
 export default function useJobSubmission({ 
   userId, 
@@ -10,6 +16,8 @@ export default function useJobSubmission({
 }) {
   const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
   const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
+  const { isConnected } = useNetworkStatus();
+  const dispatch = useDispatch();
   const isSyncing = isCreating || isUpdating;
 
   const submitJob = async (formData) => {
@@ -98,6 +106,31 @@ export default function useJobSubmission({
       paymentMethod: paymentMethod
     };
 
+    // ── Offline path ──────────────────────────────────────────────────────────
+    if (!isConnected) {
+      try {
+        await db.insert(syncQueue).values({
+          id: uuidv4(),
+          operation: editingJob ? "UPDATE_JOB" : "CREATE_JOB",
+          resourceId: editingJob?._id ?? null,
+          payload: JSON.stringify(payload),
+          retries: 0,
+          createdAt: new Date().toISOString(),
+        });
+        const rows = await db.select({ id: syncQueue.id }).from(syncQueue);
+        dispatch(setSyncQueueCount(rows.length));
+        Alert.alert(
+          "Saved Offline",
+          "Job saved locally. It will sync automatically when you're back online.",
+        );
+        if (onSuccess) onSuccess();
+      } catch {
+        Alert.alert("Error", "Failed to save job offline. Please try again.");
+      }
+      return;
+    }
+
+    // ── Online path ───────────────────────────────────────────────────────────
     try {
       if (editingJob) {
         await updateJob({ id: editingJob._id, ...payload }).unwrap();
@@ -111,7 +144,7 @@ export default function useJobSubmission({
         if (result?.data?._id) await NotificationUtils.scheduleJobReminders(result.data);
         Alert.alert("Success", "Job created successfully.");
       }
-      
+
       if (onSuccess) onSuccess();
     } catch (err) {
       Alert.alert("Error", err?.data?.message || "Operation failed.");

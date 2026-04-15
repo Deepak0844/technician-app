@@ -1,5 +1,5 @@
 import "react-native-get-random-values";
-import React, { useEffect } from "react";
+import React, { useEffect, Fragment } from "react";
 import { View, ActivityIndicator, StyleSheet, Image, Dimensions } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -20,12 +20,11 @@ configureReanimatedLogger({
 import "./global.css";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
-import { PersistGate } from "redux-persist/integration/react";
-
 // Store
-import store, { persistor } from "./src/store/index";
+import store from "./src/store/index";
 import { initializeAuth } from "./src/store/slices/authSlice";
 import { initializeTheme } from "./src/store/slices/themeSlice";
+import SyncManager from "./src/sync/SyncManager";
 
 // ... (skipping some imports for brevity in TargetContent matching)
 
@@ -96,7 +95,12 @@ function AppBootstrap() {
     );
   }
 
-  return <AppNavigator />;
+  return (
+    <>
+      <SyncManager />
+      <AppNavigator />
+    </>
+  );
 }
 
 function RootApp() {
@@ -113,9 +117,7 @@ function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <RootApp />
-          </PersistGate>
+          <RootApp />
         </Provider>
       </ErrorBoundary>
     </GestureHandlerRootView>
