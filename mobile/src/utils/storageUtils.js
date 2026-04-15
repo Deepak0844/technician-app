@@ -1,5 +1,7 @@
 import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { db } from "@db";
+import { settings } from "@db/schema";
+import { eq } from "drizzle-orm";
 
 const TOKEN_KEY = "auth_token";
 const THEME_KEY = "app_theme_mode";
@@ -30,16 +32,24 @@ async function clearToken() {
 }
 
 /**
- * Theme preference — not sensitive, plain AsyncStorage is appropriate.
- * Avoids consuming SecureStore's limited capacity on non-credentials.
+ * Theme preference stored in SQLite settings table.
+ * Keeps all local persistence in one place — no AsyncStorage dependency.
  */
 async function saveTheme(mode) {
-  await AsyncStorage.setItem(THEME_KEY, mode);
+  await db
+    .insert(settings)
+    .values({ key: THEME_KEY, value: mode })
+    .onConflictDoUpdate({ target: settings.key, set: { value: mode } });
 }
 
 async function getTheme() {
   try {
-    return await AsyncStorage.getItem(THEME_KEY);
+    const rows = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.key, THEME_KEY))
+      .limit(1);
+    return rows[0]?.value ?? null;
   } catch {
     return null;
   }

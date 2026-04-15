@@ -12,3 +12,12 @@ export const syncQueue = sqliteTable("sync_queue", {
   retries: integer("retries").notNull().default(0),
   createdAt: text("created_at").notNull(),
 });
+
+/**
+ * Generic key/value store for non-sensitive app settings (e.g. theme).
+ * Replaces AsyncStorage — keeps all local persistence in one SQLite file.
+ */
+export const settings = sqliteTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
