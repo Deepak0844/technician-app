@@ -3,7 +3,10 @@ import { FlatList, TouchableOpacity, Alert, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Contacts from "expo-contacts";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { useGetCustomersQuery, useUpsertCustomerMutation } from "@services/api/customerApi";
+import {
+  useGetCustomersQuery,
+  useUpsertCustomerMutation,
+} from "@services/api/customerApi";
 import { RouteNames } from "@constants/routeNames";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
@@ -44,21 +47,33 @@ export default function CustomerSearchScreen() {
       return;
     }
     const rawPhone = contact.phoneNumbers[0].number;
-    const phone = rawPhone.replace(/[^\d+]/g, "").replace(/\+/g, (m, offset) => offset === 0 ? m : "");
+    const phone = rawPhone
+      .replace(/[^\d+]/g, "")
+      .replace(/\+/g, (m, offset) => (offset === 0 ? m : ""));
 
     if (phone.replace("+", "").length < 7) {
-      Alert.alert("Invalid Number", `The phone number "${rawPhone}" could not be cleaned to a valid format. Please edit the contact first.`);
+      Alert.alert(
+        "Invalid Number",
+        `The phone number "${rawPhone}" could not be cleaned to a valid format. Please edit the contact first.`,
+      );
       return;
     }
 
     if (isConnected) {
       try {
-        const res = await upsertCustomer({ name: contact.name, phone }).unwrap();
+        const res = await upsertCustomer({
+          name: contact.name,
+          phone,
+        }).unwrap();
         const serverCustomer = res?.data;
-        if (onSelectCustomer && serverCustomer) onSelectCustomer(serverCustomer);
+        if (onSelectCustomer && serverCustomer)
+          onSelectCustomer(serverCustomer);
         navigation.goBack();
       } catch (err) {
-        const message = err?.data?.message || err?.data?.error || "Failed to sync contact with server.";
+        const message =
+          err?.data?.message ||
+          err?.data?.error ||
+          "Failed to sync contact with server.";
         Alert.alert("Sync Failed", message);
       }
     } else {
@@ -79,9 +94,13 @@ export default function CustomerSearchScreen() {
       Contacts.getContactsAsync({
         fields: [Contacts.Fields.Name, Contacts.Fields.PhoneNumbers],
         name: query,
-      }).then(({ data }) => {
-        setDeviceContacts(data.filter((c) => c.phoneNumbers?.length).slice(0, 5));
-      }).catch(() => { });
+      })
+        .then(({ data }) => {
+          setDeviceContacts(
+            data.filter((c) => c.phoneNumbers?.length).slice(0, 5),
+          );
+        })
+        .catch(() => {});
     } else {
       setDeviceContacts([]);
     }
@@ -98,7 +117,10 @@ export default function CustomerSearchScreen() {
       }
 
       if (finalStatus !== "granted") {
-        Alert.alert("Permission Needed", "We need access to your contacts to pick customers. Please enable Contact permissions in your phone settings.");
+        Alert.alert(
+          "Permission Needed",
+          "We need access to your contacts to pick customers. Please enable Contact permissions in your phone settings.",
+        );
         return;
       }
 
@@ -116,16 +138,25 @@ export default function CustomerSearchScreen() {
         setDeviceContacts(data.filter((c) => c.phoneNumbers?.length));
         setIsFetchingAll(false);
         if (data.length === 0) {
-          Alert.alert("No Contacts", "We couldn't find any contacts on your phone.");
+          Alert.alert(
+            "No Contacts",
+            "We couldn't find any contacts on your phone.",
+          );
         }
       }
     } catch {
-      Alert.alert("Error", "Access to contacts was denied or failed. Please check your phone settings.");
+      Alert.alert(
+        "Error",
+        "Access to contacts was denied or failed. Please check your phone settings.",
+      );
     }
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       {/* Header Bar */}
       <View
         style={{
@@ -146,28 +177,58 @@ export default function CustomerSearchScreen() {
         >
           <ArrowLeft color={colors.secondary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.secondary, flex: 1 }}>
+        <Text
+          style={{
+            fontFamily: "Inter",
+            fontSize: 14,
+            fontWeight: "700",
+            color: colors.secondary,
+            flex: 1,
+          }}
+        >
           Find or Add Customer
         </Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate(RouteNames.CREATE_CUSTOMER, { onSelectCustomer })}
-          style={{ 
-            backgroundColor: colors.secondaryBg, 
-            paddingHorizontal: 12, 
-            paddingVertical: 6, 
+          onPress={() =>
+            navigation.navigate(RouteNames.CREATE_CUSTOMER, {
+              onSelectCustomer,
+            })
+          }
+          style={{
+            backgroundColor: colors.secondaryBg,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: colors.secondaryBorder
+            borderColor: colors.secondaryBorder,
           }}
         >
-          <Text style={{ fontFamily: "Inter", color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Manual</Text>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              color: colors.secondary,
+              fontSize: 10,
+              fontWeight: "800",
+              textTransform: "uppercase",
+            }}
+          >
+            Manual
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <Box style={{ flex: 1, backgroundColor: colors.bgSecondary, padding: 24 }}>
+      <Box
+        style={{ flex: 1, backgroundColor: colors.bgSecondary, padding: 24 }}
+      >
         <Heading
           size="2xl"
-          style={{ fontFamily: "Space Grotesk", fontWeight: "800", color: colors.textPrimary, marginBottom: 24, marginTop: 8 }}
+          style={{
+            fontFamily: "Space Grotesk",
+            fontWeight: "800",
+            color: colors.textPrimary,
+            marginBottom: 24,
+            marginTop: 8,
+          }}
         >
           Find Customer
         </Heading>
@@ -189,7 +250,11 @@ export default function CustomerSearchScreen() {
             value={query}
             onChangeText={setQuery}
             autoFocus
-            style={{ color: colors.textPrimary, fontFamily: "Inter", paddingHorizontal: 16 }}
+            style={{
+              color: colors.textPrimary,
+              fontFamily: "Inter",
+              paddingHorizontal: 16,
+            }}
           />
         </Input>
 
@@ -208,7 +273,14 @@ export default function CustomerSearchScreen() {
             alignItems: "center",
           }}
         >
-          <ButtonText style={{ fontFamily: "Inter", fontWeight: "800", color: colors.secondary, textAlignVertical: "center" }}>
+          <ButtonText
+            style={{
+              fontFamily: "Inter",
+              fontWeight: "800",
+              color: colors.secondary,
+              textAlignVertical: "center",
+            }}
+          >
             {isFetchingAll ? "Loading Contacts..." : "Pick from Contacts"}
           </ButtonText>
         </Button>
@@ -218,7 +290,11 @@ export default function CustomerSearchScreen() {
           keyExtractor={(item) => item._id || item.id}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => item._id ? handleSelect(item) : selectDeviceContact(item)}>
+            <TouchableOpacity
+              onPress={() =>
+                item._id ? handleSelect(item) : selectDeviceContact(item)
+              }
+            >
               <Box
                 style={{
                   backgroundColor: colors.bgCard,
@@ -229,8 +305,22 @@ export default function CustomerSearchScreen() {
                   borderColor: colors.borderLight,
                 }}
               >
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <Text style={{ fontFamily: "Inter", fontWeight: "800", fontSize: 16, color: colors.textPrimary }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontWeight: "800",
+                      fontSize: 16,
+                      color: colors.textPrimary,
+                    }}
+                  >
                     {item.name}
                   </Text>
                   {!item._id && (
@@ -252,7 +342,14 @@ export default function CustomerSearchScreen() {
                     </Text>
                   )}
                 </View>
-                <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.secondary, letterSpacing: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontWeight: "700",
+                    color: colors.secondary,
+                    letterSpacing: 1,
+                  }}
+                >
                   {item.phone || item.phoneNumbers?.[0]?.number}
                 </Text>
               </Box>
@@ -260,10 +357,29 @@ export default function CustomerSearchScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, textAlign: "center", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", fontSize: 10, marginBottom: 8 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textDisabled,
+                  textAlign: "center",
+                  fontWeight: "700",
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  fontSize: 10,
+                  marginBottom: 8,
+                }}
+              >
                 No matching customers
               </Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textFaint, textAlign: "center", fontSize: 12, paddingHorizontal: 40 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textFaint,
+                  textAlign: "center",
+                  fontSize: 12,
+                  paddingHorizontal: 40,
+                }}
+              >
                 Type a name in the search box to find contacts from your phone.
               </Text>
             </View>

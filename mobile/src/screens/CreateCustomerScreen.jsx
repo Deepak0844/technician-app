@@ -12,7 +12,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Contacts from "expo-contacts";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { useUpsertCustomerMutation, useUpdateCustomerMutation } from "@services/api/customerApi";
+import {
+  useUpsertCustomerMutation,
+  useUpdateCustomerMutation,
+} from "@services/api/customerApi";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 import { Text } from "@components/ui/text";
@@ -53,7 +56,10 @@ export default function CreateCustomerScreen({ route }) {
   // Locations — guard against old customers with no locations array
   const [locations, setLocations] = useState(() => {
     if (editingCustomer?.locations?.length > 0) {
-      return editingCustomer.locations.map((loc) => ({ ...loc, id: generateLocalId() }));
+      return editingCustomer.locations.map((loc) => ({
+        ...loc,
+        id: generateLocalId(),
+      }));
     }
     // Old record: may have a top-level address string but no locations array
     return [
@@ -70,14 +76,18 @@ export default function CreateCustomerScreen({ route }) {
 
   const [saveToPhone, setSaveToPhone] = useState(false);
 
-  const [upsertCustomer, { isLoading: isCreating }] = useUpsertCustomerMutation();
-  const [updateCustomer, { isLoading: isUpdating }] = useUpdateCustomerMutation();
+  const [upsertCustomer, { isLoading: isCreating }] =
+    useUpsertCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdating }] =
+    useUpdateCustomerMutation();
   const isLoading = isCreating || isUpdating;
 
   // -- Location helpers --
 
   function updateLocation(id, updates) {
-    setLocations((prev) => prev.map((loc) => (loc.id === id ? { ...loc, ...updates } : loc)));
+    setLocations((prev) =>
+      prev.map((loc) => (loc.id === id ? { ...loc, ...updates } : loc)),
+    );
   }
 
   function addLocation() {
@@ -119,7 +129,10 @@ export default function CreateCustomerScreen({ route }) {
       .filter((loc) => loc.address?.trim());
 
     if (sanitizedLocations.length === 0) {
-      Alert.alert("Error", "At least one location with an address is required.");
+      Alert.alert(
+        "Error",
+        "At least one location with an address is required.",
+      );
       return;
     }
 
@@ -148,11 +161,16 @@ export default function CreateCustomerScreen({ route }) {
         try {
           const { status } = await Contacts.requestPermissionsAsync();
           if (status === "granted") {
-            const primaryLocation = locations.find((l) => l.isDefault) || locations[0];
+            const primaryLocation =
+              locations.find((l) => l.isDefault) || locations[0];
             await Contacts.addContactAsync({
               [Contacts.Fields.FirstName]: name.trim(),
-              [Contacts.Fields.PhoneNumbers]: [{ number: phone.trim(), label: "mobile" }],
-              [Contacts.Fields.Emails]: email.trim() ? [{ email: email.trim(), label: "work" }] : [],
+              [Contacts.Fields.PhoneNumbers]: [
+                { number: phone.trim(), label: "mobile" },
+              ],
+              [Contacts.Fields.Emails]: email.trim()
+                ? [{ email: email.trim(), label: "work" }]
+                : [],
               [Contacts.Fields.Addresses]: primaryLocation?.address
                 ? [{ street: primaryLocation.address, label: "work" }]
                 : [],
@@ -163,26 +181,63 @@ export default function CreateCustomerScreen({ route }) {
         }
       }
 
-      Alert.alert("Success", `Customer ${isEditing ? "updated" : "created"} successfully!`);
+      Alert.alert(
+        "Success",
+        `Customer ${isEditing ? "updated" : "created"} successfully!`,
+      );
       if (onSelectCustomer && serverCustomer) {
         onSelectCustomer(serverCustomer);
       }
       navigation.goBack();
     } catch (err) {
-      Alert.alert("Error", err?.data?.message || `Failed to ${isEditing ? "update" : "create"} customer.`);
+      Alert.alert(
+        "Error",
+        err?.data?.message ||
+          `Failed to ${isEditing ? "update" : "create"} customer.`,
+      );
     }
   }
 
   // -- Render helpers --
 
-  function renderInput(label, value, onChangeText, icon, placeholder, fieldKey, keyboardType = "default") {
+  function renderInput(
+    label,
+    value,
+    onChangeText,
+    icon,
+    placeholder,
+    fieldKey,
+    keyboardType = "default",
+  ) {
     const isFocused = focusedField === fieldKey;
     return (
       <View style={{ marginBottom: 24 }}>
-        <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 8, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4, marginBottom: 12, marginLeft: 4 }}>
+        <Text
+          style={{
+            fontFamily: "Inter",
+            color: colors.textDisabled,
+            fontSize: 8,
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: 4,
+            marginBottom: 12,
+            marginLeft: 4,
+          }}
+        >
           {label}
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, height: 56, borderRadius: 16, backgroundColor: colors.bgInput, borderWidth: 1, borderColor: isFocused ? colors.primary : colors.border }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            height: 56,
+            borderRadius: 16,
+            backgroundColor: colors.bgInput,
+            borderWidth: 1,
+            borderColor: isFocused ? colors.primary : colors.border,
+          }}
+        >
           {icon}
           <TextInput
             placeholder={placeholder}
@@ -192,7 +247,13 @@ export default function CreateCustomerScreen({ route }) {
             onFocus={() => setFocusedField(fieldKey)}
             onBlur={() => setFocusedField(null)}
             keyboardType={keyboardType}
-            style={{ flex: 1, marginLeft: 12, fontFamily: "Inter", color: colors.textPrimary, fontSize: 14 }}
+            style={{
+              flex: 1,
+              marginLeft: 12,
+              fontFamily: "Inter",
+              color: colors.textPrimary,
+              fontSize: 14,
+            }}
           />
         </View>
       </View>
@@ -200,34 +261,118 @@ export default function CreateCustomerScreen({ route }) {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       {/* Header */}
-      <View style={{ width: "100%", flexDirection: "row", alignItems: "center", paddingHorizontal: 24, height: 56, backgroundColor: colors.bgPrimary, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }}>
+      <View
+        style={{
+          width: "100%",
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 24,
+          height: 56,
+          backgroundColor: colors.bgPrimary,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 8 }}
+        >
           <ArrowLeft color={colors.primary} size={20} />
         </TouchableOpacity>
-        <Text style={{ marginLeft: 8, fontFamily: "Space Grotesk", textTransform: "uppercase", letterSpacing: 2, fontSize: 12, color: colors.primary, fontWeight: "700" }}>
+        <Text
+          style={{
+            marginLeft: 8,
+            fontFamily: "Space Grotesk",
+            textTransform: "uppercase",
+            letterSpacing: 2,
+            fontSize: 12,
+            color: colors.primary,
+            fontWeight: "700",
+          }}
+        >
           {isEditing ? "Edit" : "New"} Customer
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24 }}>
-        {renderInput("Customer Name", name, setName, <User size={18} color={colors.secondary} />, "Full Name", "name")}
-        {renderInput("Phone Number", phone, setPhone, <Phone size={18} color={colors.secondary} />, "+91 00000 00000", "phone", "phone-pad")}
-        {renderInput("Email Address", email, setEmail, <Mail size={18} color={colors.secondary} />, "customer@example.com", "email", "email-address")}
+        {renderInput(
+          "Customer Name",
+          name,
+          setName,
+          <User size={18} color={colors.secondary} />,
+          "Full Name",
+          "name",
+        )}
+        {renderInput(
+          "Phone Number",
+          phone,
+          setPhone,
+          <Phone size={18} color={colors.secondary} />,
+          "+91 00000 00000",
+          "phone",
+          "phone-pad",
+        )}
+        {renderInput(
+          "Email Address",
+          email,
+          setEmail,
+          <Mail size={18} color={colors.secondary} />,
+          "customer@example.com",
+          "email",
+          "email-address",
+        )}
 
         {/* Locations Section */}
         <View style={{ marginBottom: 24 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Space Grotesk", color: colors.textDisabled, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 4, marginLeft: 4 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                color: colors.textDisabled,
+                fontSize: 10,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 4,
+                marginLeft: 4,
+              }}
+            >
               Service Locations
             </Text>
             <TouchableOpacity
               onPress={addLocation}
-              style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: "row", alignItems: "center", gap: 4 }}
+              style={{
+                backgroundColor: colors.primaryBg,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+              }}
             >
               <Plus size={14} color={colors.primary} />
-              <Text style={{ fontFamily: "Inter", color: colors.primary, fontSize: 10, fontWeight: "700" }}>ADD NEW</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.primary,
+                  fontSize: 10,
+                  fontWeight: "700",
+                }}
+              >
+                ADD NEW
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -244,10 +389,40 @@ export default function CreateCustomerScreen({ route }) {
 
         {/* Save to Contacts toggle — create mode only */}
         {!isEditing && (
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.bgCard, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginBottom: 32 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              backgroundColor: colors.bgCard,
+              padding: 20,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+              marginBottom: 32,
+            }}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontWeight: "700", fontSize: 13, marginBottom: 4 }}>Save to Contacts</Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>Add this customer to your phone&apos;s address book</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textPrimary,
+                  fontWeight: "700",
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
+                Save to Contacts
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textDisabled,
+                  fontSize: 10,
+                }}
+              >
+                Add this customer to your phone&apos;s address book
+              </Text>
             </View>
             <Switch
               value={saveToPhone}
@@ -259,18 +434,41 @@ export default function CreateCustomerScreen({ route }) {
         )}
 
         {/* Action Button */}
-        <TouchableOpacity onPress={handleAction} disabled={isLoading} activeOpacity={0.8}>
+        <TouchableOpacity
+          onPress={handleAction}
+          disabled={isLoading}
+          activeOpacity={0.8}
+        >
           <LinearGradient
             colors={colors.gradientPrimary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ height: 60, borderRadius: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 20, elevation: 8 }}
+            style={{
+              height: 60,
+              borderRadius: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: colors.primary,
+              shadowOpacity: 0.3,
+              shadowRadius: 20,
+              elevation: 8,
+            }}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Text style={{ fontFamily: "Space Grotesk", color: "#fff", fontWeight: "900", textTransform: "uppercase", letterSpacing: 4, fontSize: 12 }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: "#fff",
+                    fontWeight: "900",
+                    textTransform: "uppercase",
+                    letterSpacing: 4,
+                    fontSize: 12,
+                  }}
+                >
                   {isEditing ? "Save Changes" : "Create Customer"}
                 </Text>
                 <Zap size={16} color="#fff" style={{ marginLeft: 12 }} />

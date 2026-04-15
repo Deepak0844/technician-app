@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { FlatList, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import {
+  FlatList,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -14,7 +19,14 @@ import { Text } from "@components/ui/text";
 import { Input, InputField } from "@components/ui/input";
 
 // Icons
-import { Search, UserPlus, Phone, MapPin, ChevronRight, User } from "lucide-react-native";
+import {
+  Search,
+  UserPlus,
+  Phone,
+  MapPin,
+  ChevronRight,
+  User,
+} from "lucide-react-native";
 
 export default function CustomerListScreen() {
   const navigation = useNavigation();
@@ -22,11 +34,16 @@ export default function CustomerListScreen() {
   const [query, setQuery] = useState("");
 
   // RTK Query
-  const { data: customersResponse, isLoading } = useGetCustomersQuery({ search: query });
+  const { data: customersResponse, isLoading } = useGetCustomersQuery({
+    search: query,
+  });
   const customers = customersResponse?.data || [];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       {/* Top Header */}
       <LinearGradient
         colors={colors.gradientHeader}
@@ -44,7 +61,14 @@ export default function CustomerListScreen() {
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <User color={colors.indigo} size={20} />
-          <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 14,
+              fontWeight: "700",
+              color: colors.indigo,
+            }}
+          >
             Customers
           </Text>
         </View>
@@ -86,12 +110,18 @@ export default function CustomerListScreen() {
             placeholderTextColor={colors.textDisabled}
             value={query}
             onChangeText={setQuery}
-            style={{ color: colors.textPrimary, fontFamily: "Inter", paddingHorizontal: 8 }}
+            style={{
+              color: colors.textPrimary,
+              fontFamily: "Inter",
+              paddingHorizontal: 8,
+            }}
           />
         </Input>
 
         {isLoading ? (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <View
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
             <ActivityIndicator color={colors.indigo} />
           </View>
         ) : (
@@ -102,7 +132,11 @@ export default function CustomerListScreen() {
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
               <TouchableOpacity
-                onPress={() => navigation.navigate(RouteNames.CUSTOMER_DETAILS, { customerId: item._id })}
+                onPress={() =>
+                  navigation.navigate(RouteNames.CUSTOMER_DETAILS, {
+                    customerId: item._id,
+                  })
+                }
                 activeOpacity={0.7}
                 style={{
                   backgroundColor: colors.bgCardAlt,
@@ -134,20 +168,60 @@ export default function CustomerListScreen() {
 
                 {/* Info */}
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 16,
+                      fontWeight: "700",
+                      color: colors.textPrimary,
+                      marginBottom: 4,
+                    }}
+                  >
                     {item.name}
                   </Text>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
                       <Phone color={colors.textMuted} size={12} />
-                      <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }}>
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          color: colors.textMuted,
+                        }}
+                      >
                         {item.phone}
                       </Text>
                     </View>
                     {item.address && (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1 }}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          flex: 1,
+                        }}
+                      >
                         <MapPin color={colors.textMuted} size={12} />
-                        <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted }} numberOfLines={1}>
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 12,
+                            color: colors.textMuted,
+                          }}
+                          numberOfLines={1}
+                        >
                           {item.address}
                         </Text>
                       </View>
@@ -160,11 +234,31 @@ export default function CustomerListScreen() {
             )}
             ListEmptyComponent={
               <View style={{ alignItems: "center", marginTop: 40 }}>
-                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, textAlign: "center", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase", fontSize: 10, marginBottom: 8 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textDisabled,
+                    textAlign: "center",
+                    fontWeight: "700",
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    fontSize: 10,
+                    marginBottom: 8,
+                  }}
+                >
                   No customers found
                 </Text>
-                <Text style={{ fontFamily: "Inter", color: colors.textFaint, textAlign: "center", fontSize: 12, paddingHorizontal: 40 }}>
-                  Use the &apos;+&apos; icon above to add a new customer from your phone contacts.
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textFaint,
+                    textAlign: "center",
+                    fontSize: 12,
+                    paddingHorizontal: 40,
+                  }}
+                >
+                  Use the &apos;+&apos; icon above to add a new customer from
+                  your phone contacts.
                 </Text>
               </View>
             }

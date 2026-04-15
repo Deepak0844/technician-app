@@ -1,5 +1,11 @@
 import React from "react";
-import { ScrollView, View, TouchableOpacity, Text, RefreshControl } from "react-native";
+import {
+  ScrollView,
+  View,
+  TouchableOpacity,
+  Text,
+  RefreshControl,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -25,10 +31,8 @@ export default function DashboardScreen() {
   const isSyncing = useSelector((state) => state.sync.isSyncing);
 
   // RTK Query
-  const {
-    data: summaryResponse,
-    refetch: refetchSummary,
-  } = useGetDashboardSummaryQuery();
+  const { data: summaryResponse, refetch: refetchSummary } =
+    useGetDashboardSummaryQuery();
 
   // Custom hooks
   const { isConnected } = useNetworkStatus();
@@ -63,16 +67,35 @@ export default function DashboardScreen() {
 
   function getStatusBadgeStyle(status) {
     if (status === JobStatuses.COMPLETED)
-      return { bg: colors.secondaryBg, border: colors.secondaryBorder, text: colors.secondary };
+      return {
+        bg: colors.secondaryBg,
+        border: colors.secondaryBorder,
+        text: colors.secondary,
+      };
     if (status === JobStatuses.PENDING)
-      return { bg: colors.warningBg, border: colors.warningBorder, text: colors.warning };
+      return {
+        bg: colors.warningBg,
+        border: colors.warningBorder,
+        text: colors.warning,
+      };
     if (status === JobStatuses.CANCELLED)
-      return { bg: colors.dangerBg, border: colors.dangerBorder, text: colors.danger };
-    return { bg: colors.primaryBgStrong, border: colors.primaryBorderStrong, text: colors.primary };
+      return {
+        bg: colors.dangerBg,
+        border: colors.dangerBorder,
+        text: colors.danger,
+      };
+    return {
+      bg: colors.primaryBgStrong,
+      border: colors.primaryBorderStrong,
+      text: colors.primary,
+    };
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgSecondary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgSecondary }}
+      edges={["top"]}
+    >
       <OfflineBanner />
 
       {/* TopAppBar */}
@@ -94,7 +117,12 @@ export default function DashboardScreen() {
         >
           <Home color={colors.indigo} size={20} />
           <Text
-            style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}
+            style={{
+              fontFamily: "Inter",
+              fontSize: 14,
+              fontWeight: "700",
+              color: colors.indigo,
+            }}
           >
             Technician Portal
           </Text>
@@ -133,8 +161,15 @@ export default function DashboardScreen() {
           >
             Welcome back, {user?.name?.split(" ")[0] || "Technician"}!
           </Text>
-          <Text style={{ fontFamily: "Inter", fontSize: 13, color: colors.textSecondary }}>
-            Status: {isConnected ? "Online" : "Connection Required"} • Session Active
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 13,
+              color: colors.textSecondary,
+            }}
+          >
+            Status: {isConnected ? "Online" : "Connection Required"} • Session
+            Active
           </Text>
         </View>
 
@@ -146,23 +181,49 @@ export default function DashboardScreen() {
               padding: 16,
               borderRadius: 12,
               marginBottom: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
               borderWidth: 1,
-              borderColor: colors.primaryBorder
+              borderColor: colors.primaryBorder,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.bgPrimary, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: colors.bgPrimary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <Files size={18} color={colors.primary} />
               </View>
               <View>
-                <Text style={{ fontFamily: 'Space Grotesk', fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
-                  {queueCount} {queueCount === 1 ? 'Job' : 'Jobs'} Pending Sync
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {queueCount} {queueCount === 1 ? "Job" : "Jobs"} Pending Sync
                 </Text>
-                <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textSecondary }}>
-                  {isSyncing ? 'Syncing now...' : 'Will sync automatically when online.'}
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {isSyncing
+                    ? "Syncing now..."
+                    : "Will sync automatically when online."}
                 </Text>
               </View>
             </View>
@@ -181,38 +242,158 @@ export default function DashboardScreen() {
             marginBottom: 16,
           }}
         >
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 1.5 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 10,
+                fontWeight: "700",
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 1.5,
+              }}
+            >
               This Month
             </Text>
-            <View style={{ backgroundColor: (earningsChange >= 0 ? colors.secondary : colors.danger) + "15", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: earningsChange >= 0 ? colors.secondary : colors.danger }}>
-                {earningsChange >= 0 ? `+${earningsChange}%` : `${earningsChange}%`}
+            <View
+              style={{
+                backgroundColor:
+                  (earningsChange >= 0 ? colors.secondary : colors.danger) +
+                  "15",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 6,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  fontWeight: "800",
+                  color: earningsChange >= 0 ? colors.secondary : colors.danger,
+                }}
+              >
+                {earningsChange >= 0
+                  ? `+${earningsChange}%`
+                  : `${earningsChange}%`}
               </Text>
             </View>
           </View>
 
           <View style={{ flexDirection: "row", gap: 12 }}>
-            <View style={{ flex: 1, backgroundColor: colors.bgPrimary, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.borderLight }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textMuted, textTransform: "uppercase", marginBottom: 4 }}>Paid</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "800", color: colors.secondary }}>
-                {formatCurrency(Number(dashboardStats?.monthlyPaidEarnings ?? 0))}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.bgPrimary,
+                padding: 12,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: colors.textMuted,
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
+                Paid
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 18,
+                  fontWeight: "800",
+                  color: colors.secondary,
+                }}
+              >
+                {formatCurrency(
+                  Number(dashboardStats?.monthlyPaidEarnings ?? 0),
+                )}
               </Text>
             </View>
-            <View style={{ flex: 1, backgroundColor: colors.bgPrimary, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.borderLight }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textMuted, textTransform: "uppercase", marginBottom: 4 }}>To Collect</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "800", color: colors.textPrimary }}>
-                {formatCurrency(Number(dashboardStats?.monthlyPendingEarnings ?? 0))}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.bgPrimary,
+                padding: 12,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: colors.textMuted,
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
+                To Collect
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 18,
+                  fontWeight: "800",
+                  color: colors.textPrimary,
+                }}
+              >
+                {formatCurrency(
+                  Number(dashboardStats?.monthlyPendingEarnings ?? 0),
+                )}
               </Text>
             </View>
           </View>
 
-          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12, opacity: 0.3 }} />
+          <View
+            style={{
+              height: 1,
+              backgroundColor: colors.border,
+              marginVertical: 12,
+              opacity: 0.3,
+            }}
+          />
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <View>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textDisabled, textTransform: "uppercase" }}>Total Earnings</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginTop: 2 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: colors.textDisabled,
+                  textTransform: "uppercase",
+                }}
+              >
+                Total Earnings
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                  marginTop: 2,
+                }}
+              >
                 {formatCurrency(totalEarnings)}
               </Text>
             </View>
@@ -238,27 +419,85 @@ export default function DashboardScreen() {
             }}
           >
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.warningIcon }} />
-                <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.warningIcon, textTransform: "uppercase", letterSpacing: 1 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 4,
+                }}
+              >
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: colors.warningIcon,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    color: colors.warningIcon,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
                   Payments Pending
                 </Text>
               </View>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 22, fontWeight: "800", color: colors.textPrimary }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 22,
+                  fontWeight: "800",
+                  color: colors.textPrimary,
+                }}
+              >
                 {formatCurrency(outstandingPayments)}
               </Text>
-              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: colors.textMuted,
+                  marginTop: 2,
+                }}
+              >
                 From completed service jobs
               </Text>
             </View>
-            <View style={{ backgroundColor: colors.warningBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
-              <Text style={{ color: colors.warningIcon, fontSize: 10, fontWeight: "800" }}>RECOVER</Text>
+            <View
+              style={{
+                backgroundColor: colors.warningBg,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.warningIcon,
+                  fontSize: 10,
+                  fontWeight: "800",
+                }}
+              >
+                RECOVER
+              </Text>
             </View>
           </TouchableOpacity>
         )}
 
         {/* Stats Row */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginBottom: 16,
+          }}
+        >
           <View
             style={{
               backgroundColor: colors.bgSurface,
@@ -269,10 +508,26 @@ export default function DashboardScreen() {
               width: "48%",
             }}
           >
-            <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 11,
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                marginBottom: 4,
+              }}
+            >
               Total Jobs
             </Text>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 20,
+                fontWeight: "700",
+                color: colors.textPrimary,
+              }}
+            >
               {totalJobs}
             </Text>
           </View>
@@ -287,14 +542,37 @@ export default function DashboardScreen() {
               width: "48%",
             }}
           >
-            <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 11,
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                marginBottom: 4,
+              }}
+            >
               Success Rate
             </Text>
             <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.secondary }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 20,
+                  fontWeight: "700",
+                  color: colors.secondary,
+                }}
+              >
                 {efficiency}
               </Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.secondary }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: colors.secondary,
+                }}
+              >
                 %
               </Text>
             </View>
@@ -321,10 +599,24 @@ export default function DashboardScreen() {
             colors={colors.gradientPrimary}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12 }}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+            }}
           >
             <PlusCircle color={colors.bgPrimary} size={24} />
-            <Text style={{ fontFamily: "Space Grotesk", color: colors.bgPrimary, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2 }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                color: colors.bgPrimary,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
               Add New Job
             </Text>
           </LinearGradient>
@@ -332,12 +624,35 @@ export default function DashboardScreen() {
 
         {/* Recent Jobs Section */}
         <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 14,
+                fontWeight: "700",
+                color: colors.textPrimary,
+              }}
+            >
               Recent Jobs
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate(RouteNames.JOB_HISTORY)} activeOpacity={0.7}>
-              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.primary }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate(RouteNames.JOB_HISTORY)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 14,
+                  color: colors.primary,
+                }}
+              >
                 View All
               </Text>
             </TouchableOpacity>
@@ -350,7 +665,9 @@ export default function DashboardScreen() {
                 <TouchableOpacity
                   key={job._id}
                   activeOpacity={0.7}
-                  onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
+                  onPress={() =>
+                    navigation.navigate(RouteNames.JOB_DETAILS, { job })
+                  }
                   style={{
                     backgroundColor: colors.bgSurface,
                     padding: 20,
@@ -363,26 +680,80 @@ export default function DashboardScreen() {
                   }}
                 >
                   <View style={{ flex: 1, paddingRight: 16 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 4,
+                      }}
+                    >
                       <Text
-                        style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "600", color: colors.textPrimary }}
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 14,
+                          fontWeight: "600",
+                          color: colors.textPrimary,
+                        }}
                         numberOfLines={1}
                       >
                         {job.customerName || job.customerId?.name || "Unknown"}
                       </Text>
                       {job.priority === PriorityLevels.URGENT && (
-                        <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
-                          <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                        <View
+                          style={{
+                            backgroundColor: "#fee2e2",
+                            paddingHorizontal: 6,
+                            paddingVertical: 1,
+                            borderRadius: 4,
+                            borderWidth: 0.5,
+                            borderColor: "#ef4444",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 7,
+                              fontWeight: "800",
+                              color: "#b91c1c",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Urgent
+                          </Text>
                         </View>
                       )}
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textSecondary }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                        }}
+                      >
                         ID: #{job._id?.slice(-6).toUpperCase() || "NEW"}
                       </Text>
-                      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.textDisabled }} />
+                      <View
+                        style={{
+                          width: 4,
+                          height: 4,
+                          borderRadius: 2,
+                          backgroundColor: colors.textDisabled,
+                        }}
+                      />
                       <Text
-                        style={{ fontFamily: "Inter", fontSize: 12, color: colors.textSecondary, flex: 1 }}
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                          flex: 1,
+                        }}
                         numberOfLines={1}
                       >
                         {job.applianceType || "General Service"}
@@ -391,7 +762,13 @@ export default function DashboardScreen() {
                   </View>
 
                   <View style={{ alignItems: "flex-end", gap: 8 }}>
-                    <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.primary }}>
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontWeight: "700",
+                        color: colors.primary,
+                      }}
+                    >
                       {formatCurrency(job.amount)}
                     </Text>
                     <View
@@ -424,8 +801,16 @@ export default function DashboardScreen() {
             })}
 
             {allJobs.length === 0 ? (
-              <View style={{ padding: 20, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ fontFamily: "Inter", color: colors.textSecondary }}>
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ fontFamily: "Inter", color: colors.textSecondary }}
+                >
                   No recent jobs found.
                 </Text>
               </View>

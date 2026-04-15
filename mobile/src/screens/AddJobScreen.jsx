@@ -1,11 +1,26 @@
 import React, { useState } from "react";
-import { ScrollView, Alert, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  Alert,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
-import { useGetCustomerByIdQuery, useUpdateCustomerMutation, useGetCustomersQuery } from "@services/api/customerApi";
-import { ApplianceTypes, JobStatuses, PriorityLevels, PaymentMethods } from "@constants/appConstants";
+import {
+  useGetCustomerByIdQuery,
+  useUpdateCustomerMutation,
+  useGetCustomersQuery,
+} from "@services/api/customerApi";
+import {
+  ApplianceTypes,
+  JobStatuses,
+  PriorityLevels,
+  PaymentMethods,
+} from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
@@ -28,75 +43,110 @@ import { ArrowLeft, Zap } from "lucide-react-native";
 export default function AddJobScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { job: editingJob, customer: initialCustomer, initialDate, origin } = route.params ?? {};
+  const {
+    job: editingJob,
+    customer: initialCustomer,
+    initialDate,
+    origin,
+  } = route.params ?? {};
   const { colors } = useTheme();
   const userId = useSelector((state) => state.auth.user?._id);
-  
+
   // -- State --
   const [selectedCustomer, setSelectedCustomer] = useState(
-    editingJob 
-      ? { 
-          _id: editingJob.customerId?._id || editingJob.customerId, 
-          name: editingJob.customerId?.name || editingJob.customerName, 
-          phone: editingJob.customerId?.phone || editingJob.customerPhone 
-        } 
-      : (initialCustomer || null)
+    editingJob
+      ? {
+          _id: editingJob.customerId?._id || editingJob.customerId,
+          name: editingJob.customerId?.name || editingJob.customerName,
+          phone: editingJob.customerId?.phone || editingJob.customerPhone,
+        }
+      : initialCustomer || null,
   );
 
   React.useEffect(() => {
     if (editingJob) {
       setAppliance(editingJob.applianceType || ApplianceTypes[0]);
       setIssue(editingJob.issue || "");
-      
-      const ptsTotal = (editingJob.partsUsed || []).reduce((sum, p) => sum + (p.price * p.quantity), 0);
+
+      const ptsTotal = (editingJob.partsUsed || []).reduce(
+        (sum, p) => sum + p.price * p.quantity,
+        0,
+      );
       const diagFee = parseFloat(editingJob.diagnosticFee) || 0;
-      const baseAmount = Math.max(0, (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee);
+      const baseAmount = Math.max(
+        0,
+        (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee,
+      );
       setAmount(baseAmount > 0 ? baseAmount.toString() : "");
-      
+
       setSelectedCustomer({
         _id: editingJob.customerId?._id || editingJob.customerId,
         name: editingJob.customerId?.name || editingJob.customerName,
-        phone: editingJob.customerId?.phone || editingJob.customerPhone
+        phone: editingJob.customerId?.phone || editingJob.customerPhone,
       });
-      
+
       setServiceDone(editingJob.serviceDone || "");
       setDiagnosticFee(editingJob.diagnosticFee?.toString() || "");
       setStatus(editingJob.status || JobStatuses.PENDING);
-      if (editingJob.serviceDate) setServiceDate(new Date(editingJob.serviceDate));
+      if (editingJob.serviceDate)
+        setServiceDate(new Date(editingJob.serviceDate));
       setWarranty(editingJob.warranty || "No Warranty");
       setPartsUsed(editingJob.partsUsed || []);
-      if (editingJob.nextReminderDate) setNextReminderDate(new Date(editingJob.nextReminderDate));
+      if (editingJob.nextReminderDate)
+        setNextReminderDate(new Date(editingJob.nextReminderDate));
       setSelectedLocation(editingJob.location || null);
       setPriority(editingJob.priority || PriorityLevels.NORMAL);
       setInternalNotes(editingJob.internalNotes || "");
       setIsPaid(editingJob.isPaid ?? false);
       setPaymentMethod(editingJob.paymentMethod || PaymentMethods.CASH);
-      
+
       if (editingJob.serviceDate) {
         const d = new Date(editingJob.serviceDate);
         if (!isNaN(d.getTime())) {
-          setSelectedTime(d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }));
+          setSelectedTime(
+            d.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          );
         }
       }
     }
   }, [editingJob]);
 
   const activeCustomerId = selectedCustomer?._id || selectedCustomer?.serverId;
-  const { data: customerDetailsResponse } = useGetCustomerByIdQuery(activeCustomerId, {
-    skip: !activeCustomerId || !!selectedCustomer?.locations,
-  });
+  const { data: customerDetailsResponse } = useGetCustomerByIdQuery(
+    activeCustomerId,
+    {
+      skip: !activeCustomerId || !!selectedCustomer?.locations,
+    },
+  );
 
   React.useEffect(() => {
-    if (customerDetailsResponse?.data && selectedCustomer && !selectedCustomer.locations) {
-      setSelectedCustomer(prev => ({ ...prev, locations: customerDetailsResponse.data.locations }));
+    if (
+      customerDetailsResponse?.data &&
+      selectedCustomer &&
+      !selectedCustomer.locations
+    ) {
+      setSelectedCustomer((prev) => ({
+        ...prev,
+        locations: customerDetailsResponse.data.locations,
+      }));
     }
   }, [customerDetailsResponse, selectedCustomer]);
 
-  const [appliance, setAppliance] = useState(editingJob?.applianceType ?? ApplianceTypes[0]);
+  const [appliance, setAppliance] = useState(
+    editingJob?.applianceType ?? ApplianceTypes[0],
+  );
   const [issue, setIssue] = useState(editingJob?.issue ?? "");
   const [serviceDone, setServiceDone] = useState(editingJob?.serviceDone ?? "");
-  const [diagnosticFee, setDiagnosticFee] = useState(editingJob?.diagnosticFee?.toString() ?? "");
-  const [status, setStatus] = useState(editingJob?.status ?? JobStatuses.PENDING);
+  const [diagnosticFee, setDiagnosticFee] = useState(
+    editingJob?.diagnosticFee?.toString() ?? "",
+  );
+  const [status, setStatus] = useState(
+    editingJob?.status ?? JobStatuses.PENDING,
+  );
   const [serviceDate, setServiceDate] = useState(() => {
     if (editingJob?.serviceDate) return new Date(editingJob.serviceDate);
     if (initialDate) {
@@ -105,32 +155,54 @@ export default function AddJobScreen() {
     }
     return new Date();
   });
-  const [warranty, setWarranty] = useState(editingJob?.warranty ?? "No Warranty");
+  const [warranty, setWarranty] = useState(
+    editingJob?.warranty ?? "No Warranty",
+  );
   const [customWarranty, setCustomWarranty] = useState("");
   const [showCustomWarranty, setShowCustomWarranty] = useState(false);
   const [amount, setAmount] = useState(() => {
     if (editingJob) {
-      const ptsTotal = (editingJob.partsUsed || []).reduce((sum, p) => sum + (p.price * p.quantity), 0);
+      const ptsTotal = (editingJob.partsUsed || []).reduce(
+        (sum, p) => sum + p.price * p.quantity,
+        0,
+      );
       const diagFee = parseFloat(editingJob.diagnosticFee) || 0;
-      const baseAmount = Math.max(0, (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee);
+      const baseAmount = Math.max(
+        0,
+        (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee,
+      );
       return baseAmount > 0 ? baseAmount.toString() : "";
     }
     return "";
   });
   const [partsUsed, setPartsUsed] = useState(editingJob?.partsUsed ?? []);
-  const [nextReminderDate, setNextReminderDate] = useState(editingJob?.nextReminderDate ? new Date(editingJob.nextReminderDate) : null);
-  const [selectedLocation, setSelectedLocation] = useState(editingJob?.location || null);
-  const [priority, setPriority] = useState(editingJob?.priority ?? PriorityLevels.NORMAL);
-  const [internalNotes, setInternalNotes] = useState(editingJob?.internalNotes ?? "");
+  const [nextReminderDate, setNextReminderDate] = useState(
+    editingJob?.nextReminderDate ? new Date(editingJob.nextReminderDate) : null,
+  );
+  const [selectedLocation, setSelectedLocation] = useState(
+    editingJob?.location || null,
+  );
+  const [priority, setPriority] = useState(
+    editingJob?.priority ?? PriorityLevels.NORMAL,
+  );
+  const [internalNotes, setInternalNotes] = useState(
+    editingJob?.internalNotes ?? "",
+  );
   const [isPaid, setIsPaid] = useState(editingJob?.isPaid ?? false);
-  const [paymentMethod, setPaymentMethod] = useState(editingJob?.paymentMethod ?? PaymentMethods.CASH);
+  const [paymentMethod, setPaymentMethod] = useState(
+    editingJob?.paymentMethod ?? PaymentMethods.CASH,
+  );
 
   // Time Sync
   let initialTime = "10:00 AM";
   if (editingJob?.serviceDate) {
     const d = new Date(editingJob.serviceDate);
     if (!isNaN(d.getTime())) {
-      initialTime = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+      initialTime = d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
     }
   }
   const [selectedTime, setSelectedTime] = useState(initialTime);
@@ -150,10 +222,11 @@ export default function AddJobScreen() {
   const [saveToProfile, setSaveToProfile] = useState(true);
   const addLocationCapture = useLocationCapture();
 
-  const [updateCustomer, { isLoading: isUpdatingCustomer }] = useUpdateCustomerMutation();
+  const [updateCustomer, { isLoading: isUpdatingCustomer }] =
+    useUpdateCustomerMutation();
 
   const handleFinish = () => {
-    if (origin === 'Calendar') {
+    if (origin === "Calendar") {
       navigation.navigate(RouteNames.CALENDAR);
     } else {
       navigation.goBack();
@@ -173,13 +246,18 @@ export default function AddJobScreen() {
   // -- Logic Handlers --
   React.useEffect(() => {
     if (selectedCustomer && !editingJob) {
-      const defaultLoc = selectedCustomer.locations?.find((l) => l.isDefault) || selectedCustomer.locations?.[0];
+      const defaultLoc =
+        selectedCustomer.locations?.find((l) => l.isDefault) ||
+        selectedCustomer.locations?.[0];
       setSelectedLocation(defaultLoc || null);
     }
   }, [selectedCustomer, editingJob]);
 
   async function handleAddLocation() {
-    if (!newLocationAddress.trim()) { Alert.alert("Error", "Address is required"); return; }
+    if (!newLocationAddress.trim()) {
+      Alert.alert("Error", "Address is required");
+      return;
+    }
     const newLoc = {
       label: newLocationLabel.trim() || "Site",
       address: newLocationAddress.trim(),
@@ -194,7 +272,12 @@ export default function AddJobScreen() {
         if (custId) {
           await updateCustomer({
             id: custId,
-            locations: [...(selectedCustomer.locations || []).map(({ _id: _l, ...rest }) => rest), newLoc],
+            locations: [
+              ...(selectedCustomer.locations || []).map(
+                ({ _id: _l, ...rest }) => rest,
+              ),
+              newLoc,
+            ],
           }).unwrap();
         }
 
@@ -210,7 +293,8 @@ export default function AddJobScreen() {
       setNewLocationLabel("");
       setNewLocationLat(null);
       setNewLocationLng(null);
-      if (saveToProfile) Alert.alert("Success", "Location added successfully to customer.");
+      if (saveToProfile)
+        Alert.alert("Success", "Location added successfully to customer.");
     } catch {
       Alert.alert("Error", "Failed to add location");
     }
@@ -252,32 +336,71 @@ export default function AddJobScreen() {
       priority,
       internalNotes,
       isPaid,
-      paymentMethod
+      paymentMethod,
     });
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       <OfflineBanner />
-      
+
       {/* TopAppBar */}
-      <View style={{ width: '100%', zIndex: 50, backgroundColor: colors.bgPrimary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, height: 56, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
+      <View
+        style={{
+          width: "100%",
+          zIndex: 50,
+          backgroundColor: colors.bgPrimary,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 24,
+          height: 56,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderMuted,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ padding: 8 }}
+            activeOpacity={0.7}
+          >
             <ArrowLeft color={colors.primary} size={20} />
           </TouchableOpacity>
-          <Text style={{ fontFamily: 'Space Grotesk', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12, color: colors.primary, fontWeight: '700' }} numberOfLines={1}>{editingJob ? "Edit Job" : "Add New Job"}</Text>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              textTransform: "uppercase",
+              letterSpacing: 2,
+              fontSize: 12,
+              color: colors.primary,
+              fontWeight: "700",
+            }}
+            numberOfLines={1}
+          >
+            {editingJob ? "Edit Job" : "Add New Job"}
+          </Text>
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1, paddingHorizontal: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ height: 16 }} />
-        
+
         <CustomerSection
           selectedCustomer={selectedCustomer}
           setSelectedCustomer={setSelectedCustomer}
           topRecent={topRecent}
-          onSearchPress={() => navigation.navigate(RouteNames.CUSTOMER_SEARCH, { onSelectCustomer: setSelectedCustomer })}
+          onSearchPress={() =>
+            navigation.navigate(RouteNames.CUSTOMER_SEARCH, {
+              onSelectCustomer: setSelectedCustomer,
+            })
+          }
           selectedLocation={selectedLocation}
           onSelectLocation={setSelectedLocation}
           onAddLocationPress={() => setShowAddLocationModal(true)}
@@ -300,10 +423,7 @@ export default function AddJobScreen() {
           setInternalNotes={setInternalNotes}
         />
 
-        <PartsSection 
-          parts={partsUsed}
-          setParts={setPartsUsed}
-        />
+        <PartsSection parts={partsUsed} setParts={setPartsUsed} />
 
         <WarrantySection
           warranty={warranty}
@@ -331,13 +451,45 @@ export default function AddJobScreen() {
         />
 
         {/* Submit Action */}
-        <TouchableOpacity onPress={handleSubmit} disabled={isSyncing} activeOpacity={0.8} style={{ marginBottom: 48, overflow: 'hidden', borderRadius: 16, elevation: 12 }}>
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingVertical: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 12 }}>
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={isSyncing}
+          activeOpacity={0.8}
+          style={{
+            marginBottom: 48,
+            overflow: "hidden",
+            borderRadius: 16,
+            elevation: 12,
+          }}
+        >
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              paddingVertical: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: 12,
+            }}
+          >
             {isSyncing ? (
               <ActivityIndicator color={colors.bgPrimary} size="small" />
             ) : (
               <>
-                <Text style={{ fontFamily: 'Space Grotesk', color: colors.bgPrimary, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 4, fontSize: 12 }}>{editingJob ? "Save Changes" : "Create Job"}</Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: colors.bgPrimary,
+                    fontWeight: "900",
+                    textTransform: "uppercase",
+                    letterSpacing: 4,
+                    fontSize: 12,
+                  }}
+                >
+                  {editingJob ? "Save Changes" : "Create Job"}
+                </Text>
                 <Zap color={colors.bgPrimary} size={14} />
               </>
             )}
@@ -346,22 +498,36 @@ export default function AddJobScreen() {
         <View style={{ height: 96 }} />
       </ScrollView>
 
-      <AddJobModals 
+      <AddJobModals
         colors={colors}
-        showCalendar={showCalendar} setShowCalendar={setShowCalendar}
-        serviceDate={serviceDate} setServiceDate={setServiceDate}
-        showTimePicker={showTimePicker} setShowTimePicker={setShowTimePicker}
-        selectedTime={selectedTime} setSelectedTime={setSelectedTime}
-        showStatusSheet={showStatusSheet} setShowStatusSheet={setShowStatusSheet}
-        status={status} setStatus={setStatus}
-        showReminderCalendar={showReminderCalendar} setShowReminderCalendar={setShowReminderCalendar}
-        nextReminderDate={nextReminderDate} setNextReminderDate={setNextReminderDate}
-        showAddLocationModal={showAddLocationModal} setShowAddLocationModal={setShowAddLocationModal}
-        newLocationLabel={newLocationLabel} setNewLocationLabel={setNewLocationLabel}
-        newLocationAddress={newLocationAddress} setNewLocationAddress={setNewLocationAddress}
-        newLocationLat={newLocationLat} setNewLocationLat={setNewLocationLat}
-        newLocationLng={newLocationLng} setNewLocationLng={setNewLocationLng}
-        saveToProfile={saveToProfile} setSaveToProfile={setSaveToProfile}
+        showCalendar={showCalendar}
+        setShowCalendar={setShowCalendar}
+        serviceDate={serviceDate}
+        setServiceDate={setServiceDate}
+        showTimePicker={showTimePicker}
+        setShowTimePicker={setShowTimePicker}
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        showStatusSheet={showStatusSheet}
+        setShowStatusSheet={setShowStatusSheet}
+        status={status}
+        setStatus={setStatus}
+        showReminderCalendar={showReminderCalendar}
+        setShowReminderCalendar={setShowReminderCalendar}
+        nextReminderDate={nextReminderDate}
+        setNextReminderDate={setNextReminderDate}
+        showAddLocationModal={showAddLocationModal}
+        setShowAddLocationModal={setShowAddLocationModal}
+        newLocationLabel={newLocationLabel}
+        setNewLocationLabel={setNewLocationLabel}
+        newLocationAddress={newLocationAddress}
+        setNewLocationAddress={setNewLocationAddress}
+        newLocationLat={newLocationLat}
+        setNewLocationLat={setNewLocationLat}
+        newLocationLng={newLocationLng}
+        setNewLocationLng={setNewLocationLng}
+        saveToProfile={saveToProfile}
+        setSaveToProfile={setSaveToProfile}
         handleAddLocation={handleAddLocation}
         isUpdatingCustomer={isUpdatingCustomer}
         addLocationCapture={addLocationCapture}
@@ -369,7 +535,6 @@ export default function AddJobScreen() {
         handleAddLocationLinkExtract={handleAddLocationLinkExtract}
         editingJob={editingJob}
       />
-
     </SafeAreaView>
   );
 }

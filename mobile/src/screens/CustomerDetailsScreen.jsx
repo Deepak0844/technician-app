@@ -1,5 +1,12 @@
 import React from "react";
-import { ScrollView, View, TouchableOpacity, ActivityIndicator, RefreshControl, Linking } from "react-native";
+import {
+  ScrollView,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Linking,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -21,7 +28,7 @@ import {
   CheckCircle2,
   Wrench,
   Navigation as NavIcon,
-  MapPin
+  MapPin,
 } from "lucide-react-native";
 
 export default function CustomerDetailsScreen() {
@@ -31,8 +38,16 @@ export default function CustomerDetailsScreen() {
   const { customerId } = route.params;
 
   // RTK Query
-  const { data: custResponse, isLoading: loadingCustomerApi, refetch: refetchCustomer } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
-  const { data: jobsResponse, isLoading: loadingJobsApi, refetch: refetchJobs } = useGetJobsByCustomerQuery(customerId, { skip: !customerId });
+  const {
+    data: custResponse,
+    isLoading: loadingCustomerApi,
+    refetch: refetchCustomer,
+  } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
+  const {
+    data: jobsResponse,
+    isLoading: loadingJobsApi,
+    refetch: refetchJobs,
+  } = useGetJobsByCustomerQuery(customerId, { skip: !customerId });
   const [selectedAppliance, setSelectedAppliance] = React.useState(null);
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -45,7 +60,9 @@ export default function CustomerDetailsScreen() {
 
   const filteredJobs = React.useMemo(() => {
     if (!selectedAppliance) return jobs;
-    return jobs.filter(j => (j.applianceType || "General") === selectedAppliance);
+    return jobs.filter(
+      (j) => (j.applianceType || "General") === selectedAppliance,
+    );
   }, [jobs, selectedAppliance]);
 
   const onRefresh = React.useCallback(async () => {
@@ -55,14 +72,14 @@ export default function CustomerDetailsScreen() {
   }, [refetchCustomer, refetchJobs]);
 
   const rawCustomer = custResponse?.data;
-  const customer = rawCustomer?.data ? rawCustomer.data : (rawCustomer || {});
+  const customer = rawCustomer?.data ? rawCustomer.data : rawCustomer || {};
 
   const isLoading = loadingCustomerApi || loadingJobsApi;
 
   // Calculate Appliance Portfolio
   const applianceStats = React.useMemo(() => {
     const stats = {};
-    jobs.forEach(job => {
+    jobs.forEach((job) => {
       const type = job.applianceType || "General";
       if (!stats[type]) {
         stats[type] = { count: 0, lastDate: null, totalSpent: 0 };
@@ -72,21 +89,31 @@ export default function CustomerDetailsScreen() {
       if (!stats[type].lastDate || date > new Date(stats[type].lastDate)) {
         stats[type].lastDate = job.serviceDate;
       }
-      stats[type].totalSpent += (parseFloat(job.amount) || 0);
+      stats[type].totalSpent += parseFloat(job.amount) || 0;
     });
     return Object.entries(stats).map(([type, data]) => ({ type, ...data }));
   }, [jobs]);
 
   if (isLoading && !customer?.name) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bgPrimary,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       {/* TopAppBar */}
       <View
         style={{
@@ -99,16 +126,30 @@ export default function CustomerDetailsScreen() {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ padding: 8 }}
+            activeOpacity={0.7}
+          >
             <ArrowLeft color={colors.primary} size={24} />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", fontSize: 14, color: colors.textPrimary, textTransform: "uppercase" }}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontWeight: "700",
+              fontSize: 14,
+              color: colors.textPrimary,
+              textTransform: "uppercase",
+            }}
+          >
             Customer Profile
           </Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })}
+            onPress={() =>
+              navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
+            }
             style={{ padding: 8 }}
             activeOpacity={0.7}
           >
@@ -173,21 +214,29 @@ export default function CustomerDetailsScreen() {
               }}
             />
 
-            <View style={{ flexDirection: "column", alignItems: "center", gap: 16, zIndex: 10, width: "100%" }}>
-               {/* Profile Orb */}
+            <View
+              style={{
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+                zIndex: 10,
+                width: "100%",
+              }}
+            >
+              {/* Profile Orb */}
               <View style={{ position: "relative" }}>
-                <Avatar 
-                  name={customer?.name} 
-                  uri={customer?.avatar || customer?.imageUrl} 
-                  size={80} 
-                  style={{ 
-                    borderWidth: 2, 
+                <Avatar
+                  name={customer?.name}
+                  uri={customer?.avatar || customer?.imageUrl}
+                  size={80}
+                  style={{
+                    borderWidth: 2,
                     borderColor: colors.secondary,
                     shadowColor: colors.secondary,
                     shadowOpacity: 0.3,
                     shadowRadius: 20,
-                    shadowOffset: { width: 0, height: 0 }
-                  }} 
+                    shadowOffset: { width: 0, height: 0 },
+                  }}
                 />
                 <View
                   style={{
@@ -209,74 +258,162 @@ export default function CustomerDetailsScreen() {
 
               {/* Customer Info */}
               <View style={{ flex: 1, alignItems: "center", width: "100%" }}>
-                <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "800", color: colors.textPrimary, marginBottom: 4, textAlign: "center" }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 20,
+                    fontWeight: "800",
+                    color: colors.textPrimary,
+                    marginBottom: 4,
+                    textAlign: "center",
+                  }}
+                >
                   {customer.name || "Unknown Customer"}
                 </Text>
 
                 <TouchableOpacity
-                  onPress={() => customer.phone && Linking.openURL(`tel:${customer.phone}`)}
+                  onPress={() =>
+                    customer.phone && Linking.openURL(`tel:${customer.phone}`)
+                  }
                   activeOpacity={0.7}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12, width: "100%" }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginBottom: 12,
+                    width: "100%",
+                  }}
                 >
                   <Phone color={colors.secondary} size={14} />
-                  <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 13 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      color: colors.textMuted,
+                      fontSize: 13,
+                    }}
+                  >
                     {customer.phone || "No phone provided"}
                   </Text>
                 </TouchableOpacity>
 
                 {/* Appliance Ledger Statistics */}
-                <View style={{ width: "100%", flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
+                <View
+                  style={{
+                    width: "100%",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    justifyContent: "center",
+                    marginTop: 8,
+                  }}
+                >
                   {applianceStats.length === 0 ? (
-                    <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textDisabled }}>No appliance history yet.</Text>
-                  ) : applianceStats.map((stat) => (
-                    <View 
-                      key={stat.type} 
-                      style={{ 
-                        backgroundColor: colors.bgSurface, 
-                        paddingHorizontal: 10, 
-                        paddingVertical: 6, 
-                        borderRadius: 12, 
-                        borderWidth: 1, 
-                        borderColor: colors.borderLight,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textDisabled,
                       }}
                     >
-                      <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.textPrimary }}>{stat.type}</Text>
-                      <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.secondary, opacity: 0.5 }} />
-                      <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "600", color: colors.primary }}>{stat.count}x</Text>
-                    </View>
-                  ))}
+                      No appliance history yet.
+                    </Text>
+                  ) : (
+                    applianceStats.map((stat) => (
+                      <View
+                        key={stat.type}
+                        style={{
+                          backgroundColor: colors.bgSurface,
+                          paddingHorizontal: 10,
+                          paddingVertical: 6,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: colors.borderLight,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 10,
+                            fontWeight: "700",
+                            color: colors.textPrimary,
+                          }}
+                        >
+                          {stat.type}
+                        </Text>
+                        <View
+                          style={{
+                            width: 4,
+                            height: 4,
+                            borderRadius: 2,
+                            backgroundColor: colors.secondary,
+                            opacity: 0.5,
+                          }}
+                        />
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 9,
+                            fontWeight: "600",
+                            color: colors.primary,
+                          }}
+                        >
+                          {stat.count}x
+                        </Text>
+                      </View>
+                    ))
+                  )}
                 </View>
-
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </View>
         <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 12,
+              paddingHorizontal: 4,
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <MapPin size={13} color={colors.textDisabled} />
-              <Text style={{
-                fontFamily: "Inter",
-                fontSize: 9,
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: 4,
-                color: colors.textDisabled,
-              }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 4,
+                  color: colors.textDisabled,
+                }}
+              >
                 Service Locations
               </Text>
             </View>
-            {Array.isArray(customer.locations) && customer.locations.length > 1 && (
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textDisabled }}>
-                {customer.locations.length} locations  •  swipe →
-              </Text>
-            )}
+            {Array.isArray(customer.locations) &&
+              customer.locations.length > 1 && (
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    color: colors.textDisabled,
+                  }}
+                >
+                  {customer.locations.length} locations • swipe →
+                </Text>
+              )}
           </View>
 
-          {Array.isArray(customer.locations) && customer.locations.length > 0 ? (
+          {Array.isArray(customer.locations) &&
+          customer.locations.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -299,15 +436,43 @@ export default function CustomerDetailsScreen() {
                   }}
                 >
                   {/* Top row: pin icon + label + navigate button */}
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: colors.primaryBg, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        backgroundColor: colors.primaryBg,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
                       <MapPin color={colors.primary} size={16} />
                     </View>
-                    <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: colors.secondary, flex: 1 }}>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 9,
+                        fontWeight: "700",
+                        textTransform: "uppercase",
+                        letterSpacing: 3,
+                        color: colors.secondary,
+                        flex: 1,
+                      }}
+                    >
                       {loc.label || "Primary"}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => openDirections(loc.latitude, loc.longitude, loc.address)}
+                      onPress={() =>
+                        openDirections(loc.latitude, loc.longitude, loc.address)
+                      }
                       style={{
                         width: 34,
                         height: 34,
@@ -328,25 +493,69 @@ export default function CustomerDetailsScreen() {
                   </View>
 
                   {/* Address */}
-                  <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 12, lineHeight: 18 }} numberOfLines={3}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      color: colors.textPrimary,
+                      fontSize: 12,
+                      lineHeight: 18,
+                    }}
+                    numberOfLines={3}
+                  >
                     {loc.address || "—"}
                   </Text>
 
                   {/* Coordinates */}
                   {loc.latitude && loc.longitude ? (
-                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>
-                      {loc.latitude.toFixed(4)}° N · {loc.longitude.toFixed(4)}° E
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        color: colors.textDisabled,
+                        fontSize: 9,
+                        marginTop: -4,
+                      }}
+                    >
+                      {loc.latitude.toFixed(4)}° N · {loc.longitude.toFixed(4)}°
+                      E
                     </Text>
                   ) : (
-                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>No GPS pin</Text>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        color: colors.textDisabled,
+                        fontSize: 9,
+                        marginTop: -4,
+                      }}
+                    >
+                      No GPS pin
+                    </Text>
                   )}
                 </View>
               ))}
             </ScrollView>
           ) : customer.address ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.bgCard, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.border }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                backgroundColor: colors.bgCard,
+                borderRadius: 18,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
               <MapPin color={colors.textMuted} size={16} />
-              <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 13, flex: 1, lineHeight: 19 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textMuted,
+                  fontSize: 13,
+                  flex: 1,
+                  lineHeight: 19,
+                }}
+              >
                 {customer.address}
               </Text>
             </View>
@@ -356,50 +565,150 @@ export default function CustomerDetailsScreen() {
         {/* Appliance Portfolio Section */}
         {applianceStats.length > 0 && (
           <View style={{ marginBottom: 32 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16, paddingHorizontal: 4 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 16,
+                paddingHorizontal: 4,
+              }}
+            >
               <Wrench size={13} color={colors.textDisabled} />
-              <Text style={{
-                fontFamily: "Inter",
-                fontSize: 9,
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: 4,
-                color: colors.textDisabled,
-              }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 4,
+                  color: colors.textDisabled,
+                }}
+              >
                 Appliance History
               </Text>
             </View>
 
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
             >
               {applianceStats.map((item) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={item.type}
-                  onPress={() => setSelectedAppliance(selectedAppliance === item.type ? null : item.type)}
+                  onPress={() =>
+                    setSelectedAppliance(
+                      selectedAppliance === item.type ? null : item.type,
+                    )
+                  }
                   activeOpacity={0.7}
-                  style={{ 
-                    width: 160, 
-                    backgroundColor: selectedAppliance === item.type ? colors.primaryBg : colors.bgSurface, 
-                    borderRadius: 20, 
-                    padding: 16, 
-                    borderWidth: 1, 
-                    borderColor: selectedAppliance === item.type ? colors.primary : colors.border,
-                    position: 'relative',
-                    overflow: 'hidden'
+                  style={{
+                    width: 160,
+                    backgroundColor:
+                      selectedAppliance === item.type
+                        ? colors.primaryBg
+                        : colors.bgSurface,
+                    borderRadius: 20,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor:
+                      selectedAppliance === item.type
+                        ? colors.primary
+                        : colors.border,
+                    position: "relative",
+                    overflow: "hidden",
                   }}
                 >
-                  <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: selectedAppliance === item.type ? colors.bgPrimary : colors.primaryBg, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                    <Wrench color={selectedAppliance === item.type ? colors.primary : colors.primary} size={16} />
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      backgroundColor:
+                        selectedAppliance === item.type
+                          ? colors.bgPrimary
+                          : colors.primaryBg,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Wrench
+                      color={
+                        selectedAppliance === item.type
+                          ? colors.primary
+                          : colors.primary
+                      }
+                      size={16}
+                    />
                   </View>
-                  <Text style={{ fontFamily: 'Space Grotesk', fontSize: 14, fontWeight: '700', color: selectedAppliance === item.type ? colors.primary : colors.textPrimary, marginBottom: 4 }}>{item.type}</Text>
-                  <Text style={{ fontFamily: 'Inter', fontSize: 10, color: selectedAppliance === item.type ? colors.primary : colors.textMuted, marginBottom: 12 }}>{item.count} service{item.count > 1 ? 's' : ''}</Text>
-                  
-                  <View style={{ borderTopWidth: 1, borderTopColor: selectedAppliance === item.type ? colors.primaryBorder : colors.border, paddingTop: 10 }}>
-                    <Text style={{ fontFamily: 'Inter', fontSize: 8, color: selectedAppliance === item.type ? colors.primary : colors.textDisabled, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Last Service</Text>
-                    <Text style={{ fontFamily: 'Inter', fontSize: 10, fontWeight: '700', color: selectedAppliance === item.type ? colors.primary : colors.secondary }}>{formatDate(item.lastDate).split(',')[0]}</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color:
+                        selectedAppliance === item.type
+                          ? colors.primary
+                          : colors.textPrimary,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {item.type}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      color:
+                        selectedAppliance === item.type
+                          ? colors.primary
+                          : colors.textMuted,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {item.count} service{item.count > 1 ? "s" : ""}
+                  </Text>
+
+                  <View
+                    style={{
+                      borderTopWidth: 1,
+                      borderTopColor:
+                        selectedAppliance === item.type
+                          ? colors.primaryBorder
+                          : colors.border,
+                      paddingTop: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 8,
+                        color:
+                          selectedAppliance === item.type
+                            ? colors.primary
+                            : colors.textDisabled,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        marginBottom: 2,
+                      }}
+                    >
+                      Last Service
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color:
+                          selectedAppliance === item.type
+                            ? colors.primary
+                            : colors.secondary,
+                      }}
+                    >
+                      {formatDate(item.lastDate).split(",")[0]}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -409,7 +718,9 @@ export default function CustomerDetailsScreen() {
 
         <View style={{ marginBottom: 24 }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate(RouteNames.ADD_JOB, { customer })}
+            onPress={() =>
+              navigation.navigate(RouteNames.ADD_JOB, { customer })
+            }
             activeOpacity={0.8}
             style={{
               borderRadius: 18,
@@ -425,10 +736,25 @@ export default function CustomerDetailsScreen() {
               colors={colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                paddingVertical: 16,
+              }}
             >
               <CalendarPlus color="#fff" size={18} />
-              <Text style={{ fontFamily: "Space Grotesk", color: "#fff", fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, fontSize: 13 }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: "#fff",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 3,
+                  fontSize: 13,
+                }}
+              >
                 Add Job
               </Text>
             </LinearGradient>
@@ -436,10 +762,31 @@ export default function CustomerDetailsScreen() {
         </View>
 
         <View style={{ marginBottom: 40, width: "100%" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24, paddingHorizontal: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, textTransform: "uppercase", letterSpacing: 2 }}>
-                {selectedAppliance ? `${selectedAppliance} History` : "Job History"}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 24,
+              paddingHorizontal: 8,
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                }}
+              >
+                {selectedAppliance
+                  ? `${selectedAppliance} History`
+                  : "Job History"}
               </Text>
               <View
                 style={{
@@ -455,17 +802,35 @@ export default function CustomerDetailsScreen() {
               />
             </View>
             <TouchableOpacity
-              onPress={() => navigation.navigate(RouteNames.TABS, { screen: RouteNames.JOB_HISTORY, params: { customerId } })}
+              onPress={() =>
+                navigation.navigate(RouteNames.TABS, {
+                  screen: RouteNames.JOB_HISTORY,
+                  params: { customerId },
+                })
+              }
               activeOpacity={0.7}
             >
-              <Text style={{ fontFamily: "Inter", color: colors.primary, letterSpacing: 2, fontWeight: "700", textTransform: "uppercase", fontSize: 10 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.primary,
+                  letterSpacing: 2,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  fontSize: 10,
+                }}
+              >
                 View All
               </Text>
             </TouchableOpacity>
           </View>
 
           {isLoading && jobs.length === 0 ? (
-            <ActivityIndicator size="small" color={colors.secondary} style={{ marginTop: 16 }} />
+            <ActivityIndicator
+              size="small"
+              color={colors.secondary}
+              style={{ marginTop: 16 }}
+            />
           ) : jobs.length === 0 ? (
             <View
               style={{
@@ -479,17 +844,47 @@ export default function CustomerDetailsScreen() {
                 justifyContent: "center",
               }}
             >
-              <View style={{ width: 64, height: 64, backgroundColor: colors.primaryBg, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  backgroundColor: colors.primaryBg,
+                  borderRadius: 32,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
                 <CalendarPlus color={colors.primary} size={32} />
               </View>
-              <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", fontSize: 18, marginBottom: 8, textAlign: "center" }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.textPrimary,
+                  fontWeight: "700",
+                  fontSize: 18,
+                  marginBottom: 8,
+                  textAlign: "center",
+                }}
+              >
                 No Jobs Found
               </Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 14, textAlign: "center", marginBottom: 24, paddingHorizontal: 16 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textMuted,
+                  fontSize: 14,
+                  textAlign: "center",
+                  marginBottom: 24,
+                  paddingHorizontal: 16,
+                }}
+              >
                 This customer does not have any jobs yet.
               </Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate(RouteNames.ADD_JOB, { customer })}
+                onPress={() =>
+                  navigation.navigate(RouteNames.ADD_JOB, { customer })
+                }
                 activeOpacity={0.7}
                 style={{
                   backgroundColor: colors.primaryBg,
@@ -500,7 +895,16 @@ export default function CustomerDetailsScreen() {
                   borderColor: colors.primaryBorder,
                 }}
               >
-                <Text style={{ fontFamily: "Space Grotesk", color: colors.primary, fontWeight: "700", fontSize: 12, textTransform: "uppercase", letterSpacing: 2 }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: colors.primary,
+                    fontWeight: "700",
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                  }}
+                >
                   Create First Job
                 </Text>
               </TouchableOpacity>
@@ -509,13 +913,19 @@ export default function CustomerDetailsScreen() {
             <View style={{ flexDirection: "column", width: "100%" }}>
               {filteredJobs.map((job) => {
                 const isCompleted = job.status === "completed";
-                const accentColor = isCompleted ? colors.primary : colors.secondary;
-                const accentBg = isCompleted ? colors.primaryBg : colors.secondaryBg;
+                const accentColor = isCompleted
+                  ? colors.primary
+                  : colors.secondary;
+                const accentBg = isCompleted
+                  ? colors.primaryBg
+                  : colors.secondaryBg;
 
                 return (
                   <TouchableOpacity
                     key={job._id || Math.random().toString()}
-                    onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
+                    onPress={() =>
+                      navigation.navigate(RouteNames.JOB_DETAILS, { job })
+                    }
                     activeOpacity={0.7}
                     style={{
                       padding: 16,
@@ -530,26 +940,88 @@ export default function CustomerDetailsScreen() {
                       opacity: isCompleted ? 0.8 : 1,
                     }}
                   >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flex: 1 }}>
-                      <View style={{ width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: accentBg }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 16,
+                        flex: 1,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: accentBg,
+                        }}
+                      >
                         <Wrench color={accentColor} size={20} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.textPrimary, fontSize: 16 }} numberOfLines={1}>
+                        <Text
+                          style={{
+                            fontFamily: "Space Grotesk",
+                            fontWeight: "700",
+                            color: colors.textPrimary,
+                            fontSize: 16,
+                          }}
+                          numberOfLines={1}
+                        >
                           {job?.applianceType || "General Service"}
                         </Text>
-                        <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted, marginTop: 4 }} numberOfLines={1}>
-                          {formatDate(job?.serviceDate)} • #{job?._id ? job._id.substring(0, 6).toUpperCase() : "..."}
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 12,
+                            color: colors.textMuted,
+                            marginTop: 4,
+                          }}
+                          numberOfLines={1}
+                        >
+                          {formatDate(job?.serviceDate)} • #
+                          {job?._id
+                            ? job._id.substring(0, 6).toUpperCase()
+                            : "..."}
                         </Text>
                       </View>
                     </View>
 
-                    <View style={{ alignItems: "flex-end", gap: 6, marginLeft: 8 }}>
-                      <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
+                    <View
+                      style={{ alignItems: "flex-end", gap: 6, marginLeft: 8 }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          color: colors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: "700",
+                        }}
+                      >
                         ₹{job.amount || "0.00"}
                       </Text>
-                      <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: colors.border, backgroundColor: accentBg }}>
-                        <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: accentColor }}>
+                      <View
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: accentBg,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 9,
+                            fontWeight: "700",
+                            textTransform: "uppercase",
+                            letterSpacing: 2,
+                            color: accentColor,
+                          }}
+                        >
                           {job.status}
                         </Text>
                       </View>

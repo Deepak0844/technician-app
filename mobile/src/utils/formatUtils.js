@@ -14,8 +14,8 @@ export const formatCurrency = (val) => {
 export const getLocalDateString = (d) => {
   const date = new Date(d);
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -27,5 +27,9 @@ export const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };

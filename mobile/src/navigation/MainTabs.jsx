@@ -1,7 +1,13 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Home, History, PlusSquare, CalendarDays, Users } from "lucide-react-native";
+import {
+  Home,
+  History,
+  PlusSquare,
+  CalendarDays,
+  Users,
+} from "lucide-react-native";
 import useRescheduleRemindersOnAppStart from "@hooks/useRescheduleRemindersOnAppStart";
 import useTheme from "@hooks/useTheme";
 import { RouteNames } from "@constants/routeNames";
@@ -59,10 +65,13 @@ function TabNavigator() {
         tabBarIcon: ({ focused, color, size }) => {
           let IconComponent;
           if (route.name === RouteNames.DASHBOARD) IconComponent = Home;
-          else if (route.name === RouteNames.JOB_HISTORY) IconComponent = History;
+          else if (route.name === RouteNames.JOB_HISTORY)
+            IconComponent = History;
           else if (route.name === RouteNames.CUSTOMERS) IconComponent = Users;
-          else if (route.name === RouteNames.ADD_JOB) IconComponent = PlusSquare;
-          else if (route.name === RouteNames.CALENDAR) IconComponent = CalendarDays;
+          else if (route.name === RouteNames.ADD_JOB)
+            IconComponent = PlusSquare;
+          else if (route.name === RouteNames.CALENDAR)
+            IconComponent = CalendarDays;
 
           return (
             <IconComponent
@@ -109,15 +118,33 @@ export default function MainTabs() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name={RouteNames.TABS} component={TabNavigator} />
-      <Stack.Screen name={RouteNames.CUSTOMER_SEARCH} component={CustomerSearchScreen} />
-      <Stack.Screen name={RouteNames.CUSTOMER_DETAILS} component={CustomerDetailsScreen} />
-      <Stack.Screen name={RouteNames.JOB_DETAILS} component={JobDetailsScreen} />
+      <Stack.Screen
+        name={RouteNames.CUSTOMER_SEARCH}
+        component={CustomerSearchScreen}
+      />
+      <Stack.Screen
+        name={RouteNames.CUSTOMER_DETAILS}
+        component={CustomerDetailsScreen}
+      />
+      <Stack.Screen
+        name={RouteNames.JOB_DETAILS}
+        component={JobDetailsScreen}
+      />
       <Stack.Screen name={RouteNames.ADD_JOB} component={AddJobScreen} />
       <Stack.Screen name={RouteNames.PROFILE} component={ProfileScreen} />
-      <Stack.Screen name={RouteNames.INVOICE_PREVIEW} component={InvoicePreviewScreen} />
+      <Stack.Screen
+        name={RouteNames.INVOICE_PREVIEW}
+        component={InvoicePreviewScreen}
+      />
       <Stack.Screen name={RouteNames.REMINDERS} component={RemindersScreen} />
-      <Stack.Screen name={RouteNames.CREATE_CUSTOMER} component={CreateCustomerScreen} />
-      <Stack.Screen name={RouteNames.SETUP_PROFILE} component={SetupProfileScreen} />
+      <Stack.Screen
+        name={RouteNames.CREATE_CUSTOMER}
+        component={CreateCustomerScreen}
+      />
+      <Stack.Screen
+        name={RouteNames.SETUP_PROFILE}
+        component={SetupProfileScreen}
+      />
     </Stack.Navigator>
   );
 }

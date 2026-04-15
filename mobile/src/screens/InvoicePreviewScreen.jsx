@@ -69,25 +69,67 @@ function computeLineTotal(item) {
 
 function SectionLabel({ title, colors }) {
   return (
-    <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: colors.secondary, marginBottom: 14 }}>
+    <Text
+      style={{
+        fontFamily: "Inter",
+        fontSize: 9,
+        fontWeight: "700",
+        textTransform: "uppercase",
+        letterSpacing: 3,
+        color: colors.secondary,
+        marginBottom: 14,
+      }}
+    >
       {title}
     </Text>
   );
 }
 
 function Divider({ colors }) {
-  return <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }} />;
+  return (
+    <View
+      style={{ height: 1, backgroundColor: colors.border, marginVertical: 10 }}
+    />
+  );
 }
 
 function InfoRow({ icon, label, value, valueColor, colors }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-      <View style={{ width: 30, alignItems: "center", paddingTop: 1 }}>{icon}</View>
-      <View style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 1 }}>
+      <View style={{ width: 30, alignItems: "center", paddingTop: 1 }}>
+        {icon}
+      </View>
+      <View
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: "Inter",
+            fontSize: 10,
+            color: colors.textMuted,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            marginTop: 1,
+          }}
+        >
           {label}
         </Text>
-        <Text style={{ fontFamily: "Inter", fontSize: 12, color: valueColor || colors.textSecondary, fontWeight: "600", textAlign: "right", maxWidth: "55%", lineHeight: 18 }}>
+        <Text
+          style={{
+            fontFamily: "Inter",
+            fontSize: 12,
+            color: valueColor || colors.textSecondary,
+            fontWeight: "600",
+            textAlign: "right",
+            maxWidth: "55%",
+            lineHeight: 18,
+          }}
+        >
           {value || "—"}
         </Text>
       </View>
@@ -97,7 +139,19 @@ function InfoRow({ icon, label, value, valueColor, colors }) {
 
 function Card({ children, style, colors }) {
   return (
-    <View style={[{ backgroundColor: colors.bgCard, borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border }, style]}>
+    <View
+      style={[
+        {
+          backgroundColor: colors.bgCard,
+          borderRadius: 18,
+          padding: 16,
+          marginBottom: 12,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -106,7 +160,14 @@ function Card({ children, style, colors }) {
 // ─────────────────────────────────────────────
 // PDF HTML Builder
 // ─────────────────────────────────────────────
-function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, subtotal }) {
+function buildPdfHtml({
+  job,
+  invoiceNumber,
+  lineItems,
+  techInfo,
+  grandTotal,
+  subtotal,
+}) {
   const partsUsed = job.partsUsed || [];
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
@@ -127,9 +188,10 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
   const sc = statusColors[job.status] || statusColors.pending;
   const statusLabel = (job.status || "pending").replace("_", " ").toUpperCase();
 
-  const lineItemRows = lineItems.map((item, i) => {
-    const lineTotal = computeLineTotal(item);
-    return `
+  const lineItemRows = lineItems
+    .map((item, i) => {
+      const lineTotal = computeLineTotal(item);
+      return `
       <tr class="${i % 2 === 1 ? "alt" : ""}">
         <td>
           <div class="item-name">${item.description || "—"}</div>
@@ -139,10 +201,12 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
         <td class="right">₹${Number(item.rate || 0).toLocaleString("en-IN")}</td>
         <td class="right bold">₹${lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 
-  const partsRows = partsUsed.map((part, i) => {
-    return `
+  const partsRows = partsUsed
+    .map((part, i) => {
+      return `
       <tr class="${i % 2 === 1 ? "alt" : ""}">
         <td>
           <div class="item-name">${part.name || "Part"}</div>
@@ -152,7 +216,8 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
         <td class="right">₹${Number(part.price || 0).toLocaleString("en-IN")}</td>
         <td class="right bold">₹${(part.price * part.quantity).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
       </tr>`;
-  }).join("");
+    })
+    .join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -352,11 +417,15 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
       </thead>
       <tbody>
         ${lineItemRows}
-        ${partsRows ? `
+        ${
+          partsRows
+            ? `
         <tr>
           <th colspan="4" style="background: #fdf2f2; font-size: 8px; color: #b91c1c; padding: 6px 12px; border-top: 1px solid #fee2e2;">Parts &amp; Components</th>
         </tr>
-        ${partsRows}` : ""}
+        ${partsRows}`
+            : ""
+        }
         <tr>
           <td colspan="3" style="padding:14px 12px; text-align:right;"><strong style="font-size:13px;color:#111827;">Grand Total</strong></td>
           <td class="right bold" style="font-size:16px;color:#4f46e5;padding:14px 12px;">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
@@ -366,7 +435,9 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
   </div>
 
   <!-- Warranty Certificate -->
-  ${job.warranty && job.warranty !== "No Warranty" ? `
+  ${
+    job.warranty && job.warranty !== "No Warranty"
+      ? `
   <div class="warranty-card">
     <div class="warranty-header">
       <div class="warranty-icon">🛡️</div>
@@ -374,10 +445,14 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
     </div>
     <div class="warranty-text">This service is covered by a <strong>${job.warranty}</strong> limited warranty from ${formatDate(job.serviceDate)}.</div>
     <div class="warranty-note">* Warranty covers the labour and replaced parts listed in this invoice. Warranty is void in case of physical damage, tampering, power surge damage, or misuse by the customer. Contact us immediately if issues recur within the warranty period.</div>
-  </div>` : ""}
+  </div>`
+      : ""
+  }
 
   <!-- Next Service Reminder -->
-  ${job.nextReminderDate ? `
+  ${
+    job.nextReminderDate
+      ? `
   <div class="reminder-card">
     <div style="font-size:22px;">🔔</div>
     <div>
@@ -385,7 +460,9 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
       <div class="reminder-date">${formatDate(job.nextReminderDate)}</div>
       <div class="reminder-text">We recommend scheduling your next service visit on or before this date.</div>
     </div>
-  </div>` : ""}
+  </div>`
+      : ""
+  }
 
   <!-- Signature Row -->
   <div class="signature-row">
@@ -446,37 +523,72 @@ export default function InvoicePreviewScreen() {
     switch (status) {
       case JobStatuses.COMPLETED:
       case "paid":
-        return { label: "PAID", color: colors.success, bg: colors.successBg, border: colors.successBorder };
+        return {
+          label: "PAID",
+          color: colors.success,
+          bg: colors.successBg,
+          border: colors.successBorder,
+        };
       case JobStatuses.IN_PROGRESS:
-        return { label: "IN PROGRESS", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
+        return {
+          label: "IN PROGRESS",
+          color: colors.warningIcon,
+          bg: colors.warningBg,
+          border: colors.warningBorder,
+        };
       case JobStatuses.CANCELLED:
-        return { label: "CANCELLED", color: colors.danger, bg: colors.dangerBg, border: colors.dangerBorder };
+        return {
+          label: "CANCELLED",
+          color: colors.danger,
+          bg: colors.dangerBg,
+          border: colors.dangerBorder,
+        };
       default:
-        return { label: "PENDING", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
+        return {
+          label: "PENDING",
+          color: colors.warningIcon,
+          bg: colors.warningBg,
+          border: colors.warningBorder,
+        };
     }
   }
 
   // ── Initial line items from job total ──
   function buildInitialLineItems() {
     if (!job) return [];
-    
+
     if (job.lineItems && job.lineItems.length > 0) {
       return job.lineItems;
     }
 
     const base = Number(job.amount) || 0;
-    const partsTotal = (job.partsUsed || []).reduce((acc, p) => acc + (p.price * p.quantity), 0);
+    const partsTotal = (job.partsUsed || []).reduce(
+      (acc, p) => acc + p.price * p.quantity,
+      0,
+    );
     const laborAmt = Math.max(0, base - partsTotal);
 
     if (laborAmt > 0) {
       return [
-        { id: "1", description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`, qty: "1", rate: String(laborAmt), note: job?.serviceDone || "" },
+        {
+          id: "1",
+          description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`,
+          qty: "1",
+          rate: String(laborAmt),
+          note: job?.serviceDone || "",
+        },
       ];
     }
 
     if (job.diagnosticFee > 0 && base === 0) {
       return [
-        { id: "1", description: "Diagnostic / Visiting Fee", qty: "1", rate: String(job.diagnosticFee), note: "" },
+        {
+          id: "1",
+          description: "Diagnostic / Visiting Fee",
+          qty: "1",
+          rate: String(job.diagnosticFee),
+          note: "",
+        },
       ];
     }
 
@@ -487,15 +599,49 @@ export default function InvoicePreviewScreen() {
   const [partsUsed, setPartsUsed] = useState(job.partsUsed || []);
   const [showTerms, setShowTerms] = useState(false);
   const [isPaid, setIsPaid] = useState(job.isPaid ?? false);
-  const [paymentMethod, setPaymentMethod] = useState(job.paymentMethod ?? PaymentMethods.CASH);
+  const [paymentMethod, setPaymentMethod] = useState(
+    job.paymentMethod ?? PaymentMethods.CASH,
+  );
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
   if (!job) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center", padding: 24 }} edges={["top"]}>
-        <Receipt color={colors.primary} size={40} style={{ marginBottom: 16 }} />
-        <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700", fontFamily: "Space Grotesk", marginBottom: 6 }}>No Invoice Data</Text>
-        <Text style={{ color: colors.textMuted, fontSize: 13, fontFamily: "Inter", textAlign: "center" }}>Please open an invoice from a job.</Text>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: colors.bgPrimary,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+        edges={["top"]}
+      >
+        <Receipt
+          color={colors.primary}
+          size={40}
+          style={{ marginBottom: 16 }}
+        />
+        <Text
+          style={{
+            color: colors.textPrimary,
+            fontSize: 16,
+            fontWeight: "700",
+            fontFamily: "Space Grotesk",
+            marginBottom: 6,
+          }}
+        >
+          No Invoice Data
+        </Text>
+        <Text
+          style={{
+            color: colors.textMuted,
+            fontSize: 13,
+            fontFamily: "Inter",
+            textAlign: "center",
+          }}
+        >
+          Please open an invoice from a job.
+        </Text>
       </SafeAreaView>
     );
   }
@@ -506,13 +652,25 @@ export default function InvoicePreviewScreen() {
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
 
   // ── Tax computation ──
-  const partsTotal = partsUsed.reduce((acc, p) => acc + (p.price * p.quantity), 0);
+  const partsTotal = partsUsed.reduce(
+    (acc, p) => acc + p.price * p.quantity,
+    0,
+  );
   const subtotal = lineItems.reduce((s, i) => s + computeLineTotal(i), 0);
   const grandTotal = subtotal + partsTotal;
 
   // ── Line item handlers ──
   function handleAddRow() {
-    setLineItems((prev) => [...prev, { id: String(Date.now()), description: "", qty: "1", rate: "0", note: "" }]);
+    setLineItems((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        description: "",
+        qty: "1",
+        rate: "0",
+        note: "",
+      },
+    ]);
   }
 
   function handleDeleteRow(id) {
@@ -520,7 +678,9 @@ export default function InvoicePreviewScreen() {
   }
 
   function handleChangeField(id, field, value) {
-    setLineItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+    setLineItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
   }
 
   function handleAddPart() {
@@ -558,17 +718,34 @@ export default function InvoicePreviewScreen() {
 
   // ── PDF actions ──
   async function handleGeneratePdf() {
-    const html = buildPdfHtml({ job: { ...job, partsUsed }, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
+    const html = buildPdfHtml({
+      job: { ...job, partsUsed },
+      invoiceNumber,
+      lineItems,
+      techInfo: techUser,
+      grandTotal,
+      subtotal,
+    });
     try {
       const { uri } = await Print.printToFileAsync({ html, base64: false });
-      await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Invoice ${invoiceNumber}` });
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/pdf",
+        dialogTitle: `Invoice ${invoiceNumber}`,
+      });
     } catch {
       Alert.alert("Error", "Failed to generate PDF. Please try again.");
     }
   }
 
   async function handlePrintPreview() {
-    const html = buildPdfHtml({ job: { ...job, partsUsed }, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
+    const html = buildPdfHtml({
+      job: { ...job, partsUsed },
+      invoiceNumber,
+      lineItems,
+      techInfo: techUser,
+      grandTotal,
+      subtotal,
+    });
     try {
       await Print.printAsync({ html });
     } catch {
@@ -584,9 +761,11 @@ export default function InvoicePreviewScreen() {
     }
 
     const cleanPhone = phone.replace(/[^\d]/g, "");
-    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const formattedPhone =
+      cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    const message = `*INVOICE: ${invoiceNumber}*\n\n` +
+    const message =
+      `*INVOICE: ${invoiceNumber}*\n\n` +
       `Hi ${customerName},\n` +
       `This is ${techName}. Here is your invoice summary for the *${job.applianceType}* service done on ${formatDate(job.serviceDate)}.\n\n` +
       `*Total Amount:* ${formatCurrency(grandTotal)}\n` +
@@ -614,67 +793,290 @@ export default function InvoicePreviewScreen() {
   // (Moved outside the component to prevent unmounting and focus loss in TextInputs)
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       <StatusBar barStyle="light-content" backgroundColor={colors.bgPrimary} />
 
       {/* ── Nav Bar ── */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, height: 56, backgroundColor: colors.bgPrimary, borderBottomWidth: 1, borderBottomColor: colors.borderMuted }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 16,
+          height: 56,
+          backgroundColor: colors.bgPrimary,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.borderMuted,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 8 }}
+          activeOpacity={0.7}
+        >
           <ArrowLeft color={colors.primary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary, fontFamily: "Space Grotesk", letterSpacing: 2, textTransform: "uppercase" }}>
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "700",
+            color: colors.primary,
+            fontFamily: "Space Grotesk",
+            letterSpacing: 2,
+            textTransform: "uppercase",
+          }}
+        >
           Invoice Preview
         </Text>
-        <TouchableOpacity onPress={handlePrintPreview} style={{ padding: 8 }} activeOpacity={0.7}>
+        <TouchableOpacity
+          onPress={handlePrintPreview}
+          style={{ padding: 8 }}
+          activeOpacity={0.7}
+        >
           <FileText color={colors.secondary} size={20} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* ══ GRADIENT HEADER CARD ══ */}
-        <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 22, padding: 22, marginBottom: 12, overflow: "hidden", position: "relative" }}>
+        <LinearGradient
+          colors={colors.gradientPrimary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            borderRadius: 22,
+            padding: 22,
+            marginBottom: 12,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
           {/* Orb accents */}
-          <View style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.07)" }} />
-          <View style={{ position: "absolute", bottom: -20, left: -20, width: 90, height: 90, borderRadius: 45, backgroundColor: "rgba(255,255,255,0.05)" }} />
+          <View
+            style={{
+              position: "absolute",
+              top: -40,
+              right: -40,
+              width: 140,
+              height: 140,
+              borderRadius: 70,
+              backgroundColor: "rgba(255,255,255,0.07)",
+            }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              bottom: -20,
+              left: -20,
+              width: 90,
+              height: 90,
+              borderRadius: 45,
+              backgroundColor: "rgba(255,255,255,0.05)",
+            }}
+          />
 
           {/* Brand + Status */}
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 16,
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: "rgba(255,255,255,0.15)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
+              }}
+            >
               <Wrench color="#fff" size={18} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "800", color: "#fff", letterSpacing: -0.3 }}>{techName}</Text>
-              <Text style={{ fontFamily: "Inter", fontSize: 10, color: "rgba(255,255,255,0.7)", marginTop: 1 }}>Professional Appliance Services</Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: "#fff",
+                  letterSpacing: -0.3,
+                }}
+              >
+                {techName}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: "rgba(255,255,255,0.7)",
+                  marginTop: 1,
+                }}
+              >
+                Professional Appliance Services
+              </Text>
             </View>
-            <View style={{ backgroundColor: statusConfig.bg, borderWidth: 1, borderColor: statusConfig.border, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexDirection: "row", alignItems: "center", gap: 5 }}>
-              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: statusConfig.color }} />
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "800", color: statusConfig.color, letterSpacing: 0.8 }}>{statusConfig.label}</Text>
+            <View
+              style={{
+                backgroundColor: statusConfig.bg,
+                borderWidth: 1,
+                borderColor: statusConfig.border,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+                borderRadius: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              <View
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: statusConfig.color,
+                }}
+              />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 9,
+                  fontWeight: "800",
+                  color: statusConfig.color,
+                  letterSpacing: 0.8,
+                }}
+              >
+                {statusConfig.label}
+              </Text>
             </View>
           </View>
 
-          <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 16 }} />
+          <View
+            style={{
+              height: 1,
+              backgroundColor: "rgba(255,255,255,0.2)",
+              marginBottom: 16,
+            }}
+          />
 
           {/* Invoice number + dates */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 10,
+            }}
+          >
             <View>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Invoice Number</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "800", color: "#fff" }}>{invoiceNumber}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 3,
+                }}
+              >
+                Invoice Number
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 20,
+                  fontWeight: "800",
+                  color: "#fff",
+                }}
+              >
+                {invoiceNumber}
+              </Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Issue Date</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "600", color: "#fff" }}>{formatDate(job.serviceDate)}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 3,
+                }}
+              >
+                Issue Date
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: "#fff",
+                }}
+              >
+                {formatDate(job.serviceDate)}
+              </Text>
             </View>
           </View>
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
             <View>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Payment Due</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 12, fontWeight: "600", color: "#fff" }}>On Completion</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 3,
+                }}
+              >
+                Payment Due
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: "#fff",
+                }}
+              >
+                On Completion
+              </Text>
             </View>
             <View style={{ alignItems: "flex-end" }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 }}>Job Ref</Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 12, fontWeight: "600", color: "#fff" }}>#{job._id?.slice(-6).toUpperCase()}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 3,
+                }}
+              >
+                Job Ref
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: "#fff",
+                }}
+              >
+                #{job._id?.slice(-6).toUpperCase()}
+              </Text>
             </View>
           </View>
         </LinearGradient>
@@ -683,46 +1085,201 @@ export default function InvoicePreviewScreen() {
         <View style={{ flexDirection: "row", marginBottom: 12, gap: 10 }}>
           {/* FROM */}
           <Card colors={colors} style={{ flex: 1, margin: 0 }}>
-            <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.primary, marginBottom: 10 }}>FROM</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 8,
+                fontWeight: "800",
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                color: colors.primary,
+                marginBottom: 10,
+              }}
+            >
+              FROM
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
               <Building2 size={12} color={colors.primary} />
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.textPrimary, flex: 1 }} numberOfLines={1}>{techName}</Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                  flex: 1,
+                }}
+                numberOfLines={1}
+              >
+                {techName}
+              </Text>
             </View>
             {techUser?.name && techUser.name !== techName && (
-              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, marginBottom: 3 }}>{techUser.name}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: colors.textDisabled,
+                  marginBottom: 3,
+                }}
+              >
+                {techUser.name}
+              </Text>
             )}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+                marginBottom: 3,
+              }}
+            >
               <Phone size={10} color={colors.secondary} />
-              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>{techUser?.phone || "—"}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: colors.textMuted,
+                }}
+              >
+                {techUser?.phone || "—"}
+              </Text>
             </View>
             {techUser?.email ? (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  marginBottom: 3,
+                }}
+              >
                 <Mail size={10} color={colors.secondary} />
-                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }} numberOfLines={1}>{techUser.email}</Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textMuted,
+                  }}
+                  numberOfLines={1}
+                >
+                  {techUser.email}
+                </Text>
               </View>
             ) : null}
             {techUser?.gstNumber ? (
-              <View style={{ marginTop: 6, backgroundColor: colors.primaryBg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" }}>
-                <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", color: colors.primary }}>GSTIN: {techUser.gstNumber}</Text>
+              <View
+                style={{
+                  marginTop: 6,
+                  backgroundColor: colors.primaryBg,
+                  borderRadius: 6,
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  alignSelf: "flex-start",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    fontWeight: "700",
+                    color: colors.primary,
+                  }}
+                >
+                  GSTIN: {techUser.gstNumber}
+                </Text>
               </View>
             ) : null}
           </Card>
 
           {/* BILL TO */}
           <Card colors={colors} style={{ flex: 1, margin: 0 }}>
-            <Text style={{ fontFamily: "Inter", fontSize: 8, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", color: colors.secondary, marginBottom: 10 }}>BILL TO</Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 8,
+                fontWeight: "800",
+                letterSpacing: 2,
+                textTransform: "uppercase",
+                color: colors.secondary,
+                marginBottom: 10,
+              }}
+            >
+              BILL TO
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 4,
+              }}
+            >
               <User size={12} color={colors.secondary} />
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.textPrimary, flex: 1 }} numberOfLines={1}>{customerName}</Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                  flex: 1,
+                }}
+                numberOfLines={1}
+              >
+                {customerName}
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 3 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+                marginBottom: 3,
+              }}
+            >
               <Phone size={10} color={colors.secondary} />
-              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>{customerPhone}</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: colors.textMuted,
+                }}
+              >
+                {customerPhone}
+              </Text>
             </View>
             {job?.location?.address ? (
-              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 5, marginTop: 2 }}>
-                <MapPin size={10} color={colors.textMuted} style={{ marginTop: 1 }} />
-                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, flex: 1, lineHeight: 15 }} numberOfLines={3}>{job.location.address}</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 5,
+                  marginTop: 2,
+                }}
+              >
+                <MapPin
+                  size={10}
+                  color={colors.textMuted}
+                  style={{ marginTop: 1 }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textMuted,
+                    flex: 1,
+                    lineHeight: 15,
+                  }}
+                  numberOfLines={3}
+                >
+                  {job.location.address}
+                </Text>
               </View>
             ) : null}
           </Card>
@@ -731,60 +1288,210 @@ export default function InvoicePreviewScreen() {
         {/* ══ SERVICE INFORMATION ══ */}
         <Card colors={colors}>
           <SectionLabel title="Service Information" colors={colors} />
-          <InfoRow icon={<Wrench size={14} color={colors.primary} />} label="Appliance" value={job.applianceType} valueColor={colors.primary} colors={colors} />
+          <InfoRow
+            icon={<Wrench size={14} color={colors.primary} />}
+            label="Appliance"
+            value={job.applianceType}
+            valueColor={colors.primary}
+            colors={colors}
+          />
           <Divider colors={colors} />
-          <InfoRow icon={<Calendar size={14} color={colors.secondary} />} label="Service Date" value={formatDate(job.serviceDate)} valueColor={colors.textPrimary} colors={colors} />
+          <InfoRow
+            icon={<Calendar size={14} color={colors.secondary} />}
+            label="Service Date"
+            value={formatDate(job.serviceDate)}
+            valueColor={colors.textPrimary}
+            colors={colors}
+          />
           <Divider colors={colors} />
-          <InfoRow icon={<Hash size={14} color={colors.secondary} />} label="Issue Reported" value={job.issue} colors={colors} />
+          <InfoRow
+            icon={<Hash size={14} color={colors.secondary} />}
+            label="Issue Reported"
+            value={job.issue}
+            colors={colors}
+          />
           {job.serviceDone ? (
             <>
               <Divider colors={colors} />
-              <InfoRow icon={<CheckCircle2 size={14} color={colors.success} />} label="Work Done" value={job.serviceDone} valueColor={colors.success} colors={colors} />
+              <InfoRow
+                icon={<CheckCircle2 size={14} color={colors.success} />}
+                label="Work Done"
+                value={job.serviceDone}
+                valueColor={colors.success}
+                colors={colors}
+              />
             </>
           ) : null}
           <Divider colors={colors} />
-          <InfoRow icon={<ShieldCheck size={14} color={colors.secondary} />} label="Warranty" value={job.warranty || "No Warranty"} valueColor={colors.secondary} colors={colors} />
+          <InfoRow
+            icon={<ShieldCheck size={14} color={colors.secondary} />}
+            label="Warranty"
+            value={job.warranty || "No Warranty"}
+            valueColor={colors.secondary}
+            colors={colors}
+          />
           {job.nextReminderDate ? (
             <>
               <Divider colors={colors} />
-              <InfoRow icon={<Bell size={14} color={colors.success} />} label="Next Service" value={formatDate(job.nextReminderDate)} valueColor={colors.success} colors={colors} />
+              <InfoRow
+                icon={<Bell size={14} color={colors.success} />}
+                label="Next Service"
+                value={formatDate(job.nextReminderDate)}
+                valueColor={colors.success}
+                colors={colors}
+              />
             </>
           ) : null}
         </Card>
 
         {/* ══ LINE ITEMS TABLE ══ */}
         <Card colors={colors}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
             <SectionLabel title="Service Breakdown" colors={colors} />
-            <TouchableOpacity onPress={handleAddRow} style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.primaryBorder }} activeOpacity={0.75}>
+            <TouchableOpacity
+              onPress={handleAddRow}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 5,
+                backgroundColor: colors.primaryBg,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.primaryBorder,
+              }}
+              activeOpacity={0.75}
+            >
               <Plus size={12} color={colors.primary} />
-              <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>Add Row</Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  fontWeight: "700",
+                  color: colors.primary,
+                }}
+              >
+                Add Row
+              </Text>
             </TouchableOpacity>
           </View>
 
           {/* Table Header */}
-          <View style={{ flexDirection: "row", backgroundColor: colors.bgSurface, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 6, marginBottom: 4 }}>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, flex: 1, textTransform: "uppercase", letterSpacing: 0.5 }}>Description</Text>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 36, textAlign: "center", textTransform: "uppercase" }}>Qty</Text>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 68, textAlign: "right", textTransform: "uppercase" }}>Rate ₹</Text>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary, width: 68, textAlign: "right", textTransform: "uppercase" }}>Amt ₹</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: colors.bgSurface,
+              borderRadius: 8,
+              paddingVertical: 8,
+              paddingHorizontal: 6,
+              marginBottom: 4,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 9,
+                fontWeight: "700",
+                color: colors.secondary,
+                flex: 1,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              Description
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 9,
+                fontWeight: "700",
+                color: colors.secondary,
+                width: 36,
+                textAlign: "center",
+                textTransform: "uppercase",
+              }}
+            >
+              Qty
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 9,
+                fontWeight: "700",
+                color: colors.secondary,
+                width: 68,
+                textAlign: "right",
+                textTransform: "uppercase",
+              }}
+            >
+              Rate ₹
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 9,
+                fontWeight: "700",
+                color: colors.secondary,
+                width: 68,
+                textAlign: "right",
+                textTransform: "uppercase",
+              }}
+            >
+              Amt ₹
+            </Text>
             <View style={{ width: 28 }} />
           </View>
 
           {lineItems.map((item, idx) => {
             const lineTotal = computeLineTotal(item);
             return (
-              <View key={item.id} style={{ flexDirection: "row", paddingVertical: 8, paddingHorizontal: 4, alignItems: "center", borderRadius: 6, backgroundColor: idx % 2 === 1 ? colors.bgSurface : "transparent" }}>
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: "row",
+                  paddingVertical: 8,
+                  paddingHorizontal: 4,
+                  alignItems: "center",
+                  borderRadius: 6,
+                  backgroundColor:
+                    idx % 2 === 1 ? colors.bgSurface : "transparent",
+                }}
+              >
                 <TextInput
-                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, flex: 1, paddingVertical: 4, paddingHorizontal: 2, minHeight: 32 }}
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    color: colors.textPrimary,
+                    flex: 1,
+                    paddingVertical: 4,
+                    paddingHorizontal: 2,
+                    minHeight: 32,
+                  }}
                   value={item.description}
-                  onChangeText={(v) => handleChangeField(item.id, "description", v)}
+                  onChangeText={(v) =>
+                    handleChangeField(item.id, "description", v)
+                  }
                   placeholder="Service description"
                   placeholderTextColor={colors.textDisabled}
                   multiline
                 />
                 <TextInput
-                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 36, textAlign: "center", paddingVertical: 4 }}
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    color: colors.textPrimary,
+                    width: 36,
+                    textAlign: "center",
+                    paddingVertical: 4,
+                  }}
                   value={String(item.qty)}
                   onChangeText={(v) => handleChangeField(item.id, "qty", v)}
                   keyboardType="numeric"
@@ -792,17 +1499,42 @@ export default function InvoicePreviewScreen() {
                   placeholderTextColor={colors.textDisabled}
                 />
                 <TextInput
-                  style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 68, textAlign: "right", paddingVertical: 4 }}
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    color: colors.textPrimary,
+                    width: 68,
+                    textAlign: "right",
+                    paddingVertical: 4,
+                  }}
                   value={String(item.rate)}
                   onChangeText={(v) => handleChangeField(item.id, "rate", v)}
                   keyboardType="numeric"
                   placeholder="0"
                   placeholderTextColor={colors.textDisabled}
                 />
-                <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, color: colors.textPrimary, fontWeight: "700", width: 68, textAlign: "right", paddingRight: 2 }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 11,
+                    color: colors.textPrimary,
+                    fontWeight: "700",
+                    width: 68,
+                    textAlign: "right",
+                    paddingRight: 2,
+                  }}
+                >
                   {lineTotal.toFixed(0)}
                 </Text>
-                <TouchableOpacity onPress={() => handleDeleteRow(item.id)} style={{ width: 28, alignItems: "center", justifyContent: "center" }} activeOpacity={0.7}>
+                <TouchableOpacity
+                  onPress={() => handleDeleteRow(item.id)}
+                  style={{
+                    width: 28,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  activeOpacity={0.7}
+                >
                   <Trash2 size={13} color={colors.danger} />
                 </TouchableOpacity>
               </View>
@@ -810,21 +1542,74 @@ export default function InvoicePreviewScreen() {
           })}
 
           {partsUsed && partsUsed.length > 0 && (
-            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderMuted }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingHorizontal: 4 }}>
-                <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "800", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
+            <View
+              style={{
+                marginTop: 8,
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: colors.borderMuted,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 8,
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    fontWeight: "800",
+                    color: colors.secondary,
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                  }}
+                >
                   Replaced Spares / Parts
                 </Text>
                 <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7}>
-                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>+ Add Part</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    + Add Part
+                  </Text>
                 </TouchableOpacity>
               </View>
               {partsUsed.map((part, idx) => {
-                const partTotal = (Number(part.price) || 0) * (Number(part.quantity) || 0);
+                const partTotal =
+                  (Number(part.price) || 0) * (Number(part.quantity) || 0);
                 return (
-                  <View key={`part-${idx}`} style={{ flexDirection: "row", paddingVertical: 8, paddingHorizontal: 4, alignItems: "center", borderRadius: 6, backgroundColor: idx % 2 === 1 ? colors.bgSurface : "transparent" }}>
+                  <View
+                    key={`part-${idx}`}
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 8,
+                      paddingHorizontal: 4,
+                      alignItems: "center",
+                      borderRadius: 6,
+                      backgroundColor:
+                        idx % 2 === 1 ? colors.bgSurface : "transparent",
+                    }}
+                  >
                     <TextInput
-                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, flex: 1, paddingVertical: 4, paddingHorizontal: 2, minHeight: 32 }}
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        flex: 1,
+                        paddingVertical: 4,
+                        paddingHorizontal: 2,
+                        minHeight: 32,
+                      }}
                       value={part.name}
                       onChangeText={(v) => handleChangePart(idx, "name", v)}
                       placeholder="Part description"
@@ -832,7 +1617,14 @@ export default function InvoicePreviewScreen() {
                       multiline
                     />
                     <TextInput
-                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 36, textAlign: "center", paddingVertical: 4 }}
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        width: 36,
+                        textAlign: "center",
+                        paddingVertical: 4,
+                      }}
                       value={String(part.quantity)}
                       onChangeText={(v) => handleChangePart(idx, "quantity", v)}
                       keyboardType="numeric"
@@ -840,17 +1632,42 @@ export default function InvoicePreviewScreen() {
                       placeholderTextColor={colors.textDisabled}
                     />
                     <TextInput
-                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 68, textAlign: "right", paddingVertical: 4 }}
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        width: 68,
+                        textAlign: "right",
+                        paddingVertical: 4,
+                      }}
                       value={String(part.price)}
                       onChangeText={(v) => handleChangePart(idx, "price", v)}
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor={colors.textDisabled}
                     />
-                    <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, color: colors.textPrimary, fontWeight: "700", width: 68, textAlign: "right", paddingRight: 2 }}>
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        fontWeight: "700",
+                        width: 68,
+                        textAlign: "right",
+                        paddingRight: 2,
+                      }}
+                    >
                       {partTotal.toFixed(0)}
                     </Text>
-                    <TouchableOpacity onPress={() => handleDeletePart(idx)} style={{ width: 28, alignItems: "center", justifyContent: "center" }} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      onPress={() => handleDeletePart(idx)}
+                      style={{
+                        width: 28,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      activeOpacity={0.7}
+                    >
                       <Trash2 size={13} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
@@ -860,15 +1677,44 @@ export default function InvoicePreviewScreen() {
           )}
 
           {(!partsUsed || partsUsed.length === 0) && (
-            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderMuted }}>
-              <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7} style={{ alignSelf: 'flex-start', paddingHorizontal: 4 }}>
-                <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>+ Add Spare / Part</Text>
+            <View
+              style={{
+                marginTop: 8,
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: colors.borderMuted,
+              }}
+            >
+              <TouchableOpacity
+                onPress={handleAddPart}
+                activeOpacity={0.7}
+                style={{ alignSelf: "flex-start", paddingHorizontal: 4 }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    color: colors.primary,
+                  }}
+                >
+                  + Add Spare / Part
+                </Text>
               </TouchableOpacity>
             </View>
           )}
 
           {lineItems.length === 0 && (!partsUsed || partsUsed.length === 0) && (
-            <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center", paddingVertical: 16, fontStyle: "italic" }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 12,
+                color: colors.textDisabled,
+                textAlign: "center",
+                paddingVertical: 16,
+                fontStyle: "italic",
+              }}
+            >
               {'No items. Tap "Add Row" to add a service line.'}
             </Text>
           )}
@@ -879,21 +1725,81 @@ export default function InvoicePreviewScreen() {
           <SectionLabel title="Payment Summary" colors={colors} />
 
           {/* Grand Total */}
-          <LinearGradient colors={[colors.primaryBg, colors.secondaryBg]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ borderRadius: 14, padding: 16 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <LinearGradient
+            colors={[colors.primaryBg, colors.secondaryBg]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ borderRadius: 14, padding: 16 }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <View>
-                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, textTransform: "uppercase", letterSpacing: 2 }}>Grand Total</Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textDisabled,
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                  }}
+                >
+                  Grand Total
+                </Text>
               </View>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 26, fontWeight: "900", color: colors.textPrimary }}>{formatCurrency(grandTotal)}</Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 26,
+                  fontWeight: "900",
+                  color: colors.textPrimary,
+                }}
+              >
+                {formatCurrency(grandTotal)}
+              </Text>
             </View>
           </LinearGradient>
 
           {/* Payment Tracking Row */}
-          <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <View
+            style={{
+              marginTop: 16,
+              borderTopWidth: 1,
+              borderTopColor: colors.border,
+              paddingTop: 16,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
               <View>
-                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 }}>Payment Status</Text>
-                <Text style={{ fontFamily: "Inter", fontSize: 10, color: isPaid ? colors.success : colors.warningIcon }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    marginBottom: 4,
+                  }}
+                >
+                  Payment Status
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: isPaid ? colors.success : colors.warningIcon,
+                  }}
+                >
                   {isPaid ? "Successfully Collected" : "Payment Pending"}
                 </Text>
               </View>
@@ -911,8 +1817,24 @@ export default function InvoicePreviewScreen() {
                   gap: 8,
                 }}
               >
-                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: isPaid ? colors.success : colors.textDisabled }} />
-                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: isPaid ? colors.success : colors.textPrimary }}>
+                <View
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 6,
+                    backgroundColor: isPaid
+                      ? colors.success
+                      : colors.textDisabled,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: isPaid ? colors.success : colors.textPrimary,
+                  }}
+                >
                   {isPaid ? "PAID" : "UNPAID"}
                 </Text>
               </TouchableOpacity>
@@ -920,7 +1842,17 @@ export default function InvoicePreviewScreen() {
 
             {isPaid && (
               <View>
-                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: colors.textPrimary, marginBottom: 10 }}>Payment Method</Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    marginBottom: 10,
+                  }}
+                >
+                  Payment Method
+                </Text>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   {[
                     { id: "cash", label: "Cash", icon: Banknote },
@@ -937,12 +1869,38 @@ export default function InvoicePreviewScreen() {
                         paddingVertical: 10,
                         borderRadius: 10,
                         borderWidth: 1,
-                        borderColor: paymentMethod === method.id ? colors.primary : colors.border,
-                        backgroundColor: paymentMethod === method.id ? colors.primaryBg : colors.bgSurface,
+                        borderColor:
+                          paymentMethod === method.id
+                            ? colors.primary
+                            : colors.border,
+                        backgroundColor:
+                          paymentMethod === method.id
+                            ? colors.primaryBg
+                            : colors.bgSurface,
                       }}
                     >
-                      <method.icon size={16} color={paymentMethod === method.id ? colors.primary : colors.textMuted} style={{ marginBottom: 4 }} />
-                      <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", color: paymentMethod === method.id ? colors.primary : colors.textMuted }}>{method.label}</Text>
+                      <method.icon
+                        size={16}
+                        color={
+                          paymentMethod === method.id
+                            ? colors.primary
+                            : colors.textMuted
+                        }
+                        style={{ marginBottom: 4 }}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 9,
+                          fontWeight: "700",
+                          color:
+                            paymentMethod === method.id
+                              ? colors.primary
+                              : colors.textMuted,
+                        }}
+                      >
+                        {method.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -953,34 +1911,109 @@ export default function InvoicePreviewScreen() {
 
         {/* ══ WARRANTY CERTIFICATE ══ */}
         {job.warranty && job.warranty !== "No Warranty" ? (
-          <View style={{ borderRadius: 18, padding: 18, marginBottom: 12, borderWidth: 2, borderColor: colors.primaryBorder, borderStyle: "dashed", backgroundColor: colors.primaryBg }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}>
+          <View
+            style={{
+              borderRadius: 18,
+              padding: 18,
+              marginBottom: 12,
+              borderWidth: 2,
+              borderColor: colors.primaryBorder,
+              borderStyle: "dashed",
+              backgroundColor: colors.primaryBg,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 <ShieldCheck size={18} color="#fff" />
               </View>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 1.5 }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 11,
+                  fontWeight: "800",
+                  color: colors.primary,
+                  textTransform: "uppercase",
+                  letterSpacing: 1.5,
+                }}
+              >
                 Service Warranty Certificate
               </Text>
             </View>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginBottom: 6 }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 14,
+                fontWeight: "700",
+                color: colors.textPrimary,
+                marginBottom: 6,
+              }}
+            >
               {job.warranty} Limited Warranty
             </Text>
-            <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textMuted, lineHeight: 17 }}>
-              From: {formatDate(job.serviceDate)} · Covers labour & parts replaced as listed above.{"\n"}Void in case of physical damage, power fluctuations, or tampering.
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 11,
+                color: colors.textMuted,
+                lineHeight: 17,
+              }}
+            >
+              From: {formatDate(job.serviceDate)} · Covers labour & parts
+              replaced as listed above.{"\n"}Void in case of physical damage,
+              power fluctuations, or tampering.
             </Text>
           </View>
         ) : null}
 
         {/* ══ TERMS & CONDITIONS ══ */}
         <Card colors={colors}>
-          <TouchableOpacity style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }} onPress={() => setShowTerms(!showTerms)} activeOpacity={0.7}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+            onPress={() => setShowTerms(!showTerms)}
+            activeOpacity={0.7}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <Info size={14} color={colors.textDisabled} />
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, fontWeight: "700", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 1 }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 11,
+                  fontWeight: "700",
+                  color: colors.textSecondary,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
                 Terms &amp; Conditions
               </Text>
             </View>
-            {showTerms ? <ChevronDown size={14} color={colors.textDisabled} /> : <ChevronRight size={14} color={colors.textDisabled} />}
+            {showTerms ? (
+              <ChevronDown size={14} color={colors.textDisabled} />
+            ) : (
+              <ChevronRight size={14} color={colors.textDisabled} />
+            )}
           </TouchableOpacity>
 
           {showTerms && (
@@ -994,8 +2027,27 @@ export default function InvoicePreviewScreen() {
                 "Disputes, if any, are subject to the jurisdiction of local courts only.",
               ].map((term, i) => (
                 <View key={i} style={{ flexDirection: "row", gap: 8 }}>
-                  <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primaryBorder, marginTop: 5, flexShrink: 0 }} />
-                  <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textDisabled, lineHeight: 16, flex: 1 }}>{term}</Text>
+                  <View
+                    style={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: colors.primaryBorder,
+                      marginTop: 5,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      color: colors.textDisabled,
+                      lineHeight: 16,
+                      flex: 1,
+                    }}
+                  >
+                    {term}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -1003,43 +2055,174 @@ export default function InvoicePreviewScreen() {
         </Card>
 
         {/* ══ THANK YOU ══ */}
-        <View style={{ alignItems: "center", padding: 24, marginBottom: 12, backgroundColor: colors.bgCard, borderRadius: 18, borderWidth: 1, borderColor: colors.border }}>
+        <View
+          style={{
+            alignItems: "center",
+            padding: 24,
+            marginBottom: 12,
+            backgroundColor: colors.bgCard,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
           <Text style={{ fontSize: 30, marginBottom: 8 }}>🙏</Text>
-          <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.primary, marginBottom: 4 }}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 16,
+              fontWeight: "700",
+              color: colors.primary,
+              marginBottom: 4,
+            }}
+          >
             Thank you, {customerName.split(" ")[0]}!
           </Text>
-          <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center" }}>
-            Thank you for choosing {techName}.{"\n"}We look forward to serving you again.
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 12,
+              color: colors.textDisabled,
+              textAlign: "center",
+            }}
+          >
+            Thank you for choosing {techName}.{"\n"}We look forward to serving
+            you again.
           </Text>
         </View>
 
         {/* ══ ACTION BUTTONS ══ */}
-        <TouchableOpacity onPress={handleSaveInvoice} disabled={isSaving} activeOpacity={0.8} style={{ marginBottom: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.primaryBorder, backgroundColor: colors.primaryBg, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        <TouchableOpacity
+          onPress={handleSaveInvoice}
+          disabled={isSaving}
+          activeOpacity={0.8}
+          style={{
+            marginBottom: 12,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.primaryBorder,
+            backgroundColor: colors.primaryBg,
+            paddingVertical: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
           <CheckCircle2 color={colors.primary} size={18} />
-          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 2 }}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 13,
+              fontWeight: "800",
+              color: colors.primary,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+            }}
+          >
             {isSaving ? "Saving..." : "Save Invoice Details"}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleWhatsAppShare} activeOpacity={0.8} style={{ marginBottom: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.successBorder, backgroundColor: colors.successBg, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+        <TouchableOpacity
+          onPress={handleWhatsAppShare}
+          activeOpacity={0.8}
+          style={{
+            marginBottom: 12,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.successBorder,
+            backgroundColor: colors.successBg,
+            paddingVertical: 18,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
           <MessageCircle color={colors.success} size={18} />
-          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.success, textTransform: "uppercase", letterSpacing: 2 }}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 13,
+              fontWeight: "800",
+              color: colors.success,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+            }}
+          >
             Share via WhatsApp
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleGeneratePdf} activeOpacity={0.85} style={{ marginBottom: 12, borderRadius: 16, overflow: "hidden", shadowColor: colors.primary, shadowOpacity: 0.4, shadowRadius: 20, elevation: 10 }}>
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 18 }}>
+        <TouchableOpacity
+          onPress={handleGeneratePdf}
+          activeOpacity={0.85}
+          style={{
+            marginBottom: 12,
+            borderRadius: 16,
+            overflow: "hidden",
+            shadowColor: colors.primary,
+            shadowOpacity: 0.4,
+            shadowRadius: 20,
+            elevation: 10,
+          }}
+        >
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              paddingVertical: 18,
+            }}
+          >
             <Download color="#fff" size={18} />
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: "#fff", textTransform: "uppercase", letterSpacing: 2 }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 13,
+                fontWeight: "800",
+                color: "#fff",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
               Download &amp; Share PDF
             </Text>
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handlePrintPreview} activeOpacity={0.8} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bgCard, marginBottom: 4 }}>
+        <TouchableOpacity
+          onPress={handlePrintPreview}
+          activeOpacity={0.8}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            paddingVertical: 16,
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.bgCard,
+            marginBottom: 4,
+          }}
+        >
           <Share2 color={colors.secondary} size={18} />
-          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 13,
+              fontWeight: "700",
+              color: colors.secondary,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+            }}
+          >
             Print / Preview Invoice
           </Text>
         </TouchableOpacity>
