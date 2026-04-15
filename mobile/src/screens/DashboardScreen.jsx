@@ -1,43 +1,42 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { ScrollView, View, TouchableOpacity, Text, RefreshControl } from "react-native";
-import { useSelector } from "react-redux";
-import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
+import { RouteNames } from "@constants/routeNames";
+import { JobStatuses, PriorityLevels } from "@constants/appConstants";
+import { formatCurrency } from "@utils/formatUtils";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 import OfflineBanner from "@components/OfflineBanner";
 import Avatar from "@components/Avatar";
-import { formatCurrency } from "@utils/formatUtils";
-
-// Services
-import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
 
 // Icons
 import { Home, PlusCircle, Files } from "lucide-react-native";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
+
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
   const queueCount = useSelector((state) => state.sync.queueCount);
   const isSyncing = useSelector((state) => state.sync.isSyncing);
 
-  // 1. RTK Query
+  // RTK Query
   const {
     data: summaryResponse,
     refetch: refetchSummary,
   } = useGetDashboardSummaryQuery();
 
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const onRefresh = React.useCallback(async () => {
-    setIsRefreshing(true);
-    await refetchSummary();
-    setIsRefreshing(false);
-  }, [refetchSummary]);
-
+  // Custom hooks
   const { isConnected } = useNetworkStatus();
 
+  // Local state
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Derived vars
   const dashboardStats = summaryResponse?.data || {
     totalJobs: 0,
     monthlyEarnings: 0,
@@ -55,12 +54,19 @@ export default function DashboardScreen() {
   const totalJobs = Number(dashboardStats?.totalJobs ?? 0);
   const outstandingPayments = Number(dashboardStats?.outstandingPayments ?? 0);
 
+  // Event handlers
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    await refetchSummary();
+    setIsRefreshing(false);
+  }
+
   function getStatusBadgeStyle(status) {
-    if (status === "completed")
+    if (status === JobStatuses.COMPLETED)
       return { bg: colors.secondaryBg, border: colors.secondaryBorder, text: colors.secondary };
-    if (status === "pending")
+    if (status === JobStatuses.PENDING)
       return { bg: colors.warningBg, border: colors.warningBorder, text: colors.warning };
-    if (status === "cancelled")
+    if (status === JobStatuses.CANCELLED)
       return { bg: colors.dangerBg, border: colors.dangerBorder, text: colors.danger };
     return { bg: colors.primaryBgStrong, border: colors.primaryBorderStrong, text: colors.primary };
   }
@@ -96,7 +102,7 @@ export default function DashboardScreen() {
         <TouchableOpacity
           style={{ flexDirection: "row", alignItems: "center" }}
           activeOpacity={0.7}
-          onPress={() => navigation.navigate("Profile")}
+          onPress={() => navigation.navigate(RouteNames.PROFILE)}
         >
           <Avatar name={user?.name} uri={user?.avatar} size={32} />
         </TouchableOpacity>
@@ -108,7 +114,7 @@ export default function DashboardScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={onRefresh}
+            onRefresh={handleRefresh}
             tintColor={colors.refreshColor}
             colors={[colors.refreshColor]}
           />
@@ -217,7 +223,7 @@ export default function DashboardScreen() {
         {outstandingPayments > 0 && (
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => navigation.navigate("JobHistory")}
+            onPress={() => navigation.navigate(RouteNames.JOB_HISTORY)}
             style={{
               width: "100%",
               backgroundColor: colors.bgCard,
@@ -298,7 +304,7 @@ export default function DashboardScreen() {
         {/* Add Job Banner */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("AddJob")}
+          onPress={() => navigation.navigate(RouteNames.ADD_JOB)}
           style={{
             width: "100%",
             height: 56,
@@ -330,7 +336,7 @@ export default function DashboardScreen() {
             <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
               Recent Jobs
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("JobHistory")} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => navigation.navigate(RouteNames.JOB_HISTORY)} activeOpacity={0.7}>
               <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.primary }}>
                 View All
               </Text>
@@ -344,7 +350,7 @@ export default function DashboardScreen() {
                 <TouchableOpacity
                   key={job._id}
                   activeOpacity={0.7}
-                  onPress={() => navigation.navigate("JobDetails", { job })}
+                  onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
                   style={{
                     backgroundColor: colors.bgSurface,
                     padding: 20,
@@ -364,7 +370,7 @@ export default function DashboardScreen() {
                       >
                         {job.customerName || job.customerId?.name || "Unknown"}
                       </Text>
-                      {job.priority === "urgent" && (
+                      {job.priority === PriorityLevels.URGENT && (
                         <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
                           <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
                         </View>

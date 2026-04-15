@@ -1,10 +1,10 @@
 import { Alert } from "react-native";
 import { v4 as uuidv4 } from "uuid";
+import { useDispatch } from "react-redux";
 import { useCreateJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
 import NotificationUtils from "@utils/notificationUtils";
 import { JobStatuses } from "@constants/appConstants";
 import useNetworkStatus from "@hooks/useNetworkStatus";
-import { useDispatch } from "react-redux";
 import { setSyncQueueCount } from "@store/slices/syncSlice";
 import { db } from "@db";
 import { syncQueue } from "@db/schema";

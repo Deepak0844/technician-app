@@ -19,3 +19,13 @@ export const getLocalDateString = (d) => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Formats a date string as "DD MMM YYYY" (Indian locale)
+ * e.g., "2024-01-15" -> "15 Jan 2024"
+ */
+export const formatDate = (dateStr) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};

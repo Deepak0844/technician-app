@@ -55,6 +55,25 @@ export const JobStatuses = {
 };
 
 /**
+ * Priority Levels
+ */
+export const PriorityLevels = {
+  NORMAL: "normal",
+  URGENT: "urgent",
+};
+
+/**
+ * Payment Methods
+ */
+export const PaymentMethods = {
+  CASH: "cash",
+  UPI: "upi",
+  ONLINE: "online",
+  CHEQUE: "cheque",
+  OTHER: "other",
+};
+
+/**
  * Pagination defaults
  */
 export const DefaultPagination = {

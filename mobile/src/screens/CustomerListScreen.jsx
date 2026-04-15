@@ -1,16 +1,20 @@
 import React, { useState } from "react";
-import { FlatList, TouchableOpacity, View, ActivityIndicator, Image } from "react-native";
+import { FlatList, TouchableOpacity, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, UserPlus, Phone, MapPin, ChevronRight, User } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useGetCustomersQuery } from "@services/api/customerApi";
-import { LinearGradient } from "expo-linear-gradient";
+import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
+import Avatar from "@components/Avatar";
 
 // Gluestack Primitives
 import { Box } from "@components/ui/box";
 import { Text } from "@components/ui/text";
 import { Input, InputField } from "@components/ui/input";
+
+// Icons
+import { Search, UserPlus, Phone, MapPin, ChevronRight, User } from "lucide-react-native";
 
 export default function CustomerListScreen() {
   const navigation = useNavigation();
@@ -46,32 +50,17 @@ export default function CustomerListScreen() {
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("CustomerSearch")}
+            onPress={() => navigation.navigate(RouteNames.CUSTOMER_SEARCH)}
             style={{ padding: 8 }}
             activeOpacity={0.7}
           >
             <UserPlus color={colors.secondary} size={20} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => navigation.navigate("Profile")}
+            onPress={() => navigation.navigate(RouteNames.PROFILE)}
             activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.borderLight,
-                overflow: "hidden",
-                backgroundColor: colors.bgCard,
-              }}
-            >
-              <Image
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </View>
+            <Avatar size={32} />
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -113,7 +102,7 @@ export default function CustomerListScreen() {
             contentContainerStyle={{ paddingBottom: 100 }}
             renderItem={({ item }) => (
               <TouchableOpacity
-                onPress={() => navigation.navigate("CustomerDetails", { customerId: item._id })}
+                onPress={() => navigation.navigate(RouteNames.CUSTOMER_DETAILS, { customerId: item._id })}
                 activeOpacity={0.7}
                 style={{
                   backgroundColor: colors.bgCardAlt,

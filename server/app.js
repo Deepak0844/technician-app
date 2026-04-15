@@ -12,7 +12,11 @@ import connectToDatabase from "#config/db.js";
 import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages, RateLimits, SuccessMessages } from "#constants/generalConstants.js";
+import {
+  ErrorMessages,
+  RateLimits,
+  SuccessMessages,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -99,7 +103,12 @@ app.get("/", (_req, res) => {
 });
 
 app.get(`${BASE_URL}/health`, (_req, res) => {
-  ResponseUtils.success(res, { status: "ok" }, HttpStatus.OK, SuccessMessages.SERVER_HEALTHY);
+  ResponseUtils.success(
+    res,
+    { status: "ok" },
+    HttpStatus.OK,
+    SuccessMessages.SERVER_HEALTHY,
+  );
 });
 
 // 404 handler

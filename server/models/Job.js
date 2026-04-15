@@ -47,19 +47,23 @@ const jobSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    lineItems: [{
-      id: String,
-      description: String,
-      qty: { type: Number, default: 1, min: 0 },
-      rate: { type: Number, default: 0, min: 0 },
-      note: String,
-    }],
-    partsUsed: [{
-      name: String,
-      quantity: { type: Number, default: 1, min: 0 },
-      price: { type: Number, default: 0, min: 0 },
-      warranty: { type: String, default: "" },
-    }],
+    lineItems: [
+      {
+        id: String,
+        description: String,
+        qty: { type: Number, default: 1, min: 0 },
+        rate: { type: Number, default: 0, min: 0 },
+        note: String,
+      },
+    ],
+    partsUsed: [
+      {
+        name: String,
+        quantity: { type: Number, default: 1, min: 0 },
+        price: { type: Number, default: 0, min: 0 },
+        warranty: { type: String, default: "" },
+      },
+    ],
     isPaid: {
       type: Boolean,
       default: false,
@@ -107,7 +111,7 @@ const jobSchema = new mongoose.Schema(
       longitude: Number,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for date-range queries (calendar view)

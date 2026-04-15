@@ -8,7 +8,8 @@ import {
   CheckCircle2, MoreVertical, Edit2, ShieldCheck, Info
 } from "lucide-react-native";
 import { useGetJobByIdQuery, useDeleteJobMutation, useRepeatJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
-import { JobStatuses } from "@constants/appConstants";
+import { JobStatuses, PriorityLevels } from "@constants/appConstants";
+import { RouteNames } from "@constants/routeNames";
 import OfflineBanner from "@components/OfflineBanner";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -47,7 +48,7 @@ export default function JobDetailsScreen() {
     );
   }
 
-  const isCompleted = job.status === "completed";
+  const isCompleted = job.status === JobStatuses.COMPLETED;
 
   const handleJobActions = () => {
     const isJobPaid = !!job.isPaid;
@@ -73,7 +74,7 @@ export default function JobDetailsScreen() {
             try {
               const res = await repeatJob(job._id).unwrap();
               Alert.alert("Success", "A new pending job has been created with this job's details.");
-              navigation.navigate("JobDetails", { job: res.data });
+              navigation.navigate(RouteNames.JOB_DETAILS, { job: res.data });
             } catch (err) {
               Alert.alert("Error", err?.data?.message || "Failed to repeat job.");
             }
@@ -157,11 +158,11 @@ export default function JobDetailsScreen() {
         {!isCompleted && !isSyncing && (
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => handleUpdateStatus(job.status === "pending" ? "in_progress" : "completed")}
+            onPress={() => handleUpdateStatus(job.status === JobStatuses.PENDING ? JobStatuses.IN_PROGRESS : JobStatuses.COMPLETED)}
             style={{ marginBottom: 24, borderRadius: 12, overflow: "hidden", elevation: 4 }}
           >
             <LinearGradient
-              colors={job.status === "pending" ? [colors.primary, colors.secondary] : [colors.secondary, "#10b981"]}
+              colors={job.status === JobStatuses.PENDING ? [colors.primary, colors.secondary] : [colors.secondary, "#10b981"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={{
@@ -172,7 +173,7 @@ export default function JobDetailsScreen() {
                 gap: 10,
               }}
             >
-              {job.status === "pending" ? (
+              {job.status === JobStatuses.PENDING ? (
                 <>
                   <Clock color={colors.bgPrimary} size={18} />
                   <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.bgPrimary, textTransform: "uppercase", letterSpacing: 1 }}>
@@ -220,7 +221,7 @@ export default function JobDetailsScreen() {
                 <Text style={{ fontFamily: "Space Grotesk", fontSize: 10, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
                   Job ID: #{job?._id ? job._id.slice(-6).toUpperCase() : "..."}
                 </Text>
-                {job?.priority === "urgent" && (
+                {job?.priority === PriorityLevels.URGENT && (
                   <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
                     <Text style={{ fontSize: 8, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
                   </View>
@@ -383,7 +384,7 @@ export default function JobDetailsScreen() {
             <TouchableOpacity 
               onPress={() => {
                 const customerId = job?.customerId?._id || job?.customerId;
-                if (customerId) navigation.navigate("CustomerDetails", { customerId });
+                if (customerId) navigation.navigate(RouteNames.CUSTOMER_DETAILS, { customerId });
               }}
               activeOpacity={0.7}
               style={{ flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 }}
@@ -571,7 +572,7 @@ export default function JobDetailsScreen() {
         {/* Action Buttons */}
         <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("InvoicePreview", { job })}
+            onPress={() => navigation.navigate(RouteNames.INVOICE_PREVIEW, { job })}
             activeOpacity={0.8}
             style={{
               flex: 1,
@@ -597,7 +598,7 @@ export default function JobDetailsScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate("AddJob", { job })}
+            onPress={() => navigation.navigate(RouteNames.ADD_JOB, { job })}
             activeOpacity={0.7}
             style={{
               backgroundColor: colors.bgCard,

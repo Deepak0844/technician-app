@@ -1,8 +1,8 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import api from "../services/api";
-import authReducer from "./slices/authSlice";
-import themeReducer from "./slices/themeSlice";
-import syncReducer from "./slices/syncSlice";
+import api from "@services/api";
+import authReducer from "@store/slices/authSlice";
+import themeReducer from "@store/slices/themeSlice";
+import syncReducer from "@store/slices/syncSlice";
 
 /**
  * Theme is restored by the initializeTheme thunk (reads AsyncStorage).

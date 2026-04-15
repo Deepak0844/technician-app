@@ -141,7 +141,13 @@ async function getDashboardSummary(userId) {
 
     // Outstanding payments total (completed but not paid) - All-time
     Job.aggregate([
-      { $match: { userId: userObjectId, status: JobStatus.COMPLETED, isPaid: false } },
+      {
+        $match: {
+          userId: userObjectId,
+          status: JobStatus.COMPLETED,
+          isPaid: false,
+        },
+      },
       {
         $group: {
           _id: null,
@@ -155,7 +161,13 @@ async function getDashboardSummary(userId) {
 
     // All-time paid earnings
     Job.aggregate([
-      { $match: { userId: userObjectId, status: JobStatus.COMPLETED, isPaid: true } },
+      {
+        $match: {
+          userId: userObjectId,
+          status: JobStatus.COMPLETED,
+          isPaid: true,
+        },
+      },
       {
         $group: {
           _id: null,

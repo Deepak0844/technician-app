@@ -1,13 +1,15 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
 import { ScrollView, View, TouchableOpacity, ActivityIndicator, RefreshControl, Linking } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import useTheme from "@hooks/useTheme";
-
-// Services
+import { useRoute, useNavigation } from "@react-navigation/native";
 import { useGetCustomerByIdQuery } from "@services/api/customerApi";
 import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
+import { RouteNames } from "@constants/routeNames";
+import { openDirections } from "@utils/locationUtils";
+import { formatDate } from "@utils/formatUtils";
+import useTheme from "@hooks/useTheme";
+import Avatar from "@components/Avatar";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
@@ -21,10 +23,6 @@ import {
   Navigation as NavIcon,
   MapPin
 } from "lucide-react-native";
-
-import { openDirections } from "@utils/locationUtils";
-import Avatar from "@components/Avatar";
-import { formatDate } from "@utils/formatUtils";
 
 export default function CustomerDetailsScreen() {
   const route = useRoute();
@@ -110,7 +108,7 @@ export default function CustomerDetailsScreen() {
         </View>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("CreateCustomer", { customer })}
+            onPress={() => navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })}
             style={{ padding: 8 }}
             activeOpacity={0.7}
           >
@@ -411,7 +409,7 @@ export default function CustomerDetailsScreen() {
 
         <View style={{ marginBottom: 24 }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("AddJob", { customer })}
+            onPress={() => navigation.navigate(RouteNames.ADD_JOB, { customer })}
             activeOpacity={0.8}
             style={{
               borderRadius: 18,
@@ -457,7 +455,7 @@ export default function CustomerDetailsScreen() {
               />
             </View>
             <TouchableOpacity
-              onPress={() => navigation.navigate("Tabs", { screen: "JobHistory", params: { customerId } })}
+              onPress={() => navigation.navigate(RouteNames.TABS, { screen: RouteNames.JOB_HISTORY, params: { customerId } })}
               activeOpacity={0.7}
             >
               <Text style={{ fontFamily: "Inter", color: colors.primary, letterSpacing: 2, fontWeight: "700", textTransform: "uppercase", fontSize: 10 }}>
@@ -491,7 +489,7 @@ export default function CustomerDetailsScreen() {
                 This customer does not have any jobs yet.
               </Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate("AddJob", { customer })}
+                onPress={() => navigation.navigate(RouteNames.ADD_JOB, { customer })}
                 activeOpacity={0.7}
                 style={{
                   backgroundColor: colors.primaryBg,
@@ -517,7 +515,7 @@ export default function CustomerDetailsScreen() {
                 return (
                   <TouchableOpacity
                     key={job._id || Math.random().toString()}
-                    onPress={() => navigation.navigate("JobDetails", { job })}
+                    onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
                     activeOpacity={0.7}
                     style={{
                       padding: 16,

@@ -1,15 +1,16 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
 import { ScrollView, Alert, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
-import { LinearGradient } from "expo-linear-gradient";
 import { useGetCustomerByIdQuery, useUpdateCustomerMutation, useGetCustomersQuery } from "@services/api/customerApi";
-import OfflineBanner from "@components/OfflineBanner";
-import { ApplianceTypes, JobStatuses } from "@constants/appConstants";
+import { ApplianceTypes, JobStatuses, PriorityLevels, PaymentMethods } from "@constants/appConstants";
+import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
 import useJobSubmission from "@hooks/useJobSubmission";
+import OfflineBanner from "@components/OfflineBanner";
 
 // Modular Components
 import CustomerSection from "@components/CreateJob/CustomerSection";
@@ -66,10 +67,10 @@ export default function AddJobScreen() {
       setPartsUsed(editingJob.partsUsed || []);
       if (editingJob.nextReminderDate) setNextReminderDate(new Date(editingJob.nextReminderDate));
       setSelectedLocation(editingJob.location || null);
-      setPriority(editingJob.priority || "normal");
+      setPriority(editingJob.priority || PriorityLevels.NORMAL);
       setInternalNotes(editingJob.internalNotes || "");
       setIsPaid(editingJob.isPaid ?? false);
-      setPaymentMethod(editingJob.paymentMethod || "cash");
+      setPaymentMethod(editingJob.paymentMethod || PaymentMethods.CASH);
       
       if (editingJob.serviceDate) {
         const d = new Date(editingJob.serviceDate);
@@ -119,10 +120,10 @@ export default function AddJobScreen() {
   const [partsUsed, setPartsUsed] = useState(editingJob?.partsUsed ?? []);
   const [nextReminderDate, setNextReminderDate] = useState(editingJob?.nextReminderDate ? new Date(editingJob.nextReminderDate) : null);
   const [selectedLocation, setSelectedLocation] = useState(editingJob?.location || null);
-  const [priority, setPriority] = useState(editingJob?.priority ?? "normal");
+  const [priority, setPriority] = useState(editingJob?.priority ?? PriorityLevels.NORMAL);
   const [internalNotes, setInternalNotes] = useState(editingJob?.internalNotes ?? "");
   const [isPaid, setIsPaid] = useState(editingJob?.isPaid ?? false);
-  const [paymentMethod, setPaymentMethod] = useState(editingJob?.paymentMethod ?? "cash");
+  const [paymentMethod, setPaymentMethod] = useState(editingJob?.paymentMethod ?? PaymentMethods.CASH);
 
   // Time Sync
   let initialTime = "10:00 AM";
@@ -153,7 +154,7 @@ export default function AddJobScreen() {
 
   const handleFinish = () => {
     if (origin === 'Calendar') {
-      navigation.navigate("Calendar");
+      navigation.navigate(RouteNames.CALENDAR);
     } else {
       navigation.goBack();
     }
@@ -276,7 +277,7 @@ export default function AddJobScreen() {
           selectedCustomer={selectedCustomer}
           setSelectedCustomer={setSelectedCustomer}
           topRecent={topRecent}
-          onSearchPress={() => navigation.navigate("CustomerSearch", { onSelectCustomer: setSelectedCustomer })}
+          onSearchPress={() => navigation.navigate(RouteNames.CUSTOMER_SEARCH, { onSelectCustomer: setSelectedCustomer })}
           selectedLocation={selectedLocation}
           onSelectLocation={setSelectedLocation}
           onAddLocationPress={() => setShowAddLocationModal(true)}

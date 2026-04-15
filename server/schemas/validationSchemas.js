@@ -200,15 +200,15 @@ const jobSharedFields = {
     .max(MAX_ITEMS, "Too many parts")
     .optional()
     .default([]),
-  status: z
-    .nativeEnum(JobStatus)
-    .optional()
-    .default(JobStatus.PENDING),
+  status: z.nativeEnum(JobStatus).optional().default(JobStatus.PENDING),
   serviceDate: z.string().min(1, "Service date is required"),
   nextReminderDate: z.string().optional().nullable(),
   warranty: z.string().max(MAX_SHORT_TEXT).optional().default(""),
   internalNotes: z.string().max(MAX_TEXT_LENGTH).optional().default(""),
-  priority: z.nativeEnum(PriorityLevels).optional().default(PriorityLevels.NORMAL),
+  priority: z
+    .nativeEnum(PriorityLevels)
+    .optional()
+    .default(PriorityLevels.NORMAL),
   isPaid: z.boolean().optional().default(false),
   paymentMethod: z
     .nativeEnum(PaymentMethods)

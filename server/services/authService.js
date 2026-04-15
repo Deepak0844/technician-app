@@ -20,9 +20,12 @@ async function sendOtp(phone) {
   const data = await response.json();
 
   if (data.Status !== TwoFactor.STATUS_SUCCESS) {
-    throw new AppError(data.Details || ErrorMessages.TWOFACTOR_SEND_FAILED, HttpStatus.BAD_REQUEST);
+    throw new AppError(
+      data.Details || ErrorMessages.TWOFACTOR_SEND_FAILED,
+      HttpStatus.BAD_REQUEST,
+    );
   }
-  
+
   // Return the sessionId (Details field)
   return data.Details;
 }
@@ -35,8 +38,14 @@ async function verifyOtp(phone, otp, sessionId, name) {
   const response = await fetch(url);
   const data = await response.json();
 
-  if (data.Status !== TwoFactor.STATUS_SUCCESS || data.Details !== TwoFactor.OTP_MATCHED) {
-    throw new AppError(data.Details || ErrorMessages.TWOFACTOR_OTP_INVALID, HttpStatus.UNAUTHORIZED);
+  if (
+    data.Status !== TwoFactor.STATUS_SUCCESS ||
+    data.Details !== TwoFactor.OTP_MATCHED
+  ) {
+    throw new AppError(
+      data.Details || ErrorMessages.TWOFACTOR_OTP_INVALID,
+      HttpStatus.UNAUTHORIZED,
+    );
   }
 
   // Upsert user
@@ -46,7 +55,7 @@ async function verifyOtp(phone, otp, sessionId, name) {
   const user = await User.findOneAndUpdate(
     { phone },
     { $set: updateFields, $setOnInsert: { phone } },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
   return user;
@@ -54,16 +63,21 @@ async function verifyOtp(phone, otp, sessionId, name) {
 
 async function getProfile(userId) {
   const user = await User.findById(userId);
-  if (!user) throw new AppError(ErrorMessages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  if (!user)
+    throw new AppError(ErrorMessages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return user;
 }
 
 async function updateProfile(userId, fields) {
-  const user = await User.findByIdAndUpdate(userId, { $set: fields }, { new: true, runValidators: true });
-  if (!user) throw new AppError(ErrorMessages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: fields },
+    { new: true, runValidators: true },
+  );
+  if (!user)
+    throw new AppError(ErrorMessages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return user;
 }
-
 
 const AuthService = {
   sendOtp,

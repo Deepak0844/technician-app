@@ -5,10 +5,7 @@ import jwt from "jsonwebtoken";
 import Env from "#config/env.js";
 
 // Constants
-import {
-  AUTH_COOKIE_NAME,
-  CookieConfig,
-} from "#constants/generalConstants.js";
+import { AUTH_COOKIE_NAME, CookieConfig } from "#constants/generalConstants.js";
 
 // Utils
 import ResponseUtils from "#utils/responseUtils.js";
@@ -17,7 +14,9 @@ import ResponseUtils from "#utils/responseUtils.js";
  * Sign a JWT for a given user id
  */
 function signToken(userId) {
-  return jwt.sign({ id: userId }, Env.JWT_SECRET, { expiresIn: Env.JWT_EXPIRES_IN });
+  return jwt.sign({ id: userId }, Env.JWT_SECRET, {
+    expiresIn: Env.JWT_EXPIRES_IN,
+  });
 }
 
 /**

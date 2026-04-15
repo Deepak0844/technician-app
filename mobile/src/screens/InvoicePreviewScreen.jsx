@@ -8,10 +8,19 @@ import {
   TextInput,
   Linking,
 } from "react-native";
-import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { useUpdateJobMutation } from "@services/api/jobApi";
+import { JobStatuses, PaymentMethods } from "@constants/appConstants";
+import { formatDate, formatCurrency } from "@utils/formatUtils";
+import useTheme from "@hooks/useTheme";
+import { Text } from "@components/ui/text";
+
+// Icons
 import {
   ArrowLeft,
   Download,
@@ -39,27 +48,10 @@ import {
   CreditCard,
   Wallet,
 } from "lucide-react-native";
-import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
-import { Text } from "@components/ui/text";
-import useTheme from "@hooks/useTheme";
-import { useUpdateJobMutation } from "@services/api/jobApi";
 
 // ─────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function formatCurrency(amount) {
-  const num = parseFloat(amount) || 0;
-  return `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
-
 function generateInvoiceNumber(jobId) {
   if (!jobId) return "INV-000000";
   return `INV-${jobId.slice(-6).toUpperCase()}`;
@@ -452,12 +444,12 @@ export default function InvoicePreviewScreen() {
   // ── Status config ──
   function getStatusConfig(status) {
     switch (status) {
-      case "completed":
+      case JobStatuses.COMPLETED:
       case "paid":
         return { label: "PAID", color: colors.success, bg: colors.successBg, border: colors.successBorder };
-      case "in_progress":
+      case JobStatuses.IN_PROGRESS:
         return { label: "IN PROGRESS", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
-      case "cancelled":
+      case JobStatuses.CANCELLED:
         return { label: "CANCELLED", color: colors.danger, bg: colors.dangerBg, border: colors.dangerBorder };
       default:
         return { label: "PENDING", color: colors.warningIcon, bg: colors.warningBg, border: colors.warningBorder };
@@ -495,7 +487,7 @@ export default function InvoicePreviewScreen() {
   const [partsUsed, setPartsUsed] = useState(job.partsUsed || []);
   const [showTerms, setShowTerms] = useState(false);
   const [isPaid, setIsPaid] = useState(job.isPaid ?? false);
-  const [paymentMethod, setPaymentMethod] = useState(job.paymentMethod ?? "cash");
+  const [paymentMethod, setPaymentMethod] = useState(job.paymentMethod ?? PaymentMethods.CASH);
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
   if (!job) {
@@ -556,7 +548,7 @@ export default function InvoicePreviewScreen() {
         amount: grandTotal,
         isPaid,
         paymentMethod,
-        status: isPaid ? "completed" : job.status,
+        status: isPaid ? JobStatuses.COMPLETED : job.status,
       }).unwrap();
       Alert.alert("Success", "Invoice details saved successfully.");
     } catch {

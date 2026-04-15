@@ -18,5 +18,10 @@ import asyncHandler from "#middlewares/asyncHandler.js";
  */
 export const getDashboardSummary = asyncHandler(async (req, res) => {
   const summary = await DashboardService.getDashboardSummary(req.user._id);
-  return ResponseUtils.success(res, summary, HttpStatus.OK, SuccessMessages.DASHBOARD_LOADED);
+  return ResponseUtils.success(
+    res,
+    summary,
+    HttpStatus.OK,
+    SuccessMessages.DASHBOARD_LOADED,
+  );
 });

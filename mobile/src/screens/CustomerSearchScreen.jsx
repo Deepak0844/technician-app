@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { FlatList, TouchableOpacity, Alert, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import * as Contacts from "expo-contacts";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useGetCustomersQuery, useUpsertCustomerMutation } from "@services/api/customerApi";
+import { RouteNames } from "@constants/routeNames";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
-import * as Contacts from "expo-contacts";
 
 // Gluestack Primitives
 import { Box } from "@components/ui/box";
@@ -14,6 +14,9 @@ import { Heading } from "@components/ui/heading";
 import { Text } from "@components/ui/text";
 import { Input, InputField } from "@components/ui/input";
 import { Button, ButtonText } from "@components/ui/button";
+
+// Icons
+import { ArrowLeft } from "lucide-react-native";
 
 export default function CustomerSearchScreen() {
   const navigation = useNavigation();
@@ -147,7 +150,7 @@ export default function CustomerSearchScreen() {
           Find or Add Customer
         </Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate("CreateCustomer", { onSelectCustomer })}
+          onPress={() => navigation.navigate(RouteNames.CREATE_CUSTOMER, { onSelectCustomer })}
           style={{ 
             backgroundColor: colors.secondaryBg, 
             paddingHorizontal: 12, 

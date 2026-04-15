@@ -1,5 +1,8 @@
 // Constants
-import { AUTH_COOKIE_NAME, SuccessMessages } from "#constants/generalConstants.js";
+import {
+  AUTH_COOKIE_NAME,
+  SuccessMessages,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils

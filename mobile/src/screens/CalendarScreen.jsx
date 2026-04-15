@@ -3,13 +3,14 @@ import { ScrollView, View, TouchableOpacity, RefreshControl, FlatList, Dimension
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar } from "react-native-calendars";
-import OfflineBanner from "@components/OfflineBanner";
-import Avatar from "@components/Avatar";
 import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { useGetJobsQuery } from "@services/api/jobApi";
+import { RouteNames } from "@constants/routeNames";
 import { getLocalDateString } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
+import OfflineBanner from "@components/OfflineBanner";
+import Avatar from "@components/Avatar";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
@@ -189,7 +190,7 @@ export default function CalendarScreen() {
                   <CalendarIcon color={colors.primary} size={20} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate("Profile")}
+                  onPress={() => navigation.navigate(RouteNames.PROFILE)}
                   activeOpacity={0.7}
                 >
                   <Avatar name={user?.name} uri={user?.avatar} size={40} />
@@ -350,7 +351,7 @@ export default function CalendarScreen() {
                       {/* Job Card */}
                       <TouchableOpacity
                         activeOpacity={0.9}
-                        onPress={() => navigation.navigate("JobDetails", { job })}
+                        onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
                         style={{ backgroundColor: colors.bgCard, borderRadius: 28, padding: 20, borderWidth: 1, borderColor: isInProgress ? colors.secondaryBorder : colors.border }}
                       >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -390,7 +391,7 @@ export default function CalendarScreen() {
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
                           <TouchableOpacity
-                            onPress={() => navigation.navigate("JobDetails", { job })}
+                            onPress={() => navigation.navigate(RouteNames.JOB_DETAILS, { job })}
                             style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: isInProgress ? colors.secondary : isCompleted ? colors.bgSurface : colors.primary, borderWidth: isCompleted ? 1 : 0, borderColor: colors.border }}
                           >
                             <Text style={{ fontFamily: 'Space Grotesk', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 4, color: isCompleted ? colors.textPrimary : colors.bgPrimary }}>
@@ -412,7 +413,7 @@ export default function CalendarScreen() {
         <View style={{ position: 'absolute', right: 24, bottom: 100, zIndex: 40 }}>
           <TouchableOpacity
             activeOpacity={0.9}
-            onPress={() => navigation.navigate("AddJob", { initialDate: selectedDate, origin: 'Calendar' })}
+            onPress={() => navigation.navigate(RouteNames.ADD_JOB, { initialDate: selectedDate, origin: 'Calendar' })}
             style={{ width: 56, height: 56, borderRadius: 16, overflow: 'hidden', shadowColor: colors.primaryDeep, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
           >
             <LinearGradient

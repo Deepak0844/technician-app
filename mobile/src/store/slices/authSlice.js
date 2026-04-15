@@ -1,22 +1,27 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiConfig";
-import StorageUtils from "../../utils/storageUtils";
-import { ApiUrls } from "../../constants/appConstants";
+import StorageUtils from "@utils/storageUtils";
+import { authApi } from "@services/api/authApi";
 
-export const initializeAuth = createAsyncThunk("auth/initialize", async (_, { rejectWithValue }) => {
-  const token = await StorageUtils.getToken();
-  if (!token) return rejectWithValue("no_token");
-  try {
-    const response = await axios.get(`${API_BASE_URL}${ApiUrls.AUTH_ME}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return { token, user: response.data?.data };
-  } catch {
-    await StorageUtils.clearToken();
-    return rejectWithValue("invalid_token");
-  }
-});
+export const initializeAuth = createAsyncThunk(
+  "auth/initialize",
+  async (_, { dispatch, rejectWithValue }) => {
+    const token = await StorageUtils.getToken();
+    if (!token) return rejectWithValue("no_token");
+    try {
+      const result = await dispatch(
+        authApi.endpoints.getMe.initiate(undefined, { forceRefetch: true }),
+      );
+      if (result.error) {
+        await StorageUtils.clearToken();
+        return rejectWithValue("invalid_token");
+      }
+      return { token, user: result.data?.data };
+    } catch {
+      await StorageUtils.clearToken();
+      return rejectWithValue("invalid_token");
+    }
+  },
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -77,5 +82,10 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, clearCredentials, completeFirstLoginSetup, updateUser } = authSlice.actions;
+export const {
+  setCredentials,
+  clearCredentials,
+  completeFirstLoginSetup,
+  updateUser,
+} = authSlice.actions;
 export default authSlice.reducer;

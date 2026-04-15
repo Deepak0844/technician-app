@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Home, History, PlusSquare, CalendarDays, Users } from "lucide-react-native";
 import useRescheduleRemindersOnAppStart from "@hooks/useRescheduleRemindersOnAppStart";
 import useTheme from "@hooks/useTheme";
+import { RouteNames } from "@constants/routeNames";
 
 import DashboardScreen from "@screens/DashboardScreen";
 import CalendarScreen from "@screens/CalendarScreen";
@@ -57,11 +58,11 @@ function TabNavigator() {
         },
         tabBarIcon: ({ focused, color, size }) => {
           let IconComponent;
-          if (route.name === "Dashboard") IconComponent = Home;
-          else if (route.name === "JobHistory") IconComponent = History;
-          else if (route.name === "Customers") IconComponent = Users;
-          else if (route.name === "AddJob") IconComponent = PlusSquare;
-          else if (route.name === "Calendar") IconComponent = CalendarDays;
+          if (route.name === RouteNames.DASHBOARD) IconComponent = Home;
+          else if (route.name === RouteNames.JOB_HISTORY) IconComponent = History;
+          else if (route.name === RouteNames.CUSTOMERS) IconComponent = Users;
+          else if (route.name === RouteNames.ADD_JOB) IconComponent = PlusSquare;
+          else if (route.name === RouteNames.CALENDAR) IconComponent = CalendarDays;
 
           return (
             <IconComponent
@@ -74,27 +75,27 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen
-        name="Dashboard"
+        name={RouteNames.DASHBOARD}
         component={DashboardScreen}
         options={{ tabBarLabel: "Home" }}
       />
       <Tab.Screen
-        name="JobHistory"
+        name={RouteNames.JOB_HISTORY}
         component={JobHistoryScreen}
         options={{ tabBarLabel: "History" }}
       />
       <Tab.Screen
-        name="AddJob"
+        name={RouteNames.ADD_JOB}
         component={AddJobScreen}
         options={{ tabBarLabel: "Add Job" }}
       />
       <Tab.Screen
-        name="Calendar"
+        name={RouteNames.CALENDAR}
         component={CalendarScreen}
         options={{ tabBarLabel: "Calendar" }}
       />
       <Tab.Screen
-        name="Customers"
+        name={RouteNames.CUSTOMERS}
         component={CustomerListScreen}
         options={{ tabBarLabel: "Customers" }}
       />
@@ -107,16 +108,16 @@ export default function MainTabs() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Tabs" component={TabNavigator} />
-      <Stack.Screen name="CustomerSearch" component={CustomerSearchScreen} />
-      <Stack.Screen name="CustomerDetails" component={CustomerDetailsScreen} />
-      <Stack.Screen name="JobDetails" component={JobDetailsScreen} />
-      <Stack.Screen name="AddJob" component={AddJobScreen} />
-      <Stack.Screen name="Profile" component={ProfileScreen} />
-      <Stack.Screen name="InvoicePreview" component={InvoicePreviewScreen} />
-      <Stack.Screen name="Reminders" component={RemindersScreen} />
-      <Stack.Screen name="CreateCustomer" component={CreateCustomerScreen} />
-      <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
+      <Stack.Screen name={RouteNames.TABS} component={TabNavigator} />
+      <Stack.Screen name={RouteNames.CUSTOMER_SEARCH} component={CustomerSearchScreen} />
+      <Stack.Screen name={RouteNames.CUSTOMER_DETAILS} component={CustomerDetailsScreen} />
+      <Stack.Screen name={RouteNames.JOB_DETAILS} component={JobDetailsScreen} />
+      <Stack.Screen name={RouteNames.ADD_JOB} component={AddJobScreen} />
+      <Stack.Screen name={RouteNames.PROFILE} component={ProfileScreen} />
+      <Stack.Screen name={RouteNames.INVOICE_PREVIEW} component={InvoicePreviewScreen} />
+      <Stack.Screen name={RouteNames.REMINDERS} component={RemindersScreen} />
+      <Stack.Screen name={RouteNames.CREATE_CUSTOMER} component={CreateCustomerScreen} />
+      <Stack.Screen name={RouteNames.SETUP_PROFILE} component={SetupProfileScreen} />
     </Stack.Navigator>
   );
 }

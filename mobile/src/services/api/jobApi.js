@@ -1,7 +1,7 @@
-import api from "../api";
-import { ApiUrls } from "../../constants/appConstants";
-import { TagTypes } from "../../constants/apiTags";
-import ApiUtils from "./apiUtils";
+import api from "@services/api";
+import { ApiUrls } from "@constants/appConstants";
+import { TagTypes } from "@constants/apiTags";
+import ApiUtils from "@services/api/apiUtils";
 
 export const jobApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -17,7 +17,11 @@ export const jobApi = api.injectEndpoints({
       ],
     }),
     updateJob: builder.mutation({
-      query: ({ id, ...body }) => ({ url: ApiUrls.JOB_BY_ID(id), method: "put", data: body }),
+      query: ({ id, ...body }) => ({
+        url: ApiUrls.JOB_BY_ID(id),
+        method: "put",
+        data: body,
+      }),
       invalidatesTags: (result, error, arg) => [
         ...ApiUtils.entityTags(TagTypes.JOBS)(result, error, arg),
         ...ApiUtils.listTags(TagTypes.JOBS),

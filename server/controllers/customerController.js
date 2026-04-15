@@ -18,8 +18,17 @@ import asyncHandler from "#middlewares/asyncHandler.js";
  */
 export const searchCustomers = asyncHandler(async (req, res) => {
   const { q, page, pageSize } = req.query;
-  const result = await CustomerService.searchCustomers(req.user._id, { q, page, pageSize });
-  return ResponseUtils.success(res, result, HttpStatus.OK, SuccessMessages.CUSTOMERS_LOADED);
+  const result = await CustomerService.searchCustomers(req.user._id, {
+    q,
+    page,
+    pageSize,
+  });
+  return ResponseUtils.success(
+    res,
+    result,
+    HttpStatus.OK,
+    SuccessMessages.CUSTOMERS_LOADED,
+  );
 });
 
 /**
@@ -29,7 +38,12 @@ export const searchCustomers = asyncHandler(async (req, res) => {
  */
 export const upsertCustomer = asyncHandler(async (req, res) => {
   const customer = await CustomerService.upsertCustomer(req.user._id, req.body);
-  return ResponseUtils.success(res, customer, HttpStatus.OK, SuccessMessages.CUSTOMER_CREATED);
+  return ResponseUtils.success(
+    res,
+    customer,
+    HttpStatus.OK,
+    SuccessMessages.CUSTOMER_CREATED,
+  );
 });
 
 /**
@@ -38,8 +52,16 @@ export const upsertCustomer = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getCustomerById = asyncHandler(async (req, res) => {
-  const customer = await CustomerService.getCustomerById(req.user._id, req.params.id);
-  return ResponseUtils.success(res, customer, HttpStatus.OK, SuccessMessages.CUSTOMER_LOADED);
+  const customer = await CustomerService.getCustomerById(
+    req.user._id,
+    req.params.id,
+  );
+  return ResponseUtils.success(
+    res,
+    customer,
+    HttpStatus.OK,
+    SuccessMessages.CUSTOMER_LOADED,
+  );
 });
 
 /**
@@ -48,8 +70,17 @@ export const getCustomerById = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const updateCustomer = asyncHandler(async (req, res) => {
-  const customer = await CustomerService.updateCustomer(req.user._id, req.params.id, req.body);
-  return ResponseUtils.success(res, customer, HttpStatus.OK, SuccessMessages.CUSTOMER_UPDATED);
+  const customer = await CustomerService.updateCustomer(
+    req.user._id,
+    req.params.id,
+    req.body,
+  );
+  return ResponseUtils.success(
+    res,
+    customer,
+    HttpStatus.OK,
+    SuccessMessages.CUSTOMER_UPDATED,
+  );
 });
 
 /**
@@ -59,5 +90,10 @@ export const updateCustomer = asyncHandler(async (req, res) => {
  */
 export const deleteCustomer = asyncHandler(async (req, res) => {
   await CustomerService.deleteCustomer(req.user._id, req.params.id);
-  return ResponseUtils.success(res, null, HttpStatus.OK, SuccessMessages.CUSTOMER_DELETED);
+  return ResponseUtils.success(
+    res,
+    null,
+    HttpStatus.OK,
+    SuccessMessages.CUSTOMER_DELETED,
+  );
 });

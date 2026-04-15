@@ -1,10 +1,15 @@
 import React from "react";
-import { NavigationContainer, DarkTheme, DefaultTheme } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DarkTheme,
+  DefaultTheme,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
-import AuthStack from "./AuthStack";
-import MainTabs from "./MainTabs";
+import AuthStack from "@navigation/AuthStack";
+import MainTabs from "@navigation/MainTabs";
 import { DarkColors, LightColors } from "@constants/colors";
+import { StackNames } from "@constants/routeNames";
 
 const RootStack = createNativeStackNavigator();
 
@@ -30,9 +35,9 @@ export default function AppNavigator() {
     <NavigationContainer theme={AppTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
-          <RootStack.Screen name="Main" component={MainTabs} />
+          <RootStack.Screen name={StackNames.MAIN} component={MainTabs} />
         ) : (
-          <RootStack.Screen name="Auth" component={AuthStack} />
+          <RootStack.Screen name={StackNames.AUTH} component={AuthStack} />
         )}
       </RootStack.Navigator>
     </NavigationContainer>

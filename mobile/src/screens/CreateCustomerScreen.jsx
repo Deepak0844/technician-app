@@ -9,17 +9,17 @@ import {
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
 import * as Contacts from "expo-contacts";
-import { ArrowLeft, User, Phone, Mail, Zap, Plus } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-
-// Custom
-import useTheme from "@hooks/useTheme";
-import { Text } from "@components/ui/text";
+import { useNavigation } from "@react-navigation/native";
 import { useUpsertCustomerMutation, useUpdateCustomerMutation } from "@services/api/customerApi";
 import useNetworkStatus from "@hooks/useNetworkStatus";
+import useTheme from "@hooks/useTheme";
+import { Text } from "@components/ui/text";
 import LocationFormSection from "@components/LocationFormSection";
+
+// Icons
+import { ArrowLeft, User, Phone, Mail, Zap, Plus } from "lucide-react-native";
 
 /** Generates a stable-enough local ID for new locations before server assignment. */
 function generateLocalId() {
