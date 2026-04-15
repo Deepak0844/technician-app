@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef } from "react";
-import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity, Image } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity } from "react-native";
 import { useDispatch } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { useSendOtpMutation, useVerifyOtpMutation } from "@services/api/authApi";
@@ -26,6 +26,8 @@ export default function OtpLoginScreen() {
   const [otp, setOtp] = useState("");
   const [sessionId, setSessionId] = useState(null);
   const [step, setStep] = useState("phone");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef(null);
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { colors } = useTheme();
@@ -44,7 +46,23 @@ export default function OtpLoginScreen() {
         useNativeDriver: true,
       })
     ).start();
+    // Clean up resend countdown on unmount
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, [scanAnim]);
+
+  /** Start a 60-second resend cooldown to prevent OTP spam. */
+  function startCooldown() {
+    setResendCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
 
   const translateY = scanAnim.interpolate({
     inputRange: [0, 1],
@@ -52,13 +70,31 @@ export default function OtpLoginScreen() {
   });
 
   async function handleSendOtp() {
-    if (!phone.trim()) { Alert.alert("Error", "Please enter your phone number"); return; }
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) { Alert.alert("Error", "Please enter your phone number"); return; }
+    if (!/^\+?\d{7,15}$/.test(trimmedPhone)) {
+      Alert.alert("Error", "Please enter a valid phone number (7\u201315 digits, optional leading +)");
+      return;
+    }
+    try {
+      const res = await sendOtp({ phone: trimmedPhone }).unwrap();
+      setSessionId(res.data.sessionId);
+      setStep("otp");
+      startCooldown();
+    } catch (error) {
+      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to send OTP";
+      Alert.alert("Error", String(errorMsg));
+    }
+  }
+
+  async function handleResendOtp() {
+    if (resendCooldown > 0 || isSending) return;
     try {
       const res = await sendOtp({ phone: phone.trim() }).unwrap();
       setSessionId(res.data.sessionId);
-      setStep("otp");
+      startCooldown();
     } catch (error) {
-      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to send OTP";
+      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to resend OTP";
       Alert.alert("Error", String(errorMsg));
     }
   }
@@ -87,12 +123,6 @@ export default function OtpLoginScreen() {
         style={{ flex: 1, backgroundColor: colors.bgPrimary }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Background Decoration Image */}
-        <Image
-          source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBkN6DFsmnByBHAUsGPnn8oEfZ1tY0dMy4dp4Jivlz8fNKvaKo0btrAJ92NTTHRFXb7Z5rW3RDT5QBA-Ody6NVHyWssTxG661idIQUxt8AQxigwanc8Ee2QMD6AvJO9kJ-fmj-2eX7fbM31YRMrhFLAMKJ26m-0fzJCU3XslnlGTN6am_sWKRX3nN4pcMmXjzcxRE931XI4mmEIgF64eEqsCkIcktb05ANggOPldbgB9rhN0nvFHMXakr8IcOO5EcYowsWRthOaIu11" }}
-          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0.1 }}
-        />
-
         {/* Aesthetic Background Elements */}
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}>
           <View
@@ -314,9 +344,12 @@ export default function OtpLoginScreen() {
                   </Text>
                 </TouchableOpacity>
                 {step === "otp" ? (
-                  <TouchableOpacity onPress={() => setStep("phone")}>
-                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: colors.textSecondary }}>
-                      Change Method
+                  <TouchableOpacity
+                    onPress={resendCooldown > 0 ? undefined : handleResendOtp}
+                    disabled={resendCooldown > 0 || isSending}
+                  >
+                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: resendCooldown > 0 ? colors.textMuted : colors.primary }}>
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
                     </Text>
                   </TouchableOpacity>
                 ) : (

@@ -13,7 +13,6 @@ function convertToCSV(data) {
   if (!data || data.length === 0) return '';
 
   const headers = [
-    'Job ID',
     'Customer Name',
     'Phone',
     'Date',
@@ -37,7 +36,6 @@ function convertToCSV(data) {
     const paidStatus = job.isPaid ? 'Paid' : 'Unpaid';
 
     return [
-      job._id || 'N/A',
       `"${customerName}"`, // Wrap in quotes to handle names with commas
       customerPhone,
       date,

@@ -12,7 +12,7 @@ const draftSlice = createSlice({
     addDraft: (state, action) => {
       const { data, customerName, applianceType } = action.payload;
       state.drafts.push({
-        id: Date.now().toString(), // Using timestamp as simple ID
+        id: uuidv4(),
         data,
         customerName,
         applianceType,

@@ -1,6 +1,7 @@
 import axios, { isCancel } from "axios";
 import { API_BASE_URL } from "../config/apiConfig";
 import StorageUtils from "../utils/storageUtils";
+import { clearCredentials } from "../store/slices/authSlice";
 
 const customBaseQuery =
   () =>
@@ -22,6 +23,13 @@ const customBaseQuery =
       return { data: response.data };
     } catch (error) {
       if (isCancel(error)) throw error;
+
+      // Token expired or revoked — clear credentials and redirect to login
+      if (error.response?.status === 401) {
+        await StorageUtils.clearToken();
+        api.dispatch(clearCredentials());
+      }
+
       return {
         error: {
           status: error.response?.status,
