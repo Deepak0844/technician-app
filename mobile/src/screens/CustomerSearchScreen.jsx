@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FlatList, TouchableOpacity, Alert, View } from "react-native";
+import { FlatList, TouchableOpacity, Alert, View, ActivityIndicator, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Contacts from "expo-contacts";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -29,6 +29,7 @@ export default function CustomerSearchScreen() {
   const [query, setQuery] = useState("");
   const [deviceContacts, setDeviceContacts] = useState([]);
   const [isFetchingAll, setIsFetchingAll] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [upsertCustomer] = useUpsertCustomerMutation();
   const { isConnected } = useNetworkStatus();
 
@@ -60,6 +61,7 @@ export default function CustomerSearchScreen() {
     }
 
     if (isConnected) {
+      setIsSyncing(true);
       try {
         const res = await upsertCustomer({
           name: contact.name,
@@ -70,6 +72,7 @@ export default function CustomerSearchScreen() {
           onSelectCustomer(serverCustomer);
         navigation.goBack();
       } catch (err) {
+        setIsSyncing(false);
         const message =
           err?.data?.message ||
           err?.data?.error ||
@@ -153,10 +156,45 @@ export default function CustomerSearchScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
-      edges={["top"]}
-    >
+    <>
+      {/* Syncing overlay */}
+      <Modal visible={isSyncing} transparent animationType="fade" statusBarTranslucent>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: colors.bgCard,
+              borderRadius: 20,
+              padding: 32,
+              alignItems: "center",
+              gap: 16,
+              minWidth: 180,
+            }}
+          >
+            <ActivityIndicator size="large" color={colors.secondary} />
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontWeight: "700",
+                color: colors.textPrimary,
+                fontSize: 14,
+              }}
+            >
+              Saving contact...
+            </Text>
+          </View>
+        </View>
+      </Modal>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+        edges={["top"]}
+      >
       {/* Header Bar */}
       <View
         style={{
@@ -261,7 +299,7 @@ export default function CustomerSearchScreen() {
         <Button
           variant="outline"
           onPress={handlePickContact}
-          disabled={isFetchingAll}
+          disabled={isFetchingAll || isSyncing}
           style={{
             borderWidth: 2,
             borderColor: colors.secondaryBorder,
@@ -387,5 +425,6 @@ export default function CustomerSearchScreen() {
         />
       </Box>
     </SafeAreaView>
+    </>
   );
 }

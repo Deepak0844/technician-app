@@ -1,5 +1,3 @@
-import Constants from "expo-constants";
-
 /**
  * API base URL — dynamically resolves the dev server IP from Expo,
  * so you never need to hardcode your machine's IP again.
@@ -20,14 +18,10 @@ if (!__DEV__ && !PROD_BASE_URL) {
 }
 
 const getDevBaseUrl = () => {
-  const host =
-    Constants.expoGoConfig?.debuggerHost ??
-    Constants.manifest?.debuggerHost ??
-    "localhost";
-  const ip = host.split(":")[0];
+  const ip = "192.168.29.115";
   return `http://${ip}:${DEV_SERVER_PORT}/api/v1`;
 };
 
 const API_BASE_URL = __DEV__ ? getDevBaseUrl() : PROD_BASE_URL;
-
+console.log(`API Base URL: ${API_BASE_URL}`);
 export { API_BASE_URL };

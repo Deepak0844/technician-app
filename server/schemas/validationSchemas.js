@@ -143,8 +143,9 @@ export const upsertCustomerSchema = z.object({
     .or(z.literal("")),
   locations: z
     .array(locationSchema)
-    .min(1, "At least one location is required")
-    .max(20, "Too many locations"),
+    .max(20, "Too many locations")
+    .optional()
+    .default([]),
 });
 
 /**
