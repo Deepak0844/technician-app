@@ -89,7 +89,7 @@ export default function DashboardScreen() {
       style={{ flex: 1, backgroundColor: colors.bgSecondary }}
       edges={["top"]}
     >
-      {/* TopAppBar */}}
+      {/* TopAppBar */}
       <LinearGradient
         colors={colors.gradientHeader}
         style={{

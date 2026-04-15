@@ -72,7 +72,7 @@ export default function JobHistoryScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <Box style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
 
-        {/* TopAppBar */}}
+        {/* TopAppBar */}
         <LinearGradient
           colors={colors.gradientHeader}
           style={{

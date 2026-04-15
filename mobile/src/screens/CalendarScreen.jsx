@@ -237,7 +237,7 @@ export default function CalendarScreen() {
           }
         >
 
-          {/* Header section */}}
+          {/* Header section */}
           <View
             style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }}
           >

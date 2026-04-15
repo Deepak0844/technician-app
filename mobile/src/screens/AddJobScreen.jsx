@@ -344,7 +344,7 @@ export default function AddJobScreen() {
       style={{ flex: 1, backgroundColor: colors.bgPrimary }}
       edges={["top"]}
     >
-      {/* TopAppBar */}}
+      {/* TopAppBar */}
       <View
         style={{
           width: "100%",
