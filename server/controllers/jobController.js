@@ -32,14 +32,25 @@ export const createJob = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getJobs = asyncHandler(async (req, res) => {
-  const { customerId, startDate, endDate, status, search, page, pageSize } =
-    req.query;
+  const {
+    customerId,
+    startDate,
+    endDate,
+    status,
+    search,
+    isPaid,
+    applianceType,
+    page,
+    pageSize,
+  } = req.query;
   const result = await JobService.getJobs(req.user._id, {
     customerId,
     startDate,
     endDate,
     status,
     search,
+    isPaid,
+    applianceType,
     page,
     pageSize,
   });

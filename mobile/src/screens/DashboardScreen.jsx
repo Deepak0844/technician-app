@@ -582,11 +582,12 @@ export default function DashboardScreen() {
               <Text
                 style={{
                   fontFamily: "Inter",
-                  fontSize: 14,
+                  fontSize: 13,
                   color: colors.primary,
+                  fontWeight: "600",
                 }}
               >
-                View All
+                View All{totalJobs > 0 ? ` (${totalJobs})` : ""}
               </Text>
             </TouchableOpacity>
           </View>

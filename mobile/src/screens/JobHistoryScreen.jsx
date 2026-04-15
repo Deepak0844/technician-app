@@ -1,11 +1,17 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useState } from "react";
-import { FlatList, View, TouchableOpacity, RefreshControl } from "react-native";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  FlatList,
+  View,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Search, Filter, X, Check } from "lucide-react-native";
-import { useGetJobsQuery } from "@services/api/jobApi";
+import { useGetJobsPagedInfiniteQuery } from "@services/api/jobApi";
 import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -30,6 +36,7 @@ export default function JobHistoryScreen() {
   const [applianceFilter, setApplianceFilter] = useState(undefined);
   const bottomSheetRef = React.useRef(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const hasScrolledRef = useRef(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -39,21 +46,35 @@ export default function JobHistoryScreen() {
   }, [search]);
 
   const {
-    data: jobsResponse,
+    data: jobsData,
     isLoading: loadingJobs,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refetch,
-  } = useGetJobsQuery({
+  } = useGetJobsPagedInfiniteQuery({
     search: debouncedSearch,
     customerId: route.params?.customerId,
     isPaid: isPaidFilter,
     applianceType: applianceFilter,
   });
 
-  const onRefresh = React.useCallback(async () => {
+  // Reset scroll guard when filters or search change so a fresh
+  // page-1 result never auto-loads page 2 before the user scrolls.
+  useEffect(() => {
+    hasScrolledRef.current = false;
+  }, [debouncedSearch, isPaidFilter, applianceFilter]);
+
+  const onRefresh = React.useCallback(() => {
+    hasScrolledRef.current = false;
     refetch();
   }, [refetch]);
 
-  const allJobs = jobsResponse?.data || [];
+  const jobs = useMemo(
+    () => jobsData?.pages.flatMap((p) => p.data) ?? [],
+    [jobsData],
+  );
 
   function getStatusColor(status) {
     if (status === "completed") return colors.secondary;
@@ -65,6 +86,8 @@ export default function JobHistoryScreen() {
   function getStatusBorderColor(status) {
     if (status === "completed") return colors.secondary;
     if (status === "cancelled") return colors.danger;
+    if (status === "pending") return colors.warning;
+    if (status === "in_progress") return colors.primary;
     return colors.border;
   }
 
@@ -273,13 +296,26 @@ export default function JobHistoryScreen() {
           )}
 
           <FlatList
-            data={allJobs}
+            data={jobs}
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 150 }}
+            onScrollBeginDrag={() => {
+              hasScrolledRef.current = true;
+            }}
+            onEndReached={() => {
+              if (
+                hasScrolledRef.current &&
+                hasNextPage &&
+                !isFetchingNextPage
+              ) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
             refreshControl={
               <RefreshControl
-                refreshing={false}
+                refreshing={isFetching && !isFetchingNextPage && !!jobsData}
                 onRefresh={onRefresh}
                 tintColor={colors.indigo}
                 colors={[colors.indigo]}
@@ -293,6 +329,13 @@ export default function JobHistoryScreen() {
                   ))}
                 </View>
               )
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <ActivityIndicator color={colors.indigo} />
+                </View>
+              ) : null
             }
             renderItem={({ item }) => (
               <TouchableOpacity

@@ -9,6 +9,22 @@ export const jobApi = api.injectEndpoints({
       query: (params) => ({ url: ApiUrls.JOBS, params }),
       providesTags: ApiUtils.paginatedTags(TagTypes.JOBS),
     }),
+    // Infinite-scroll variant used by JobHistoryScreen
+    getJobsPaged: builder.infiniteQuery({
+      infiniteQueryOptions: {
+        initialPageParam: 1,
+        refetchCachedPages: false, // on any refetch (pull-to-refresh, tag invalidation) restart from page 1
+        getNextPageParam: (lastPage) =>
+          lastPage.pagination?.hasNext
+            ? lastPage.pagination.page + 1
+            : undefined,
+      },
+      query: ({ queryArg, pageParam }) => ({
+        url: ApiUrls.JOBS,
+        params: { ...queryArg, page: pageParam, pageSize: 10 },
+      }),
+      providesTags: () => ApiUtils.listTags(TagTypes.JOBS),
+    }),
     createJob: builder.mutation({
       query: (body) => ({ url: ApiUrls.JOBS, method: "post", data: body }),
       invalidatesTags: (result, error, arg) => [
@@ -59,6 +75,7 @@ export const jobApi = api.injectEndpoints({
 export const {
   useGetJobsQuery,
   useLazyGetJobsQuery,
+  useGetJobsPagedInfiniteQuery,
   useCreateJobMutation,
   useUpdateJobMutation,
   useGetJobByIdQuery,

@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   FlatList,
   TouchableOpacity,
   View,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { useGetCustomersQuery } from "@services/api/customerApi";
+import { useGetCustomersPagedInfiniteQuery } from "@services/api/customerApi";
 import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
@@ -32,12 +33,33 @@ export default function CustomerListScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const [query, setQuery] = useState("");
+  const hasScrolledRef = useRef(false);
 
-  // RTK Query
-  const { data: customersResponse, isLoading } = useGetCustomersQuery({
-    search: query,
-  });
-  const customers = customersResponse?.data || [];
+  const {
+    data: customersData,
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useGetCustomersPagedInfiniteQuery({ q: query });
+
+  // Reset scroll guard whenever the search changes so a fresh
+  // page-1 result never auto-loads page 2 before the user scrolls.
+  useEffect(() => {
+    hasScrolledRef.current = false;
+  }, [query]);
+
+  const onRefresh = React.useCallback(() => {
+    hasScrolledRef.current = false;
+    refetch();
+  }, [refetch]);
+
+  const allCustomers = useMemo(
+    () => customersData?.pages.flatMap((p) => p.data) ?? [],
+    [customersData],
+  );
 
   return (
     <SafeAreaView
@@ -126,10 +148,40 @@ export default function CustomerListScreen() {
           </View>
         ) : (
           <FlatList
-            data={customers}
+            data={allCustomers}
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
+            onScrollBeginDrag={() => {
+              hasScrolledRef.current = true;
+            }}
+            onEndReached={() => {
+              if (
+                hasScrolledRef.current &&
+                hasNextPage &&
+                !isFetchingNextPage
+              ) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={
+                  isFetching && !isFetchingNextPage && !!customersData
+                }
+                onRefresh={onRefresh}
+                tintColor={colors.indigo}
+                colors={[colors.indigo]}
+              />
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <ActivityIndicator color={colors.indigo} />
+                </View>
+              ) : null
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 onPress={() =>
