@@ -26,6 +26,7 @@ export const SuccessMessages = {
   CUSTOMER_CREATED: "Customer created successfully",
   CUSTOMER_LOADED: "Customer loaded successfully",
   CUSTOMERS_LOADED: "Customers loaded successfully",
+  CUSTOMER_UPDATED: "Customer updated successfully",
   JOB_CREATED: "Job created successfully",
   JOB_LOADED: "Job loaded successfully",
   JOBS_LOADED: "Jobs loaded successfully",

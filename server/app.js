@@ -25,7 +25,6 @@ import customerRoutes from "#routes/customerRoutes.js";
 import jobRoutes from "#routes/jobRoutes.js";
 import dashboardRoutes from "#routes/dashboardRoutes.js";
 
-
 // Create Express app
 const app = express();
 
@@ -41,7 +40,7 @@ if (Env.NODE_ENV !== "test") {
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
+  }),
 );
 
 // CORS
@@ -60,7 +59,7 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 // Rate Limiting
@@ -75,8 +74,8 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "50kb" }));
+app.use(express.urlencoded({ extended: false, limit: "50kb" }));
 app.use(cookieParser());
 
 // Request logging
@@ -93,11 +92,16 @@ app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 
 // Base route — health check
 app.get("/", (_req, res) => {
-  ResponseUtils.success(res, { message: "Technician App API is running", version: "1.0.0" });
+  ResponseUtils.success(res, {
+    message: "Technician App API is running",
+    version: "1.0.0",
+  });
 });
 
 app.get(`${BASE_URL}/health`, (_req, res) => {
-  res.status(HttpStatus.OK).json({ status: "ok", message: "Server is healthy" });
+  res
+    .status(HttpStatus.OK)
+    .json({ status: "ok", message: "Server is healthy" });
 });
 
 // 404 handler
@@ -107,12 +111,32 @@ app.use((_req, _res, next) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
-  const statusCode = err.status || err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+  // MongoDB CastError — invalid ObjectId
+  if (err.name === "CastError") {
+    return ResponseUtils.error(
+      res,
+      "Invalid ID format",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  // MongoDB duplicate key error
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || "field";
+    return ResponseUtils.error(
+      res,
+      `A record with that ${field} already exists.`,
+      HttpStatus.CONFLICT,
+    );
+  }
+
+  const statusCode =
+    err.status || err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
   const message = err.message || ErrorMessages.SERVER_ERROR;
 
   logger.error(
     { statusCode, method: req.method, url: req.originalUrl, stack: err.stack },
-    message
+    message,
   );
 
   ResponseUtils.error(res, message, statusCode);

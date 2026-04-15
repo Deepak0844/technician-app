@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 
 // Models
 import User from "#models/User.js";
+import TokenBlocklist from "#models/TokenBlocklist.js";
 
 // Config
 import Env from "#config/env.js";
@@ -17,7 +18,8 @@ import asyncHandler from "#middlewares/asyncHandler.js";
 import ResponseUtils from "#utils/responseUtils.js";
 
 /**
- * Protect routes — validates JWT from cookie or Authorization header
+ * Protect routes — validates JWT from cookie or Authorization header.
+ * Also rejects tokens that have been explicitly revoked via logout.
  */
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -30,21 +32,52 @@ export const protect = asyncHandler(async (req, res, next) => {
     }
 
     if (!token) {
-      return ResponseUtils.error(res, ErrorMessages.NOT_AUTHORIZED, HttpStatus.UNAUTHORIZED);
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.NOT_AUTHORIZED,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const decoded = jwt.verify(token, Env.JWT_SECRET);
+
+    // Check if this token has been revoked (i.e. user logged out)
+    const isRevoked = await TokenBlocklist.exists({ token });
+    if (isRevoked) {
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.TOKEN_EXPIRED,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
-      return ResponseUtils.error(res, ErrorMessages.NOT_AUTHORIZED, HttpStatus.UNAUTHORIZED);
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.NOT_AUTHORIZED,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
+
+    // Attach decoded payload for downstream use (e.g. logout)
+    req.token = token;
+    req.tokenExp = decoded.exp;
 
     next();
   } catch (err) {
     if (err.name === "TokenExpiredError") {
-      return ResponseUtils.error(res, ErrorMessages.TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.TOKEN_EXPIRED,
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    return ResponseUtils.error(res, ErrorMessages.NOT_AUTHORIZED, HttpStatus.UNAUTHORIZED);
+    return ResponseUtils.error(
+      res,
+      ErrorMessages.NOT_AUTHORIZED,
+      HttpStatus.UNAUTHORIZED,
+    );
   }
 });

@@ -3,7 +3,10 @@ import mongoose from "mongoose";
 import Customer from "#models/Customer.js";
 
 // Constants
-import { ErrorMessages, DefaultPagination } from "#constants/generalConstants.js";
+import {
+  ErrorMessages,
+  DefaultPagination,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -12,7 +15,10 @@ import { AppError } from "#utils/errorUtils.js";
 /**
  * Search customers for a given user by name or phone
  */
-async function searchCustomers(userId, { q = "", page = 1, pageSize = DefaultPagination.PAGE_SIZE } = {}) {
+async function searchCustomers(
+  userId,
+  { q = "", page = 1, pageSize = DefaultPagination.PAGE_SIZE } = {},
+) {
   const skip = (Number(page) - 1) * Number(pageSize);
   const query = { userId };
 
@@ -24,7 +30,11 @@ async function searchCustomers(userId, { q = "", page = 1, pageSize = DefaultPag
   }
 
   const [data, total] = await Promise.all([
-    Customer.find(query).sort({ name: 1 }).skip(skip).limit(Number(pageSize)).lean(),
+    Customer.find(query)
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(Number(pageSize))
+      .lean(),
     Customer.countDocuments(query),
   ]);
 
@@ -46,7 +56,7 @@ async function upsertCustomer(userId, { name, phone, email, locations }) {
   const customer = await Customer.findOneAndUpdate(
     { userId, phone },
     { $set: { name, email, locations } },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
   return customer;
 }
@@ -56,7 +66,8 @@ async function upsertCustomer(userId, { name, phone, email, locations }) {
  */
 async function getCustomerById(userId, customerId) {
   const customer = await Customer.findOne({ _id: customerId, userId }).lean();
-  if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  if (!customer)
+    throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return customer;
 }
 
@@ -67,10 +78,11 @@ async function updateCustomer(userId, customerId, data) {
   const customer = await Customer.findOneAndUpdate(
     { _id: customerId, userId },
     { $set: data },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).lean();
-  
-  if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+  if (!customer)
+    throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return customer;
 }
 
@@ -79,13 +91,17 @@ async function updateCustomer(userId, customerId, data) {
  */
 async function deleteCustomer(userId, customerId) {
   const Job = mongoose.model("Job");
-  const jobCount = await Job.countDocuments({ customerId });
+  const jobCount = await Job.countDocuments({ customerId, userId });
   if (jobCount > 0) {
-    throw new AppError(`Cannot delete customer with ${jobCount} associated jobs.`, HttpStatus.BAD_REQUEST);
+    throw new AppError(
+      `Cannot delete customer with ${jobCount} associated job(s).`,
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   const customer = await Customer.findOneAndDelete({ _id: customerId, userId });
-  if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  if (!customer)
+    throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return customer;
 }
 
