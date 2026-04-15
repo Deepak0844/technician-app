@@ -20,12 +20,11 @@ configureReanimatedLogger({
 import "./global.css";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
-import { PersistGate } from "redux-persist/integration/react";
-
 // Store
-import store, { persistor } from "./src/store/index";
+import store from "./src/store/index";
 import { initializeAuth } from "./src/store/slices/authSlice";
 import { initializeTheme } from "./src/store/slices/themeSlice";
+import { loadDrafts } from "./src/store/slices/draftSlice";
 
 // ... (skipping some imports for brevity in TargetContent matching)
 
@@ -64,6 +63,7 @@ function AppBootstrap() {
   useEffect(function bootstrap() {
     dispatch(initializeAuth());
     dispatch(initializeTheme());
+    dispatch(loadDrafts());
   }, [dispatch]);
 
   // Once authenticated, request OS notification permission (needed for local notifications on iOS)
@@ -113,9 +113,7 @@ function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
         <Provider store={store}>
-          <PersistGate loading={null} persistor={persistor}>
-            <RootApp />
-          </PersistGate>
+          <RootApp />
         </Provider>
       </ErrorBoundary>
     </GestureHandlerRootView>

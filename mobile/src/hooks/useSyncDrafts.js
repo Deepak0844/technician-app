@@ -29,8 +29,8 @@ export default function useSyncDrafts() {
           await NotificationUtils.scheduleJobReminders(result.data);
         }
         
-        // Remove draft upon success
-        dispatch(removeDraft(draft.id));
+        // Remove draft upon success (await so SQLite write completes)
+        await dispatch(removeDraft(draft.id)).unwrap();
         successCount++;
       } catch (err) {
         console.error(`Failed to sync draft ${draft.id}:`, err);
