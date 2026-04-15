@@ -1,7 +1,6 @@
 import axios, { isCancel } from "axios";
 import { API_BASE_URL } from "@config/apiConfig";
 import StorageUtils from "@utils/storageUtils";
-import { clearCredentials } from "@store/slices/authSlice";
 
 const customBaseQuery = () => async (rawArgs, api) => {
   const args = typeof rawArgs === "string" ? { url: rawArgs } : rawArgs;
@@ -25,7 +24,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
     // Token expired or revoked — clear credentials and redirect to login
     if (error.response?.status === 401) {
       await StorageUtils.clearToken();
-      api.dispatch(clearCredentials());
+      api.dispatch({ type: 'auth/clearCredentials' });
     }
 
     return {
