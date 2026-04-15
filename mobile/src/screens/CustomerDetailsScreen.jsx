@@ -1081,7 +1081,9 @@ export default function CustomerDetailsScreen() {
                     paddingHorizontal: 10,
                   }}
                 >
-                  This customer doesn't have any jobs yet. Create the first one!
+                  {
+                    "This customer doesn't have any jobs yet. Create the first one!"
+                  }
                 </Text>
                 <TouchableOpacity
                   onPress={() =>
