@@ -1,20 +1,9 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  View,
-  Animated,
-  Easing,
-  TouchableOpacity,
-} from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity } from "react-native";
 import { useDispatch } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
-import {
-  useSendOtpMutation,
-  useVerifyOtpMutation,
-} from "@services/api/authApi";
+import { useSendOtpMutation, useVerifyOtpMutation } from "@services/api/authApi";
 import { setCredentials } from "@store/slices/authSlice";
 import { RouteNames } from "@constants/routeNames";
 import StorageUtils from "@utils/storageUtils";
@@ -30,15 +19,7 @@ import { Input, InputField } from "@components/ui/input";
 import { ButtonSpinner } from "@components/ui/button";
 
 // Icons
-import {
-  Terminal,
-  ShieldCheck,
-  Smartphone,
-  ArrowRight,
-  Fingerprint,
-  Lock,
-  KeyRound,
-} from "lucide-react-native";
+import { Terminal, ShieldCheck, Smartphone, ArrowRight, Fingerprint, Lock, KeyRound } from "lucide-react-native";
 
 export default function OtpLoginScreen() {
   const [phone, setPhone] = useState("");
@@ -63,12 +44,10 @@ export default function OtpLoginScreen() {
         duration: 3000,
         easing: Easing.linear,
         useNativeDriver: true,
-      }),
+      })
     ).start();
     // Clean up resend countdown on unmount
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current);
-    };
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, [scanAnim]);
 
   /** Start a 60-second resend cooldown to prevent OTP spam. */
@@ -92,15 +71,9 @@ export default function OtpLoginScreen() {
 
   async function handleSendOtp() {
     const trimmedPhone = phone.trim();
-    if (!trimmedPhone) {
-      Alert.alert("Error", "Please enter your phone number");
-      return;
-    }
+    if (!trimmedPhone) { Alert.alert("Error", "Please enter your phone number"); return; }
     if (!/^\+?\d{7,15}$/.test(trimmedPhone)) {
-      Alert.alert(
-        "Error",
-        "Please enter a valid phone number (7\u201315 digits, optional leading +)",
-      );
+      Alert.alert("Error", "Please enter a valid phone number (7\u201315 digits, optional leading +)");
       return;
     }
     try {
@@ -109,11 +82,7 @@ export default function OtpLoginScreen() {
       setStep("otp");
       startCooldown();
     } catch (error) {
-      const errorMsg =
-        error?.data?.message ||
-        error?.data ||
-        error?.message ||
-        "Failed to send OTP";
+      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to send OTP";
       Alert.alert("Error", String(errorMsg));
     }
   }
@@ -125,67 +94,37 @@ export default function OtpLoginScreen() {
       setSessionId(res.data.sessionId);
       startCooldown();
     } catch (error) {
-      const errorMsg =
-        error?.data?.message ||
-        error?.data ||
-        error?.message ||
-        "Failed to resend OTP";
+      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to resend OTP";
       Alert.alert("Error", String(errorMsg));
     }
   }
 
   async function handleVerifyOtp() {
-    if (!otp.trim()) {
-      Alert.alert("Error", "Please enter the OTP");
-      return;
-    }
-    if (!sessionId) {
-      Alert.alert("Error", "Session ID missing. Please resend OTP.");
-      return;
-    }
+    if (!otp.trim()) { Alert.alert("Error", "Please enter the OTP"); return; }
+    if (!sessionId) { Alert.alert("Error", "Session ID missing. Please resend OTP."); return; }
     try {
-      const result = await verifyOtp({
-        phone: phone.trim(),
-        otp: otp.trim(),
-        sessionId,
-      }).unwrap();
+      const result = await verifyOtp({ phone: phone.trim(), otp: otp.trim(), sessionId }).unwrap();
       const { token, isFirstLogin, ...user } = result?.data ?? {};
       await StorageUtils.saveToken(token);
       dispatch(setCredentials({ token, user, isFirstLogin: !!isFirstLogin }));
-
+      
       if (isFirstLogin) {
         navigation.navigate(RouteNames.SETUP_PROFILE);
       }
     } catch (error) {
-      const errorMsg =
-        error?.data?.message ||
-        error?.data ||
-        error?.message ||
-        "OTP verification failed";
+      const errorMsg = error?.data?.message || error?.data || error?.message || "OTP verification failed";
       Alert.alert("Error", String(errorMsg));
     }
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
-      edges={["top"]}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.bgPrimary }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* Aesthetic Background Elements */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            overflow: "hidden",
-          }}
-        >
+        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}>
           <View
             style={{
               position: "absolute",
@@ -240,42 +179,19 @@ export default function OtpLoginScreen() {
             activeOpacity={0.7}
           >
             <Terminal color={colors.indigo} size={20} />
-            <Text
-              style={{
-                fontFamily: "Inter",
-                fontSize: 14,
-                textTransform: "uppercase",
-                letterSpacing: 4,
-                color: colors.textMuted,
-              }}
-            >
+            <Text style={{ fontFamily: "Inter", fontSize: 14, textTransform: "uppercase", letterSpacing: 4, color: colors.textMuted }}>
               Technician App
             </Text>
           </TouchableOpacity>
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 14,
-              fontWeight: "800",
-              letterSpacing: -0.5,
-              color: colors.indigo,
-            }}
-          >
+          <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "800", letterSpacing: -0.5, color: colors.indigo }}>
             LOGIN
           </Text>
         </LinearGradient>
 
         {/* Main Content */}
-        <View
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 16,
-            zIndex: 10,
-          }}
-        >
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16, zIndex: 10 }}>
           <View style={{ width: "100%", maxWidth: 400, marginTop: 40 }}>
+
             {/* Branding */}
             <View style={{ alignItems: "center", marginBottom: 48 }}>
               <View
@@ -294,12 +210,7 @@ export default function OtpLoginScreen() {
               >
                 <ShieldCheck color={colors.primary} size={40} />
                 <Animated.View
-                  style={{
-                    transform: [{ translateY }],
-                    position: "absolute",
-                    width: "100%",
-                    height: 2,
-                  }}
+                  style={{ transform: [{ translateY }], position: "absolute", width: "100%", height: 2 }}
                 >
                   <LinearGradient
                     colors={["transparent", colors.primary, "transparent"]}
@@ -311,24 +222,11 @@ export default function OtpLoginScreen() {
               </View>
               <Heading
                 size="3xl"
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  textAlign: "center",
-                  marginBottom: 8,
-                }}
+                style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.textPrimary, textAlign: "center", marginBottom: 8 }}
               >
                 Technician Portal
               </Heading>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 14,
-                  color: colors.textSecondary,
-                  textAlign: "center",
-                }}
-              >
+              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
                 Please verify your identity
               </Text>
             </View>
@@ -338,15 +236,7 @@ export default function OtpLoginScreen() {
               {step === "phone" ? (
                 <Box>
                   <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 11,
-                      textTransform: "uppercase",
-                      letterSpacing: 2,
-                      color: colors.textSecondary,
-                      marginBottom: 8,
-                      marginLeft: 4,
-                    }}
+                    style={{ fontFamily: "Inter", fontSize: 11, textTransform: "uppercase", letterSpacing: 2, color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}
                   >
                     Phone Number
                   </Text>
@@ -362,29 +252,15 @@ export default function OtpLoginScreen() {
                       backgroundColor: colors.bgInput,
                     }}
                   >
-                    <Smartphone
-                      color={colors.textSecondary}
-                      size={24}
-                      style={{ marginRight: 12 }}
-                    />
-                    <Input
-                      variant="unstyled"
-                      style={{ flex: 1, height: "100%" }}
-                    >
+                    <Smartphone color={colors.textSecondary} size={24} style={{ marginRight: 12 }} />
+                    <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
                       <InputField
                         placeholder="+1 (555) 000-0000"
                         placeholderTextColor={colors.placeholderText}
                         keyboardType="phone-pad"
                         value={phone}
                         onChangeText={setPhone}
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 14,
-                          color: colors.textPrimary,
-                          flex: 1,
-                          height: "100%",
-                          backgroundColor: "transparent",
-                        }}
+                        style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
                       />
                     </Input>
                   </View>
@@ -392,15 +268,7 @@ export default function OtpLoginScreen() {
               ) : (
                 <Box>
                   <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 11,
-                      textTransform: "uppercase",
-                      letterSpacing: 2,
-                      color: colors.secondary,
-                      marginBottom: 8,
-                      marginLeft: 4,
-                    }}
+                    style={{ fontFamily: "Inter", fontSize: 11, textTransform: "uppercase", letterSpacing: 2, color: colors.secondary, marginBottom: 8, marginLeft: 4 }}
                   >
                     Enter the code sent to your phone
                   </Text>
@@ -416,15 +284,8 @@ export default function OtpLoginScreen() {
                       backgroundColor: colors.bgInput,
                     }}
                   >
-                    <KeyRound
-                      color={colors.secondary}
-                      size={24}
-                      style={{ marginRight: 12 }}
-                    />
-                    <Input
-                      variant="unstyled"
-                      style={{ flex: 1, height: "100%" }}
-                    >
+                    <KeyRound color={colors.secondary} size={24} style={{ marginRight: 12 }} />
+                    <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
                       <InputField
                         placeholder="000 000"
                         placeholderTextColor={colors.placeholderText}
@@ -432,16 +293,7 @@ export default function OtpLoginScreen() {
                         value={otp}
                         onChangeText={setOtp}
                         maxLength={6}
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 14,
-                          fontWeight: "700",
-                          letterSpacing: 8,
-                          color: colors.textPrimary,
-                          flex: 1,
-                          height: "100%",
-                          backgroundColor: "transparent",
-                        }}
+                        style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", letterSpacing: 8, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
                       />
                     </Input>
                   </View>
@@ -469,27 +321,13 @@ export default function OtpLoginScreen() {
                   colors={colors.gradientPrimary}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                  }}
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
                 >
                   {isSending || isVerifying ? (
                     <ButtonSpinner color={colors.bgPrimary} />
                   ) : (
                     <>
-                      <Text
-                        style={{
-                          fontFamily: "Space Grotesk",
-                          fontWeight: "700",
-                          textTransform: "uppercase",
-                          letterSpacing: 2,
-                          color: colors.bgPrimary,
-                        }}
-                      >
+                      <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: colors.bgPrimary }}>
                         {step === "phone" ? "Send OTP" : "Verify & Login"}
                       </Text>
                       <ArrowRight color={colors.bgPrimary} size={20} />
@@ -499,27 +337,9 @@ export default function OtpLoginScreen() {
               </TouchableOpacity>
 
               {/* Help links */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingHorizontal: 4,
-                  marginTop: 8,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => Alert.alert("Help", "Contact IT Service Desk")}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      textTransform: "uppercase",
-                      letterSpacing: -0.5,
-                      color: colors.textSecondary,
-                    }}
-                  >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4, marginTop: 8 }}>
+                <TouchableOpacity onPress={() => Alert.alert("Help", "Contact IT Service Desk")}>
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: colors.textSecondary }}>
                     Help Center
                   </Text>
                 </TouchableOpacity>
@@ -528,38 +348,13 @@ export default function OtpLoginScreen() {
                     onPress={resendCooldown > 0 ? undefined : handleResendOtp}
                     disabled={resendCooldown > 0 || isSending}
                   >
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: -0.5,
-                        color:
-                          resendCooldown > 0
-                            ? colors.textMuted
-                            : colors.primary,
-                      }}
-                    >
-                      {resendCooldown > 0
-                        ? `Resend in ${resendCooldown}s`
-                        : "Resend OTP"}
+                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: resendCooldown > 0 ? colors.textMuted : colors.primary }}>
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
                     </Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity
-                    onPress={() =>
-                      Alert.alert("Change Method", "Login method options")
-                    }
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: -0.5,
-                        color: colors.textSecondary,
-                      }}
-                    >
+                  <TouchableOpacity onPress={() => Alert.alert("Change Method", "Login method options")}>
+                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: colors.textSecondary }}>
                       Change Method
                     </Text>
                   </TouchableOpacity>
@@ -568,29 +363,14 @@ export default function OtpLoginScreen() {
             </VStack>
 
             {/* Divider */}
-            <View
-              style={{
-                marginTop: 64,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 16,
-              }}
-            >
+            <View style={{ marginTop: 64, flexDirection: "row", alignItems: "center", gap: 16 }}>
               <LinearGradient
                 colors={colors.gradientDivider}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{ flex: 1, height: 1 }}
               />
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  letterSpacing: 4,
-                  color: colors.textMuted,
-                }}
-              >
+              <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: 4, color: colors.textMuted }}>
                 Secure Login
               </Text>
               <LinearGradient
@@ -602,40 +382,15 @@ export default function OtpLoginScreen() {
             </View>
 
             {/* Bottom Action */}
-            <View
-              style={{
-                marginTop: 32,
-                flexDirection: "row",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 14,
-                  color: colors.textSecondary,
-                }}
-              >
+            <View style={{ marginTop: 32, flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary }}>
                 Don&apos;t have an account?
               </Text>
               <TouchableOpacity
                 style={{ marginLeft: 4 }}
-                onPress={() =>
-                  Alert.alert(
-                    "Sign Up",
-                    "Contact administrator to provision a new technician account.",
-                  )
-                }
+                onPress={() => Alert.alert("Sign Up", "Contact administrator to provision a new technician account.")}
               >
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontWeight: "700",
-                    fontSize: 14,
-                    color: colors.primary,
-                  }}
-                >
+                <Text style={{ fontFamily: "Inter", fontWeight: "700", fontSize: 14, color: colors.primary }}>
                   Sign up
                 </Text>
               </TouchableOpacity>
@@ -659,15 +414,7 @@ export default function OtpLoginScreen() {
             opacity: 0.6,
           }}
         >
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 10,
-              textTransform: "uppercase",
-              letterSpacing: 4,
-              color: colors.textFaint,
-            }}
-          >
+          <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: 4, color: colors.textFaint }}>
             Secure Session
           </Text>
           <View style={{ flexDirection: "row", gap: 16 }}>

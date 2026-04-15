@@ -21,7 +21,6 @@ module.exports = function (api) {
             '@navigation': './src/navigation',
             '@config': './src/config',
             '@screens': './src/screens',
-            '@db': './src/db',
             '@assets': './assets',
             'tailwind.config': './tailwind.config.js',
           },
