@@ -7,7 +7,7 @@ import { useLazyGetJobsQuery } from "@services/api/jobApi";
 import { clearCredentials, updateUser } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
-import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2, Briefcase, Download, Loader2, Zap } from "lucide-react-native";
+import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2, Briefcase, Download, Zap } from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
@@ -22,7 +22,7 @@ export default function ProfileScreen() {
   const { data: meResponse, isLoading } = useGetMeQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
-  const [triggerExport, { isFetching: isExporting }] = useLazyGetJobsQuery();
+  const [triggerExport] = useLazyGetJobsQuery();
   const user = React.useMemo(() => meResponse?.data ?? cachedUser ?? {}, [meResponse?.data, cachedUser]);
 
   const [isEditing, setIsEditing] = React.useState(false);
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
             if (result?.data) {
               await exportJobsToCSV(result.data);
             }
-          } catch (err) {
+          } catch (_err) {
             Alert.alert("Export Failed", "Could not fetch job data for export.");
           }
         }

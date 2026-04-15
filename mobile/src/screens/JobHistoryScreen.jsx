@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState } from "react";
-import { FlatList, View, TouchableOpacity, RefreshControl, Image } from "react-native";
+import { FlatList, View, TouchableOpacity, RefreshControl } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";

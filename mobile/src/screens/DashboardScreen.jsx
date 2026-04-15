@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { ScrollView, View, TouchableOpacity, Image, Text, RefreshControl } from "react-native";
+import { ScrollView, View, TouchableOpacity, Text, RefreshControl } from "react-native";
 import { useSelector } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -26,7 +26,6 @@ export default function DashboardScreen() {
   // 1. RTK Query
   const {
     data: summaryResponse,
-    isLoading: loadingSummary,
     refetch: refetchSummary,
   } = useGetDashboardSummaryQuery();
 
@@ -50,7 +49,6 @@ export default function DashboardScreen() {
   };
 
   const allJobs = dashboardStats.recentJobs || [];
-  const monthlyEarnings = Number(dashboardStats?.monthlyEarnings ?? 0);
   const totalEarnings = Number(dashboardStats?.totalEarnings ?? 0);
   const earningsChange = Number(dashboardStats?.earningsChange ?? 0);
   const efficiency = Number(dashboardStats?.efficiency ?? 0);

@@ -17,7 +17,6 @@ import JobDetailsScreen from "@screens/JobDetailsScreen";
 import InvoicePreviewScreen from "@screens/InvoicePreviewScreen";
 import RemindersScreen from "@screens/RemindersScreen";
 import CreateCustomerScreen from "@screens/CreateCustomerScreen";
-import DraftsListScreen from "@screens/DraftsListScreen";
 import SetupProfileScreen from "@screens/SetupProfileScreen";
 
 const Tab = createBottomTabNavigator();

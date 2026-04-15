@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl, Platform } from "react-native";
+import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Bell, BellOff, Trash2, Clock } from "lucide-react-native";
 import * as Notifications from "expo-notifications";

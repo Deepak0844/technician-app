@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertCircle, RefreshCw, ChevronRight, HardDrive } from 'lucide-react-native';
+import { AlertCircle, RefreshCw, HardDrive } from 'lucide-react-native';
 import * as Updates from 'expo-updates';
 
 class ErrorBoundary extends React.Component {
@@ -27,7 +27,7 @@ class ErrorBoundary extends React.Component {
       } else {
         window.location.reload();
       }
-    } catch (e) {
+    } catch (_e) {
       this.setState({ hasError: false, error: null, errorInfo: null });
     }
   };

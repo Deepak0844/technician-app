@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, Pressable } from 'react-native';
-import { Plus, Trash2, Package, ShoppingCart } from 'lucide-react-native';
+import { Plus, Trash2, ShoppingCart } from 'lucide-react-native';
 import useTheme from '@hooks/useTheme';
 
 const PartsSection = ({ parts, setParts }) => {

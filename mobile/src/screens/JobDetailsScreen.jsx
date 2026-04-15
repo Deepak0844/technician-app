@@ -62,7 +62,7 @@ export default function JobDetailsScreen() {
              try {
                await updateJob({ id: job._id, isPaid: !isJobPaid }).unwrap();
                Alert.alert("Success", `Job marked as ${!isJobPaid ? "PAID" : "UNPAID"}`);
-             } catch (err) {
+             } catch (_err) {
                Alert.alert("Error", "Failed to update payment status.");
              }
           }
@@ -90,7 +90,7 @@ export default function JobDetailsScreen() {
                   await deleteJob(job._id).unwrap();
                   Alert.alert("Deleted", "Job deleted successfully.");
                   navigation.goBack();
-                } catch (err) {
+                } catch (_err) {
                   Alert.alert("Error", "Failed to delete job.");
                 }
               }}
@@ -105,7 +105,7 @@ export default function JobDetailsScreen() {
     try {
       await updateJob({ id: job._id, status: newStatus }).unwrap();
       Alert.alert("Success", `Status updated to ${newStatus.replace("_", " ")}`);
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to update status.");
     }
   };

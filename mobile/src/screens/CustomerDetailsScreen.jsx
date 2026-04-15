@@ -1,12 +1,12 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { ScrollView, View, TouchableOpacity, ActivityIndicator, Image, RefreshControl, Alert, Linking } from "react-native";
+import { ScrollView, View, TouchableOpacity, ActivityIndicator, RefreshControl, Linking } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
 
 // Services
-import { useGetCustomerByIdQuery, useDeleteCustomerMutation } from "@services/api/customerApi";
+import { useGetCustomerByIdQuery } from "@services/api/customerApi";
 import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
 
 // Gluestack Primitives
@@ -14,12 +14,10 @@ import { Text } from "@components/ui/text";
 import {
   ArrowLeft,
   Edit,
-  Trash2,
   Phone,
   CalendarPlus,
   CheckCircle2,
   Wrench,
-  User,
   Navigation as NavIcon,
   MapPin
 } from "lucide-react-native";
@@ -37,8 +35,6 @@ export default function CustomerDetailsScreen() {
   // RTK Query
   const { data: custResponse, isLoading: loadingCustomerApi, refetch: refetchCustomer } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
   const { data: jobsResponse, isLoading: loadingJobsApi, refetch: refetchJobs } = useGetJobsByCustomerQuery(customerId, { skip: !customerId });
-  const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
-
   const [selectedAppliance, setSelectedAppliance] = React.useState(null);
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -63,30 +59,7 @@ export default function CustomerDetailsScreen() {
   const rawCustomer = custResponse?.data;
   const customer = rawCustomer?.data ? rawCustomer.data : (rawCustomer || {});
 
-  async function handleDelete() {
-    Alert.alert(
-      "Delete Customer",
-      "Are you sure you want to delete this customer? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteCustomer(customerId).unwrap();
-              Alert.alert("Success", "Customer deleted successfully.");
-              navigation.navigate("Tabs", { screen: "Customers" });
-            } catch (err) {
-              Alert.alert("Error", err?.data?.message || "Failed to delete customer.");
-            }
-          }
-        }
-      ]
-    );
-  }
-
-  const isLoading = loadingCustomerApi || loadingJobsApi || isDeleting;
+  const isLoading = loadingCustomerApi || loadingJobsApi;
 
   // Calculate Appliance Portfolio
   const applianceStats = React.useMemo(() => {

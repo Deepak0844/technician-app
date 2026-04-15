@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { ScrollView, View, TouchableOpacity, Image, RefreshControl, FlatList, Dimensions } from "react-native";
+import { ScrollView, View, TouchableOpacity, RefreshControl, FlatList, Dimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar } from "react-native-calendars";
@@ -8,7 +8,7 @@ import Avatar from "@components/Avatar";
 import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { useGetJobsQuery } from "@services/api/jobApi";
-import { formatCurrency, getLocalDateString } from "@utils/formatUtils";
+import { getLocalDateString } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 
 // Gluestack Primitives

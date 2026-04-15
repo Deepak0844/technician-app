@@ -7,7 +7,6 @@ import {
   StatusBar,
   TextInput,
   Linking,
-  Platform,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -878,7 +877,7 @@ export default function InvoicePreviewScreen() {
 
           {lineItems.length === 0 && (!partsUsed || partsUsed.length === 0) && (
             <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center", paddingVertical: 16, fontStyle: "italic" }}>
-              No items. Tap "Add Row" to add a service line.
+              {'No items. Tap "Add Row" to add a service line.'}
             </Text>
           )}
         </Card>

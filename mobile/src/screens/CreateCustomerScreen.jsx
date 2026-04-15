@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import * as Contacts from "expo-contacts";
-import { ArrowLeft, User, Phone, Mail, MapPin, Zap, Plus } from "lucide-react-native";
+import { ArrowLeft, User, Phone, Mail, Zap, Plus } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 // Custom

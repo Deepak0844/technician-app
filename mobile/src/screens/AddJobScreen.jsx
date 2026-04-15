@@ -16,7 +16,6 @@ import CustomerSection from "@components/CreateJob/CustomerSection";
 import JobDetailsForm from "@components/CreateJob/JobDetailsForm";
 import WarrantySection from "@components/CreateJob/WarrantySection";
 import TimelineSection from "@components/CreateJob/TimelineSection";
-import StatusSelectionModal from "@components/CreateJob/StatusSelectionModal";
 import PartsSection from "@components/CreateJob/PartsSection";
 import AddJobModals from "@components/CreateJob/AddJobModals";
 // Gluestack Primitives
