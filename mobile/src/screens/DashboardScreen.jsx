@@ -14,28 +14,21 @@ import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
 import { RouteNames } from "@constants/routeNames";
 import { JobStatuses, PriorityLevels } from "@constants/appConstants";
 import { formatCurrency } from "@utils/formatUtils";
-import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
-import OfflineBanner from "@components/OfflineBanner";
 import Avatar from "@components/Avatar";
 
 // Icons
-import { Home, PlusCircle, Files } from "lucide-react-native";
+import { Home, PlusCircle } from "lucide-react-native";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
 
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
-  const queueCount = useSelector((state) => state.sync.queueCount);
-  const isSyncing = useSelector((state) => state.sync.isSyncing);
 
   // RTK Query
   const { data: summaryResponse, refetch: refetchSummary } =
     useGetDashboardSummaryQuery();
-
-  // Custom hooks
-  const { isConnected } = useNetworkStatus();
 
   // Local state
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -96,9 +89,7 @@ export default function DashboardScreen() {
       style={{ flex: 1, backgroundColor: colors.bgSecondary }}
       edges={["top"]}
     >
-      <OfflineBanner />
-
-      {/* TopAppBar */}
+      {/* TopAppBar */}}
       <LinearGradient
         colors={colors.gradientHeader}
         style={{
@@ -168,67 +159,9 @@ export default function DashboardScreen() {
               color: colors.textSecondary,
             }}
           >
-            Status: {isConnected ? "Online" : "Connection Required"} • Session
-            Active
+            Status: Session Active
           </Text>
         </View>
-
-        {/* Offline Sync Banner */}
-        {queueCount > 0 && (
-          <View
-            style={{
-              backgroundColor: colors.primaryBg,
-              padding: 16,
-              borderRadius: 12,
-              marginBottom: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderWidth: 1,
-              borderColor: colors.primaryBorder,
-            }}
-          >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  backgroundColor: colors.bgPrimary,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Files size={18} color={colors.primary} />
-              </View>
-              <View>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                  }}
-                >
-                  {queueCount} {queueCount === 1 ? "Job" : "Jobs"} Pending Sync
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    color: colors.textSecondary,
-                  }}
-                >
-                  {isSyncing
-                    ? "Syncing now..."
-                    : "Will sync automatically when online."}
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Summary Card - Financial Intelligence */}
         <View

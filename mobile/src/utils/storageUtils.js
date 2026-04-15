@@ -1,7 +1,4 @@
 import * as SecureStore from "expo-secure-store";
-import { db } from "@db";
-import { settings } from "@db/schema";
-import { eq } from "drizzle-orm";
 
 const TOKEN_KEY = "auth_token";
 const THEME_KEY = "app_theme_mode";
@@ -32,24 +29,15 @@ async function clearToken() {
 }
 
 /**
- * Theme preference stored in SQLite settings table.
- * Keeps all local persistence in one place — no AsyncStorage dependency.
+ * Theme preference stored in SecureStore.
  */
 async function saveTheme(mode) {
-  await db
-    .insert(settings)
-    .values({ key: THEME_KEY, value: mode })
-    .onConflictDoUpdate({ target: settings.key, set: { value: mode } });
+  await SecureStore.setItemAsync(THEME_KEY, mode);
 }
 
 async function getTheme() {
   try {
-    const rows = await db
-      .select()
-      .from(settings)
-      .where(eq(settings.key, THEME_KEY))
-      .limit(1);
-    return rows[0]?.value ?? null;
+    return await SecureStore.getItemAsync(THEME_KEY);
   } catch {
     return null;
   }

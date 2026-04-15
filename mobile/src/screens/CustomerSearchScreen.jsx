@@ -15,7 +15,6 @@ import {
   useUpsertCustomerMutation,
 } from "@services/api/customerApi";
 import { RouteNames } from "@constants/routeNames";
-import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 
 // Gluestack Primitives
@@ -38,7 +37,6 @@ export default function CustomerSearchScreen() {
   const [isFetchingAll, setIsFetchingAll] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [upsertCustomer] = useUpsertCustomerMutation();
-  const { isConnected } = useNetworkStatus();
 
   // 1. RTK Query
   const { data: customersResponse } = useGetCustomersQuery({ q: query });
@@ -67,27 +65,22 @@ export default function CustomerSearchScreen() {
       return;
     }
 
-    if (isConnected) {
-      setIsSyncing(true);
-      try {
-        const res = await upsertCustomer({
-          name: contact.name,
-          phone,
-        }).unwrap();
-        const serverCustomer = res?.data;
-        if (onSelectCustomer && serverCustomer)
-          onSelectCustomer(serverCustomer);
-        navigation.goBack();
-      } catch (err) {
-        setIsSyncing(false);
-        const message =
-          err?.data?.message ||
-          err?.data?.error ||
-          "Failed to sync contact with server.";
-        Alert.alert("Sync Failed", message);
-      }
-    } else {
-      Alert.alert("Offline", "You must be online to add a customer.");
+    setIsSyncing(true);
+    try {
+      const res = await upsertCustomer({
+        name: contact.name,
+        phone,
+      }).unwrap();
+      const serverCustomer = res?.data;
+      if (onSelectCustomer && serverCustomer) onSelectCustomer(serverCustomer);
+      navigation.goBack();
+    } catch (err) {
+      setIsSyncing(false);
+      const message =
+        err?.data?.message ||
+        err?.data?.error ||
+        "Failed to sync contact with server.";
+      Alert.alert("Sync Failed", message);
     }
   }
 

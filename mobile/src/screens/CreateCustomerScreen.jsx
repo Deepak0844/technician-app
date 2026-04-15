@@ -16,7 +16,6 @@ import {
   useUpsertCustomerMutation,
   useUpdateCustomerMutation,
 } from "@services/api/customerApi";
-import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 import { Text } from "@components/ui/text";
 import LocationFormSection from "@components/LocationFormSection";
@@ -45,7 +44,6 @@ export default function CreateCustomerScreen({ route }) {
   const navigation = useNavigation();
   const { onSelectCustomer, customer: editingCustomer } = route.params ?? {};
   const { colors } = useTheme();
-  const { isConnected } = useNetworkStatus();
   const isEditing = !!editingCustomer;
 
   const [name, setName] = useState(editingCustomer?.name ?? "");
@@ -116,10 +114,6 @@ export default function CreateCustomerScreen({ route }) {
     }
     if (!phone.trim()) {
       Alert.alert("Error", "Phone number is required");
-      return;
-    }
-    if (!isConnected) {
-      Alert.alert("Offline", "You must be online to update customers.");
       return;
     }
 

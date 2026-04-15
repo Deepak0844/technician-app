@@ -3,7 +3,10 @@ import { useDispatch } from "react-redux";
 import { eq } from "drizzle-orm";
 import { db } from "@db";
 import { syncQueue } from "@db/schema";
-import { useCreateJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
+import {
+  useCreateJobMutation,
+  useUpdateJobMutation,
+} from "@services/api/jobApi";
 import api from "@services/api";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import NotificationUtils from "@utils/notificationUtils";

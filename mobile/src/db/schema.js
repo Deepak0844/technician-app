@@ -7,8 +7,8 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 export const syncQueue = sqliteTable("sync_queue", {
   id: text("id").primaryKey(),
   operation: text("operation").notNull(), // 'CREATE_JOB' | 'UPDATE_JOB'
-  resourceId: text("resource_id"),        // null for CREATE, job._id for UPDATE
-  payload: text("payload").notNull(),     // JSON stringified job payload
+  resourceId: text("resource_id"), // null for CREATE, job._id for UPDATE
+  payload: text("payload").notNull(), // JSON stringified job payload
   retries: integer("retries").notNull().default(0),
   createdAt: text("created_at").notNull(),
 });

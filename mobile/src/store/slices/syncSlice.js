@@ -7,7 +7,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const syncSlice = createSlice({
   name: "sync",
   initialState: {
-    queueCount: 0,  // number of operations waiting to be sent to server
+    queueCount: 0, // number of operations waiting to be sent to server
     isSyncing: false,
   },
   reducers: {

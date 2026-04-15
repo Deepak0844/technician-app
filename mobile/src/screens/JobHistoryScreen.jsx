@@ -6,7 +6,6 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { ArrowLeft, Search , Filter, X, Check } from "lucide-react-native";
 import { useGetJobsQuery } from "@services/api/jobApi";
-import OfflineBanner from "@components/OfflineBanner";
 import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -72,9 +71,8 @@ export default function JobHistoryScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
       <Box style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
-        <OfflineBanner />
 
-        {/* TopAppBar */}
+        {/* TopAppBar */}}
         <LinearGradient
           colors={colors.gradientHeader}
           style={{

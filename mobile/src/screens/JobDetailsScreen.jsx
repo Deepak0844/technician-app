@@ -34,7 +34,6 @@ import {
 } from "@services/api/jobApi";
 import { JobStatuses, PriorityLevels } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
-import OfflineBanner from "@components/OfflineBanner";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 
@@ -172,8 +171,6 @@ export default function JobDetailsScreen() {
       style={{ flex: 1, backgroundColor: colors.bgPrimary }}
       edges={["top"]}
     >
-      <OfflineBanner />
-
       {/* Top Header */}
       <LinearGradient
         colors={colors.gradientHeader}

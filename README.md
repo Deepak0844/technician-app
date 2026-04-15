@@ -13,7 +13,7 @@ A full-stack mobile application for field technicians to manage service jobs, cu
 | Framework     | React Native 0.83 via **Expo SDK 55**           |
 | Navigation    | React Navigation 7 (native-stack + bottom-tabs) |
 | State         | Redux Toolkit + RTK Query                       |
-| Persistence   | Redux Persist + AsyncStorage                    |
+| Persistence   | expo-secure-store (token + theme)               |
 | Styling       | NativeWind 4 (Tailwind CSS) + Gluestack UI      |
 | Notifications | expo-notifications                              |
 | Location      | expo-location                                   |
@@ -42,11 +42,11 @@ technician-app/
 │   │   ├── components/       # Reusable UI & feature components
 │   │   ├── config/           # API base URL configuration
 │   │   ├── constants/        # Route names, colors, API tags
-│   │   ├── hooks/            # Custom hooks (sync, network, location, theme)
+│   │   ├── hooks/            # Custom hooks (location, theme, job submission)
 │   │   ├── navigation/       # App navigator, auth stack, main tabs
 │   │   ├── screens/          # All app screens
 │   │   ├── services/         # RTK Query API slices (auth, customer, job, dashboard)
-│   │   ├── store/            # Redux store & slices (auth, draft, theme)
+│   │   ├── store/            # Redux store & slices (auth, theme)
 │   │   └── utils/            # Formatting, export, notification, storage helpers
 │   ├── assets/               # Icons, splash screens
 │   ├── android/              # Native Android project (auto-generated via prebuild)
@@ -196,7 +196,6 @@ All endpoints are prefixed with `/api/v1`.
 - **Job Management** — Create, edit, view, and track service jobs with timelines
 - **Customer Management** — Customer CRUD with contact import from device
 - **Invoice Generation** — PDF invoices via expo-print with share support
-- **Offline Drafts** — Save jobs offline and sync when back online
 - **Calendar View** — Visualize scheduled jobs on a calendar
 - **Push Notifications** — Reminders for upcoming jobs
 - **Location Capture** — Capture technician location per job

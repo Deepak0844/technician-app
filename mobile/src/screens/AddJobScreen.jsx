@@ -25,7 +25,6 @@ import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
 import useJobSubmission from "@hooks/useJobSubmission";
-import OfflineBanner from "@components/OfflineBanner";
 
 // Modular Components
 import CustomerSection from "@components/CreateJob/CustomerSection";
@@ -233,7 +232,7 @@ export default function AddJobScreen() {
     }
   };
 
-  const { submitJob, isSyncing } = useJobSubmission({
+  const { submitJob, isLoading: isSyncing } = useJobSubmission({
     userId,
     editingJob,
     onSuccess: handleFinish,
@@ -345,9 +344,7 @@ export default function AddJobScreen() {
       style={{ flex: 1, backgroundColor: colors.bgPrimary }}
       edges={["top"]}
     >
-      <OfflineBanner />
-
-      {/* TopAppBar */}
+      {/* TopAppBar */}}
       <View
         style={{
           width: "100%",

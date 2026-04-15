@@ -22,7 +22,6 @@ import { useGetJobsQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import { getLocalDateString } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
-import OfflineBanner from "@components/OfflineBanner";
 import Avatar from "@components/Avatar";
 
 // Gluestack Primitives
@@ -237,9 +236,8 @@ export default function CalendarScreen() {
             />
           }
         >
-          <OfflineBanner />
 
-          {/* Header section */}
+          {/* Header section */}}
           <View
             style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 }}
           >

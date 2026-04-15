@@ -121,7 +121,6 @@ Output locations:
 - [ ] Verify dashboard stats update correctly (including paid/unpaid).
 - [ ] Test PDF invoice generation and sharing on a real device.
 - [ ] Confirm push notifications arrive for scheduled reminders.
-- [ ] Test offline draft creation and sync upon reconnection.
 
 ---
 

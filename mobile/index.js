@@ -1,14 +1,22 @@
-import "react-native-get-random-values";
-import React, { useEffect, Fragment } from "react";
-import { View, ActivityIndicator, StyleSheet, Image, Dimensions } from "react-native";
+import React, { useEffect } from "react";
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+  Dimensions,
+} from "react-native";
 
 const { width, height } = Dimensions.get("window");
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
-import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 // Disable the strict mode warning for Reanimated reading from shared values during render
 // (often triggered by third-party UI libraries like BottomSheet or Gluestack)
@@ -24,7 +32,6 @@ import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 import store from "./src/store/index";
 import { initializeAuth } from "./src/store/slices/authSlice";
 import { initializeTheme } from "./src/store/slices/themeSlice";
-import SyncManager from "./src/sync/SyncManager";
 
 // ... (skipping some imports for brevity in TargetContent matching)
 
@@ -60,27 +67,33 @@ function AppBootstrap() {
   const tokenLoaded = useSelector((state) => state.auth.tokenLoaded);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
-  useEffect(function bootstrap() {
-    dispatch(initializeAuth());
-    dispatch(initializeTheme());
-  }, [dispatch]);
+  useEffect(
+    function bootstrap() {
+      dispatch(initializeAuth());
+      dispatch(initializeTheme());
+    },
+    [dispatch],
+  );
 
   // Once authenticated, request OS notification permission (needed for local notifications on iOS)
-  useEffect(function requestNotificationPermission() {
-    if (!isAuthenticated) return;
-    NotificationUtils.requestPermissions();
-  }, [isAuthenticated]);
-  
+  useEffect(
+    function requestNotificationPermission() {
+      if (!isAuthenticated) return;
+      NotificationUtils.requestPermissions();
+    },
+    [isAuthenticated],
+  );
+
   // Request Location Permissions on App Start
   useEffect(function requestLocationPermission() {
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('Location permission denied at startup');
+        if (status !== "granted") {
+          console.log("Location permission denied at startup");
         }
       } catch (err) {
-        console.warn('Failed to request location permission at startup:', err);
+        console.warn("Failed to request location permission at startup:", err);
       }
     })();
   }, []);
@@ -95,12 +108,7 @@ function AppBootstrap() {
     );
   }
 
-  return (
-    <>
-      <SyncManager />
-      <AppNavigator />
-    </>
-  );
+  return <AppNavigator />;
 }
 
 function RootApp() {
