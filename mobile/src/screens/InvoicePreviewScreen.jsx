@@ -6,6 +6,8 @@ import {
   Alert,
   StatusBar,
   TextInput,
+  Linking,
+  Platform,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,6 +35,10 @@ import {
   ChevronRight,
   Info,
   Bell,
+  MessageCircle,
+  Banknote,
+  CreditCard,
+  Wallet,
 } from "lucide-react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -110,6 +116,7 @@ function Card({ children, style, colors }) {
 // PDF HTML Builder
 // ─────────────────────────────────────────────
 function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, subtotal }) {
+  const partsUsed = job.partsUsed || [];
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
   const customerAddress = job.location?.address || "—";
@@ -138,8 +145,21 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
           ${item.note ? `<div class="item-note">${item.note}</div>` : ""}
         </td>
         <td class="right">${item.qty}</td>
-        <td class="right">₹${parseFloat(item.rate || 0).toLocaleString("en-IN")}</td>
+        <td class="right">₹${Number(item.rate || 0).toLocaleString("en-IN")}</td>
         <td class="right bold">₹${lineTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+      </tr>`;
+  }).join("");
+
+  const partsRows = partsUsed.map((part, i) => {
+    return `
+      <tr class="${i % 2 === 1 ? "alt" : ""}">
+        <td>
+          <div class="item-name">${part.name || "Part"}</div>
+          ${part.warranty ? `<div class="item-note">Warranty: ${part.warranty}</div>` : ""}
+        </td>
+        <td class="right">${part.quantity}</td>
+        <td class="right">₹${Number(part.price || 0).toLocaleString("en-IN")}</td>
+        <td class="right bold">₹${(part.price * part.quantity).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
       </tr>`;
   }).join("");
 
@@ -341,6 +361,11 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal, sub
       </thead>
       <tbody>
         ${lineItemRows}
+        ${partsRows ? `
+        <tr>
+          <th colspan="4" style="background: #fdf2f2; font-size: 8px; color: #b91c1c; padding: 6px 12px; border-top: 1px solid #fee2e2;">Parts &amp; Components</th>
+        </tr>
+        ${partsRows}` : ""}
         <tr>
           <td colspan="3" style="padding:14px 12px; text-align:right;"><strong style="font-size:13px;color:#111827;">Grand Total</strong></td>
           <td class="right bold" style="font-size:16px;color:#4f46e5;padding:14px 12px;">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
@@ -448,22 +473,17 @@ export default function InvoicePreviewScreen() {
       return job.lineItems;
     }
 
-    const base = parseFloat(job.amount) || 0;
-    if (base > 0) {
-      const diagRate = Math.max(50, Math.round(base * 0.20));
-      const repairRate = Math.max(50, Math.round(base * 0.60));
-      const partsAmt = Math.max(0, base - diagRate - repairRate);
-      const items = [
-        { id: "1", description: "Appliance Diagnosis & Inspection", qty: "1", rate: String(diagRate), note: "" },
-        { id: "2", description: `Repair Service — ${job?.applianceType || "Appliance"}`, qty: "1", rate: String(repairRate), note: job?.serviceDone ? "Refer: Work Done section" : "" },
+    const base = Number(job.amount) || 0;
+    const partsTotal = (job.partsUsed || []).reduce((acc, p) => acc + (p.price * p.quantity), 0);
+    const laborAmt = Math.max(0, base - partsTotal);
+
+    if (laborAmt > 0) {
+      return [
+        { id: "1", description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`, qty: "1", rate: String(laborAmt), note: job?.serviceDone || "" },
       ];
-      if (partsAmt > 0) {
-        items.push({ id: "3", description: "Spare Parts & Consumables", qty: "1", rate: String(partsAmt), note: "" });
-      }
-      return items;
     }
 
-    if (job.diagnosticFee > 0) {
+    if (job.diagnosticFee > 0 && base === 0) {
       return [
         { id: "1", description: "Diagnostic / Visiting Fee", qty: "1", rate: String(job.diagnosticFee), note: "" },
       ];
@@ -473,7 +493,10 @@ export default function InvoicePreviewScreen() {
   }
 
   const [lineItems, setLineItems] = useState(buildInitialLineItems);
+  const [partsUsed, setPartsUsed] = useState(job.partsUsed || []);
   const [showTerms, setShowTerms] = useState(false);
+  const [isPaid, setIsPaid] = useState(job.isPaid ?? false);
+  const [paymentMethod, setPaymentMethod] = useState(job.paymentMethod ?? "cash");
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
   if (!job) {
@@ -492,8 +515,9 @@ export default function InvoicePreviewScreen() {
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
 
   // ── Tax computation ──
+  const partsTotal = partsUsed.reduce((acc, p) => acc + (p.price * p.quantity), 0);
   const subtotal = lineItems.reduce((s, i) => s + computeLineTotal(i), 0);
-  const grandTotal = subtotal;
+  const grandTotal = subtotal + partsTotal;
 
   // ── Line item handlers ──
   function handleAddRow() {
@@ -508,12 +532,32 @@ export default function InvoicePreviewScreen() {
     setLineItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }
 
+  function handleAddPart() {
+    setPartsUsed((prev) => [...prev, { name: "", quantity: "1", price: "0" }]);
+  }
+
+  function handleDeletePart(idx) {
+    setPartsUsed((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleChangePart(idx, field, value) {
+    setPartsUsed((prev) => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], [field]: value };
+      return copy;
+    });
+  }
+
   async function handleSaveInvoice() {
     try {
       await updateJob({
         id: job._id,
         lineItems,
+        partsUsed,
         amount: grandTotal,
+        isPaid,
+        paymentMethod,
+        status: isPaid ? "completed" : job.status,
       }).unwrap();
       Alert.alert("Success", "Invoice details saved successfully.");
     } catch {
@@ -523,7 +567,7 @@ export default function InvoicePreviewScreen() {
 
   // ── PDF actions ──
   async function handleGeneratePdf() {
-    const html = buildPdfHtml({ job, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
+    const html = buildPdfHtml({ job: { ...job, partsUsed }, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
     try {
       const { uri } = await Print.printToFileAsync({ html, base64: false });
       await Sharing.shareAsync(uri, { mimeType: "application/pdf", dialogTitle: `Invoice ${invoiceNumber}` });
@@ -533,13 +577,47 @@ export default function InvoicePreviewScreen() {
   }
 
   async function handlePrintPreview() {
-    const html = buildPdfHtml({ job, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
+    const html = buildPdfHtml({ job: { ...job, partsUsed }, invoiceNumber, lineItems, techInfo: techUser, grandTotal, subtotal });
     try {
       await Print.printAsync({ html });
     } catch {
       Alert.alert("Error", "Print failed. Please try again.");
     }
   }
+
+  const handleWhatsAppShare = () => {
+    const phone = job.customerId?.phone || job.customerPhone;
+    if (!phone) {
+      Alert.alert("Error", "Customer phone number not found.");
+      return;
+    }
+
+    const cleanPhone = phone.replace(/[^\d]/g, "");
+    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+
+    const message = `*INVOICE: ${invoiceNumber}*\n\n` +
+      `Hi ${customerName},\n` +
+      `This is ${techName}. Here is your invoice summary for the *${job.applianceType}* service done on ${formatDate(job.serviceDate)}.\n\n` +
+      `*Total Amount:* ${formatCurrency(grandTotal)}\n` +
+      `*Warranty:* ${job.warranty || "No Warranty"}\n\n` +
+      `Thank you for your business! 🙏`;
+
+    const url = `whatsapp://send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
+
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          // Fallback if WhatsApp is not installed
+          const webUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+          Linking.openURL(webUrl);
+        }
+      })
+      .catch(() => {
+        Alert.alert("Error", "Could not open WhatsApp.");
+      });
+  };
 
   // ── Card wrapper ──
   // (Moved outside the component to prevent unmounting and focus loss in TextInputs)
@@ -740,9 +818,67 @@ export default function InvoicePreviewScreen() {
             );
           })}
 
-          {lineItems.length === 0 && (
+          {partsUsed && partsUsed.length > 0 && (
+            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderMuted }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingHorizontal: 4 }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "800", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
+                  Replaced Spares / Parts
+                </Text>
+                <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7}>
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>+ Add Part</Text>
+                </TouchableOpacity>
+              </View>
+              {partsUsed.map((part, idx) => {
+                const partTotal = (Number(part.price) || 0) * (Number(part.quantity) || 0);
+                return (
+                  <View key={`part-${idx}`} style={{ flexDirection: "row", paddingVertical: 8, paddingHorizontal: 4, alignItems: "center", borderRadius: 6, backgroundColor: idx % 2 === 1 ? colors.bgSurface : "transparent" }}>
+                    <TextInput
+                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, flex: 1, paddingVertical: 4, paddingHorizontal: 2, minHeight: 32 }}
+                      value={part.name}
+                      onChangeText={(v) => handleChangePart(idx, "name", v)}
+                      placeholder="Part description"
+                      placeholderTextColor={colors.textDisabled}
+                      multiline
+                    />
+                    <TextInput
+                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 36, textAlign: "center", paddingVertical: 4 }}
+                      value={String(part.quantity)}
+                      onChangeText={(v) => handleChangePart(idx, "quantity", v)}
+                      keyboardType="numeric"
+                      placeholder="1"
+                      placeholderTextColor={colors.textDisabled}
+                    />
+                    <TextInput
+                      style={{ fontFamily: "Inter", fontSize: 11, color: colors.textPrimary, width: 68, textAlign: "right", paddingVertical: 4 }}
+                      value={String(part.price)}
+                      onChangeText={(v) => handleChangePart(idx, "price", v)}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textDisabled}
+                    />
+                    <Text style={{ fontFamily: "Space Grotesk", fontSize: 11, color: colors.textPrimary, fontWeight: "700", width: 68, textAlign: "right", paddingRight: 2 }}>
+                      {partTotal.toFixed(0)}
+                    </Text>
+                    <TouchableOpacity onPress={() => handleDeletePart(idx)} style={{ width: 28, alignItems: "center", justifyContent: "center" }} activeOpacity={0.7}>
+                      <Trash2 size={13} color={colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+
+          {(!partsUsed || partsUsed.length === 0) && (
+            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderMuted }}>
+              <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7} style={{ alignSelf: 'flex-start', paddingHorizontal: 4 }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary }}>+ Add Spare / Part</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {lineItems.length === 0 && (!partsUsed || partsUsed.length === 0) && (
             <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textDisabled, textAlign: "center", paddingVertical: 16, fontStyle: "italic" }}>
-              No items. Tap &quot;Add Row&quot; to add a service line.
+              No items. Tap "Add Row" to add a service line.
             </Text>
           )}
         </Card>
@@ -760,6 +896,68 @@ export default function InvoicePreviewScreen() {
               <Text style={{ fontFamily: "Space Grotesk", fontSize: 26, fontWeight: "900", color: colors.textPrimary }}>{formatCurrency(grandTotal)}</Text>
             </View>
           </LinearGradient>
+
+          {/* Payment Tracking Row */}
+          <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <View>
+                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 }}>Payment Status</Text>
+                <Text style={{ fontFamily: "Inter", fontSize: 10, color: isPaid ? colors.success : colors.warningIcon }}>
+                  {isPaid ? "Successfully Collected" : "Payment Pending"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsPaid(!isPaid)}
+                style={{
+                  backgroundColor: isPaid ? colors.successBg : colors.bgSurface,
+                  borderWidth: 1,
+                  borderColor: isPaid ? colors.successBorder : colors.border,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: isPaid ? colors.success : colors.textDisabled }} />
+                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: isPaid ? colors.success : colors.textPrimary }}>
+                  {isPaid ? "PAID" : "UNPAID"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {isPaid && (
+              <View>
+                <Text style={{ fontFamily: "Inter", fontSize: 11, fontWeight: "700", color: colors.textPrimary, marginBottom: 10 }}>Payment Method</Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  {[
+                    { id: "cash", label: "Cash", icon: Banknote },
+                    { id: "upi", label: "UPI", icon: Wallet },
+                    { id: "online", label: "Online", icon: CreditCard },
+                    { id: "cheque", label: "Cheque", icon: FileText },
+                  ].map((method) => (
+                    <TouchableOpacity
+                      key={method.id}
+                      onPress={() => setPaymentMethod(method.id)}
+                      style={{
+                        flex: 1,
+                        alignItems: "center",
+                        paddingVertical: 10,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: paymentMethod === method.id ? colors.primary : colors.border,
+                        backgroundColor: paymentMethod === method.id ? colors.primaryBg : colors.bgSurface,
+                      }}
+                    >
+                      <method.icon size={16} color={paymentMethod === method.id ? colors.primary : colors.textMuted} style={{ marginBottom: 4 }} />
+                      <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", color: paymentMethod === method.id ? colors.primary : colors.textMuted }}>{method.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
         </Card>
 
         {/* ══ WARRANTY CERTIFICATE ══ */}
@@ -829,6 +1027,13 @@ export default function InvoicePreviewScreen() {
           <CheckCircle2 color={colors.primary} size={18} />
           <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.primary, textTransform: "uppercase", letterSpacing: 2 }}>
             {isSaving ? "Saving..." : "Save Invoice Details"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleWhatsAppShare} activeOpacity={0.8} style={{ marginBottom: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.successBorder, backgroundColor: colors.successBg, paddingVertical: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <MessageCircle color={colors.success} size={18} />
+          <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.success, textTransform: "uppercase", letterSpacing: 2 }}>
+            Share via WhatsApp
           </Text>
         </TouchableOpacity>
 

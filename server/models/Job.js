@@ -45,10 +45,25 @@ const jobSchema = new mongoose.Schema(
     lineItems: [{
       id: String,
       description: String,
-      qty: String,
-      rate: String,
+      qty: { type: Number, default: 1, min: 0 },
+      rate: { type: Number, default: 0, min: 0 },
       note: String,
     }],
+    partsUsed: [{
+      name: String,
+      quantity: { type: Number, default: 1, min: 0 },
+      price: { type: Number, default: 0, min: 0 },
+      warranty: { type: String, default: "" },
+    }],
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["cash", "upi", "online", "cheque", "other"],
+      default: "cash",
+    },
     status: {
       type: String,
       enum: Object.values(JobStatus),
@@ -69,6 +84,16 @@ const jobSchema = new mongoose.Schema(
     warranty: {
       type: String,
       default: "",
+    },
+    internalNotes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    priority: {
+      type: String,
+      enum: ["normal", "urgent"],
+      default: "normal",
     },
     location: {
       label: String,

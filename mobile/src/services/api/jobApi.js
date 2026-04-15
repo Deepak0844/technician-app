@@ -40,15 +40,25 @@ export const jobApi = api.injectEndpoints({
         ...ApiUtils.listTags(TagTypes.DASHBOARD),
       ],
     }),
+    deleteJob: builder.mutation({
+      query: (id) => ({ url: ApiUrls.JOB_BY_ID(id), method: "delete" }),
+      invalidatesTags: (result, error, arg) => [
+        { type: TagTypes.JOBS, id: arg },
+        ...ApiUtils.listTags(TagTypes.JOBS),
+        ...ApiUtils.listTags(TagTypes.DASHBOARD),
+      ],
+    }),
   }),
   overrideExisting: false,
 });
 
 export const {
   useGetJobsQuery,
+  useLazyGetJobsQuery,
   useCreateJobMutation,
   useUpdateJobMutation,
   useGetJobByIdQuery,
   useGetJobsByCustomerQuery,
   useRepeatJobMutation,
+  useDeleteJobMutation,
 } = jobApi;

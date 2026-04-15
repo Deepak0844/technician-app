@@ -4,8 +4,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Calendar } from "react-native-calendars";
 import OfflineBanner from "@components/OfflineBanner";
+import Avatar from "@components/Avatar";
 import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 import { useGetJobsQuery } from "@services/api/jobApi";
+import { formatCurrency, getLocalDateString } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 
 // Gluestack Primitives
@@ -23,14 +26,10 @@ const SLOT_WIDTH = ITEM_WIDTH + ITEM_MARGIN; // 64
 export default function CalendarScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const user = useSelector((state) => state.auth.user);
 
   // State
-  const getLocalDateString = (d) => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  // (getLocalDateString removed - now using shared utility)
 
   const [selectedDate, setSelectedDate] = useState(getLocalDateString(new Date()));
   const [currentMonthStr, setCurrentMonthStr] = useState(getLocalDateString(new Date()).substring(0, 7)); // "YYYY-MM"
@@ -191,13 +190,9 @@ export default function CalendarScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => navigation.navigate("Profile")}
-                  style={{ width: 40, height: 40, borderRadius: 16, backgroundColor: colors.bgCard, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primaryBorder, overflow: 'hidden' }}
                   activeOpacity={0.7}
                 >
-                  <Image
-                    source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }}
-                    style={{ width: '100%', height: '100%' }}
-                  />
+                  <Avatar name={user?.name} uri={user?.avatar} size={40} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -360,9 +355,16 @@ export default function CalendarScreen() {
                       >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                           <View style={{ flex: 1, paddingRight: 16 }}>
-                            <Text style={{ fontFamily: 'Space Grotesk', fontSize: 18, fontWeight: '700', color: isCompleted ? colors.textDisabled : colors.textPrimary, marginBottom: 4, textDecorationLine: isCompleted ? 'line-through' : 'none' }}>
-                              {job.applianceType}
-                            </Text>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                              <Text style={{ fontFamily: 'Space Grotesk', fontSize: 18, fontWeight: '700', color: isCompleted ? colors.textDisabled : colors.textPrimary, textDecorationLine: isCompleted ? 'line-through' : 'none' }}>
+                                {job.applianceType}
+                              </Text>
+                              {job.priority === "urgent" && (
+                                <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
+                                  <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                                </View>
+                              )}
+                            </View>
                             <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textDisabled, textTransform: 'uppercase', letterSpacing: 4, fontWeight: '700' }}>
                               {job.customerId?.name || job.customerName || "Residential Client"}
                             </Text>

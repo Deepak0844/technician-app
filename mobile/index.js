@@ -1,3 +1,4 @@
+import "react-native-get-random-values";
 import React, { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, Image, Dimensions } from "react-native";
 
@@ -7,6 +8,7 @@ import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 import { configureReanimatedLogger, ReanimatedLogLevel } from "react-native-reanimated";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Disable the strict mode warning for Reanimated reading from shared values during render
 // (often triggered by third-party UI libraries like BottomSheet or Gluestack)
@@ -18,8 +20,10 @@ configureReanimatedLogger({
 import "./global.css";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
+import { PersistGate } from "redux-persist/integration/react";
+
 // Store
-import store from "./src/store/index";
+import store, { persistor } from "./src/store/index";
 import { initializeAuth } from "./src/store/slices/authSlice";
 import { initializeTheme } from "./src/store/slices/themeSlice";
 
@@ -106,11 +110,15 @@ function RootApp() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <Provider store={store}>
-        <RootApp />
-      </Provider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <RootApp />
+          </PersistGate>
+        </Provider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 

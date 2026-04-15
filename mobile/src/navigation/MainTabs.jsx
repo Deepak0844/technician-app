@@ -17,6 +17,8 @@ import JobDetailsScreen from "@screens/JobDetailsScreen";
 import InvoicePreviewScreen from "@screens/InvoicePreviewScreen";
 import RemindersScreen from "@screens/RemindersScreen";
 import CreateCustomerScreen from "@screens/CreateCustomerScreen";
+import DraftsListScreen from "@screens/DraftsListScreen";
+import SetupProfileScreen from "@screens/SetupProfileScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -115,6 +117,8 @@ export default function MainTabs() {
       <Stack.Screen name="InvoicePreview" component={InvoicePreviewScreen} />
       <Stack.Screen name="Reminders" component={RemindersScreen} />
       <Stack.Screen name="CreateCustomer" component={CreateCustomerScreen} />
+      <Stack.Screen name="DraftsList" component={DraftsListScreen} />
+      <Stack.Screen name="SetupProfile" component={SetupProfileScreen} />
     </Stack.Navigator>
   );
 }

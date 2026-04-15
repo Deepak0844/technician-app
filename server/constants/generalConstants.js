@@ -31,6 +31,7 @@ export const SuccessMessages = {
   JOBS_LOADED: "Jobs loaded successfully",
   JOB_REPEATED: "Job repeated successfully",
   JOB_UPDATED: "Job updated successfully",
+  JOB_DELETED: "Job deleted successfully",
   DASHBOARD_LOADED: "Dashboard summary loaded successfully",
 };
 

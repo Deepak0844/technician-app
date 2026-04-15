@@ -2,8 +2,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef } from "react";
 import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity, Image } from "react-native";
 import { useDispatch } from "react-redux";
+import { useNavigation } from "@react-navigation/native";
 import { useSendOtpMutation, useVerifyOtpMutation } from "@services/api/authApi";
 import { setCredentials } from "@store/slices/authSlice";
+import { RouteNames } from "@constants/routeNames";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
@@ -25,6 +27,7 @@ export default function OtpLoginScreen() {
   const [sessionId, setSessionId] = useState(null);
   const [step, setStep] = useState("phone");
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const { colors } = useTheme();
   const [sendOtp, { isLoading: isSending }] = useSendOtpMutation();
   const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
@@ -68,6 +71,10 @@ export default function OtpLoginScreen() {
       const { token, isFirstLogin, ...user } = result?.data ?? {};
       await StorageUtils.saveToken(token);
       dispatch(setCredentials({ token, user, isFirstLogin: !!isFirstLogin }));
+      
+      if (isFirstLogin) {
+        navigation.navigate(RouteNames.SETUP_PROFILE);
+      }
     } catch (error) {
       const errorMsg = error?.data?.message || error?.data || error?.message || "OTP verification failed";
       Alert.alert("Error", String(errorMsg));

@@ -3,11 +3,16 @@ import React, { useState } from "react";
 import { FlatList, View, TouchableOpacity, RefreshControl, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ArrowLeft, Search } from "lucide-react-native";
+import { useSelector } from "react-redux";
+import { ArrowLeft, Search , Filter, X, Check } from "lucide-react-native";
 import { useGetJobsQuery } from "@services/api/jobApi";
 import OfflineBanner from "@components/OfflineBanner";
+import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
+import { JobCardSkeleton } from "@components/SkeletonLoaders";
+import { ApplianceTypes } from "@constants/appConstants";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 
 // Gluestack Primitives
 import { Box } from "@components/ui/box";
@@ -19,15 +24,30 @@ export default function JobHistoryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
+  const user = useSelector((state) => state.auth.user);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isPaidFilter, setIsPaidFilter] = useState(undefined); // undefined, true, false
+  const [applianceFilter, setApplianceFilter] = useState(undefined);
+  const bottomSheetRef = React.useRef(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const {
     data: jobsResponse,
     isLoading: loadingJobs,
     refetch,
   } = useGetJobsQuery({
-    search,
+    search: debouncedSearch,
     customerId: route.params?.customerId,
+    isPaid: isPaidFilter,
+    applianceType: applianceFilter,
   });
 
   const onRefresh = React.useCallback(async () => {
@@ -85,22 +105,7 @@ export default function JobHistoryScreen() {
             onPress={() => navigation.navigate("Profile")}
             activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.borderLight,
-                overflow: "hidden",
-                backgroundColor: colors.bgCard,
-              }}
-            >
-              <Image
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </View>
+            <Avatar name={user?.name} uri={user?.avatar} size={32} />
           </TouchableOpacity>
         </LinearGradient>
 
@@ -111,31 +116,78 @@ export default function JobHistoryScreen() {
             </Text>
           </View>
 
-          {/* Search Input */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 16,
-              height: 56,
-              borderRadius: 12,
-              borderWidth: 2,
-              borderColor: colors.borderInput,
-              backgroundColor: colors.bgInput,
-              marginBottom: 24,
+              gap: 8,
+              marginBottom: 16,
             }}
           >
-            <Search color={colors.textSecondary} size={20} style={{ marginRight: 12 }} />
-            <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
-              <InputField
-                placeholder="Search specific jobs..."
-                placeholderTextColor={colors.placeholderText}
-                value={search}
-                onChangeText={setSearch}
-                style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
-              />
-            </Input>
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                height: 48,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: colors.border,
+                backgroundColor: colors.bgInput,
+              }}
+            >
+              <Search color={colors.textSecondary} size={18} style={{ marginRight: 10 }} />
+              <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
+                <InputField
+                  placeholder="Search jobs..."
+                  placeholderTextColor={colors.placeholderText}
+                  value={search}
+                  onChangeText={setSearch}
+                  style={{ fontFamily: "Inter", fontSize: 13, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
+                />
+              </Input>
+            </View>
+            <TouchableOpacity
+              onPress={() => bottomSheetRef.current?.expand()}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                backgroundColor: isFilterOpen || applianceFilter || isPaidFilter !== undefined ? colors.primaryBg : colors.bgInput,
+                borderWidth: 1.5,
+                borderColor: applianceFilter || isPaidFilter !== undefined ? colors.primaryBorder : colors.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Filter color={applianceFilter || isPaidFilter !== undefined ? colors.primary : colors.textSecondary} size={20} />
+            </TouchableOpacity>
           </View>
+
+          {/* Active Filter Chips */}
+          {(applianceFilter || isPaidFilter !== undefined) && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+              {isPaidFilter !== undefined && (
+                <TouchableOpacity
+                  onPress={() => setIsPaidFilter(undefined)}
+                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.successBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.successBorder }}
+                >
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.success, marginRight: 4 }}>{isPaidFilter ? "PAID" : "UNPAID"}</Text>
+                  <X size={12} color={colors.success} />
+                </TouchableOpacity>
+              )}
+              {applianceFilter && (
+                <TouchableOpacity
+                  onPress={() => setApplianceFilter(undefined)}
+                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.primaryBorder }}
+                >
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary, marginRight: 4 }}>{applianceFilter}</Text>
+                  <X size={12} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <FlatList
             data={allJobs}
@@ -144,12 +196,17 @@ export default function JobHistoryScreen() {
             contentContainerStyle={{ paddingBottom: 150 }}
             refreshControl={
               <RefreshControl
-                refreshing={loadingJobs}
+                refreshing={false}
                 onRefresh={onRefresh}
                 tintColor={colors.indigo}
                 colors={[colors.indigo]}
               />
             }
+            ListHeaderComponent={loadingJobs && (
+              <View style={{ marginBottom: 16 }}>
+                {[1, 2, 3, 4].map((i) => <JobCardSkeleton key={i} />)}
+              </View>
+            )}
             renderItem={({ item }) => (
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -169,9 +226,16 @@ export default function JobHistoryScreen() {
                   }}
                 >
                   <HStack style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }} numberOfLines={1}>
-                      {item.customerId?.name || item.customerName || "Customer"}
-                    </Text>
+                    <HStack style={{ alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }} numberOfLines={1}>
+                        {item.customerId?.name || item.customerName || "Customer"}
+                      </Text>
+                      {item.priority === "urgent" && (
+                        <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
+                          <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                        </View>
+                      )}
+                    </HStack>
                     <HStack space="sm" style={{ alignItems: "center" }}>
                       <Text
                         style={{
@@ -208,24 +272,114 @@ export default function JobHistoryScreen() {
                 </View>
               </TouchableOpacity>
             )}
-            ListEmptyComponent={
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  color: colors.textMuted,
-                  textAlign: "center",
-                  fontWeight: "700",
-                  marginTop: 40,
-                  letterSpacing: 2,
-                  textTransform: "uppercase",
-                  fontSize: 12,
-                }}
-              >
-                No jobs found
-              </Text>
-            }
+            ListEmptyComponent={!loadingJobs && (
+              <View style={{ alignItems: "center", marginTop: 60 }}>
+                <Search size={48} color={colors.border} style={{ marginBottom: 16 }} />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textMuted,
+                    textAlign: "center",
+                    fontWeight: "700",
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
+                    fontSize: 12,
+                  }}
+                >
+                  No jobs found matching your filters
+                </Text>
+              </View>
+            )}
           />
         </Box>
+
+        {/* Filter Sheet */}
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={-1}
+          snapPoints={["60%", "85%"]}
+          enablePanDownToClose
+          backgroundStyle={{ backgroundColor: colors.bgCard }}
+          handleIndicatorStyle={{ backgroundColor: colors.border }}
+          onChange={(index) => setIsFilterOpen(index >= 0)}
+        >
+          <BottomSheetView style={{ padding: 24 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>Filters</Text>
+              <TouchableOpacity onPress={() => { setIsPaidFilter(undefined); setApplianceFilter(undefined); bottomSheetRef.current?.close(); }}>
+                <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: colors.danger }}>RESET ALL</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Payment Filter */}
+            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Payment Status</Text>
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 32 }}>
+              {[
+                { id: undefined, label: "All" },
+                { id: true, label: "Paid" },
+                { id: false, label: "Unpaid" },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={String(item.id)}
+                  onPress={() => setIsPaidFilter(item.id)}
+                  style={{
+                    flex: 1,
+                    height: 48,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: isPaidFilter === item.id ? colors.successBg : colors.bgSurface,
+                    borderWidth: 1.5,
+                    borderColor: isPaidFilter === item.id ? colors.success : colors.border,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: isPaidFilter === item.id ? colors.success : colors.textPrimary }}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Appliance Filter */}
+            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Appliance Type</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+              {ApplianceTypes.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setApplianceFilter(applianceFilter === type ? undefined : type)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 10,
+                    backgroundColor: applianceFilter === type ? colors.primaryBg : colors.bgSurface,
+                    borderWidth: 1.5,
+                    borderColor: applianceFilter === type ? colors.primary : colors.border,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: applianceFilter === type ? colors.primary : colors.textPrimary }}>{type}</Text>
+                  {applianceFilter === type && <Check size={14} color={colors.primary} />}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => bottomSheetRef.current?.close()}
+              style={{
+                width: "100%",
+                height: 56,
+                borderRadius: 16,
+                backgroundColor: colors.primary,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: 40,
+              }}
+            >
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.bgPrimary, textTransform: "uppercase", letterSpacing: 2 }}>Apply Filters</Text>
+            </TouchableOpacity>
+          </BottomSheetView>
+        </BottomSheet>
       </Box>
     </SafeAreaView>
   );

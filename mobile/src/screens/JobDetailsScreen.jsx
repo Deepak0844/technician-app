@@ -1,13 +1,14 @@
 import React from "react";
-import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator, Linking, RefreshControl } from "react-native";
+import { ScrollView, View, TouchableOpacity, Text, ActivityIndicator, Linking, RefreshControl, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   ArrowLeft, User, Phone, MapPin, Wrench, Clock, FileText,
-  CheckCircle2, MoreVertical, Edit2, ShieldCheck,
+  CheckCircle2, MoreVertical, Edit2, ShieldCheck, Info
 } from "lucide-react-native";
-import { useGetJobByIdQuery } from "@services/api/jobApi";
+import { useGetJobByIdQuery, useDeleteJobMutation, useRepeatJobMutation, useUpdateJobMutation } from "@services/api/jobApi";
+import { JobStatuses } from "@constants/appConstants";
 import OfflineBanner from "@components/OfflineBanner";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -21,6 +22,12 @@ export default function JobDetailsScreen() {
   const { data: jobResponse, isLoading, refetch, isFetching } = useGetJobByIdQuery(initialJob?._id, {
     skip: !initialJob?._id,
   });
+
+  const [deleteJob, { isLoading: isDeleting }] = useDeleteJobMutation();
+  const [repeatJob, { isLoading: isRepeating }] = useRepeatJobMutation();
+  const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
+
+  const isSyncing = isDeleting || isRepeating || isUpdating;
 
   const job = jobResponse?.data || initialJob;
 
@@ -41,6 +48,67 @@ export default function JobDetailsScreen() {
   }
 
   const isCompleted = job.status === "completed";
+
+  const handleJobActions = () => {
+    const isJobPaid = !!job.isPaid;
+    Alert.alert(
+      "Job Actions",
+      "Manage this job record and lifecycle.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: isJobPaid ? "Mark as UNPAID" : "Mark as PAID",
+          onPress: async () => {
+             try {
+               await updateJob({ id: job._id, isPaid: !isJobPaid }).unwrap();
+               Alert.alert("Success", `Job marked as ${!isJobPaid ? "PAID" : "UNPAID"}`);
+             } catch (err) {
+               Alert.alert("Error", "Failed to update payment status.");
+             }
+          }
+        },
+        { 
+          text: "Repeat Job", 
+          onPress: async () => {
+            try {
+              const res = await repeatJob(job._id).unwrap();
+              Alert.alert("Success", "A new pending job has been created with this job's details.");
+              navigation.navigate("JobDetails", { job: res.data });
+            } catch (err) {
+              Alert.alert("Error", err?.data?.message || "Failed to repeat job.");
+            }
+          }
+        },
+        {
+          text: "Delete Job",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert("Confirm Delete", "Are you sure you want to permanently delete this job?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete Permanently", style: "destructive", onPress: async () => {
+                try {
+                  await deleteJob(job._id).unwrap();
+                  Alert.alert("Deleted", "Job deleted successfully.");
+                  navigation.goBack();
+                } catch (err) {
+                  Alert.alert("Error", "Failed to delete job.");
+                }
+              }}
+            ]);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleUpdateStatus = async (newStatus) => {
+    try {
+      await updateJob({ id: job._id, status: newStatus }).unwrap();
+      Alert.alert("Success", `Status updated to ${newStatus.replace("_", " ")}`);
+    } catch (err) {
+      Alert.alert("Error", "Failed to update status.");
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
@@ -67,8 +135,8 @@ export default function JobDetailsScreen() {
         <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.primary }}>
           Job Details
         </Text>
-        <TouchableOpacity style={{ padding: 8 }} activeOpacity={0.7}>
-          <MoreVertical color={colors.primary} size={20} />
+        <TouchableOpacity style={{ padding: 8 }} onPress={handleJobActions} activeOpacity={0.7} disabled={isSyncing}>
+          {isSyncing ? <ActivityIndicator size="small" color={colors.primary} /> : <MoreVertical color={colors.primary} size={20} />}
         </TouchableOpacity>
       </LinearGradient>
 
@@ -84,6 +152,44 @@ export default function JobDetailsScreen() {
           />
         }
       >
+
+        {/* Quick Lifecycle Action - Zero-Tap Workflow */}
+        {!isCompleted && !isSyncing && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => handleUpdateStatus(job.status === "pending" ? "in_progress" : "completed")}
+            style={{ marginBottom: 24, borderRadius: 12, overflow: "hidden", elevation: 4 }}
+          >
+            <LinearGradient
+              colors={job.status === "pending" ? [colors.primary, colors.secondary] : [colors.secondary, "#10b981"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 14,
+                gap: 10,
+              }}
+            >
+              {job.status === "pending" ? (
+                <>
+                  <Clock color={colors.bgPrimary} size={18} />
+                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.bgPrimary, textTransform: "uppercase", letterSpacing: 1 }}>
+                    Resume / Start Job
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 color={colors.bgPrimary} size={18} />
+                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 13, fontWeight: "800", color: colors.bgPrimary, textTransform: "uppercase", letterSpacing: 1 }}>
+                    Mark as Completed
+                  </Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
 
         {/* Job Header Card */}
         <View
@@ -110,35 +216,65 @@ export default function JobDetailsScreen() {
           />
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-            <View>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 10, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
-                Job ID: #{job?._id ? job._id.slice(-6).toUpperCase() : "..."}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <Text style={{ fontFamily: "Space Grotesk", fontSize: 10, fontWeight: "700", color: colors.secondary, textTransform: "uppercase", letterSpacing: 2 }}>
+                  Job ID: #{job?._id ? job._id.slice(-6).toUpperCase() : "..."}
+                </Text>
+                {job?.priority === "urgent" && (
+                  <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
+                    <Text style={{ fontSize: 8, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                  </View>
+                )}
+              </View>
               <Text style={{ fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
                 {job?.applianceType || "General Service"}
               </Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: isCompleted ? colors.success : colors.warningIcon,
-                }}
-              />
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 10,
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: 2,
-                  color: isCompleted ? colors.success : colors.warningIcon,
-                }}
-              >
-                {job?.status || "Pending"}
-              </Text>
+            <View style={{ gap: 6, alignItems: "flex-end" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: isCompleted ? colors.success : colors.warningIcon,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    color: isCompleted ? colors.success : colors.warningIcon,
+                  }}
+                >
+                  {job?.status || "Pending"}
+                </Text>
+              </View>
+              
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                 <View
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: job?.isPaid ? colors.success : colors.danger,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    color: job?.isPaid ? colors.success : colors.danger,
+                  }}
+                >
+                  {job?.isPaid ? "Paid" : "Unpaid"}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -154,19 +290,81 @@ export default function JobDetailsScreen() {
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <View>
               <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
-                Amount
+                Total Job Amount
               </Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.primary }}>
-                {formatCurrency(job?.amount)}
-              </Text>
-              {job?.amount === 0 && !!job?.diagnosticFee && (
-                <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, marginTop: 4 }}>
-                  (Diag. Fee: {formatCurrency(job?.diagnosticFee)})
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
+                <Text style={{ fontFamily: "Space Grotesk", fontSize: 28, fontWeight: "700", color: colors.primary }}>
+                  {formatCurrency(job?.amount)}
                 </Text>
+                {job?.partsUsed?.length > 0 && (
+                  <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>
+                    (incl. spares)
+                  </Text>
+                )}
+              </View>
+              {job?.partsUsed?.length > 0 && (
+                 <View style={{ marginTop: 8, gap: 2 }}>
+                    <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textSecondary }}>
+                      Labor: {formatCurrency(job?.amount - job.partsUsed.reduce((acc, p) => acc + (p.price * p.quantity), 0))}
+                    </Text>
+                    <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textSecondary }}>
+                      Spares: {formatCurrency(job.partsUsed.reduce((acc, p) => acc + (p.price * p.quantity), 0))}
+                    </Text>
+                 </View>
               )}
             </View>
           </View>
         </View>
+
+        {/* Parts Section (If any) */}
+        {job?.partsUsed?.length > 0 && (
+          <View style={{ marginBottom: 24 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>
+                Parts & Materials
+              </Text>
+              <View style={{ backgroundColor: colors.secondaryBg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontFamily: "Space Grotesk", fontSize: 9, fontWeight: "700", color: colors.secondary }}>{job.partsUsed.length} ITEMS</Text>
+              </View>
+            </View>
+            <View
+              style={{
+                backgroundColor: colors.bgCardAlt,
+                borderRadius: 20,
+                padding: 16,
+                borderWidth: 1,
+                borderColor: colors.border,
+                gap: 12
+              }}
+            >
+              {job.partsUsed.map((part, idx) => (
+                <View key={idx} style={{ 
+                  flexDirection: "row", 
+                  alignItems: "center", 
+                  justifyContent: "space-between",
+                  paddingBottom: idx === job.partsUsed.length - 1 ? 0 : 12,
+                  borderBottomWidth: idx === job.partsUsed.length - 1 ? 0 : 1,
+                  borderBottomColor: colors.border
+                }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>{part.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted }}>Qty: {part.quantity}</Text>
+                      {part.warranty && (
+                        <>
+                          <View style={{ width: 2, height: 2, borderRadius: 1, backgroundColor: colors.textMuted }} />
+                          <ShieldCheck size={10} color={colors.secondary} />
+                          <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.secondary }}>{part.warranty}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary }}>{formatCurrency(part.price * part.quantity)}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Customer Details Section */}
         <View style={{ marginBottom: 24 }}>
@@ -337,6 +535,39 @@ export default function JobDetailsScreen() {
           </View>
         </View>
 
+        {/* Technician Private Workspace */}
+        {job?.internalNotes && (
+          <View style={{ marginBottom: 24 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.secondary }}>
+                Technician Workspace
+              </Text>
+              <View style={{ backgroundColor: colors.secondaryBorder, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                <Text style={{ fontSize: 8, fontWeight: "800", color: colors.secondary, textTransform: "uppercase" }}>PRIVATE</Text>
+              </View>
+            </View>
+            <View
+              style={{
+                backgroundColor: colors.bgCardAlt,
+                borderRadius: 16,
+                padding: 20,
+                borderWidth: 1,
+                borderColor: colors.secondaryBorder,
+                borderStyle: "dashed",
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                <View style={{ marginTop: 2 }}>
+                  <Info size={16} color={colors.secondary} />
+                </View>
+                <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, lineHeight: 22, flex: 1 }}>
+                  {job.internalNotes}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
           <TouchableOpacity
@@ -387,6 +618,59 @@ export default function JobDetailsScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Quick Status Change Actions */}
+        {(job.status === JobStatuses.PENDING || job.status === JobStatuses.IN_PROGRESS) && (
+          <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+            {job.status === JobStatuses.PENDING && (
+              <TouchableOpacity
+                onPress={() => handleUpdateStatus(JobStatuses.IN_PROGRESS)}
+                disabled={isSyncing}
+                activeOpacity={0.7}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.warningBg,
+                  borderWidth: 1,
+                  borderColor: colors.warningBorder,
+                  height: 56,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  gap: 8,
+                }}
+              >
+                <Clock color={colors.warningIcon} size={20} />
+                <Text style={{ fontFamily: "Space Grotesk", color: colors.warningIcon, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, fontSize: 11 }}>
+                  Start Job
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => handleUpdateStatus(JobStatuses.COMPLETED)}
+              disabled={isSyncing}
+              activeOpacity={0.7}
+              style={{
+                flex: job.status === JobStatuses.PENDING ? 1 : 1,
+                backgroundColor: colors.successBg,
+                borderWidth: 1,
+                borderColor: colors.successBorder,
+                height: 56,
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+              }}
+            >
+              <CheckCircle2 color={colors.success} size={20} />
+              <Text style={{ fontFamily: "Space Grotesk", color: colors.success, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, fontSize: 11 }}>
+                Complete
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

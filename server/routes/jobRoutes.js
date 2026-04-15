@@ -21,5 +21,6 @@ router.get("/customer/:customerId", jobController.getJobsByCustomer);
 router.post("/repeat/:jobId", jobController.repeatJob);
 router.get("/:jobId", jobController.getJobById);
 router.put("/:jobId", jobController.updateJob);
+router.delete("/:jobId", jobController.deleteJob);
 
 export default router;

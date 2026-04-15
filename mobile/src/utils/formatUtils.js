@@ -7,3 +7,15 @@ export const formatCurrency = (val) => {
   const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `₹${formatted}`;
 };
+
+/**
+ * Returns a local date string in YYYY-MM-DD format
+ */
+export const getLocalDateString = (d) => {
+  const date = new Date(d);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+

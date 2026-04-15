@@ -7,18 +7,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import useNetworkStatus from "@hooks/useNetworkStatus";
 import useTheme from "@hooks/useTheme";
 import OfflineBanner from "@components/OfflineBanner";
+import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
 
 // Services
 import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
 
 // Icons
-import { Home, PlusCircle } from "lucide-react-native";
+import { Home, PlusCircle, Files } from "lucide-react-native";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
+  const drafts = useSelector((state) => state.draft.drafts);
 
   // 1. RTK Query
   const {
@@ -27,8 +29,11 @@ export default function DashboardScreen() {
     refetch: refetchSummary,
   } = useGetDashboardSummaryQuery();
 
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
-    refetchSummary();
+    setIsRefreshing(true);
+    await refetchSummary();
+    setIsRefreshing(false);
   }, [refetchSummary]);
 
   const { isConnected } = useNetworkStatus();
@@ -39,15 +44,17 @@ export default function DashboardScreen() {
     totalEarnings: 0,
     earningsChange: 0,
     efficiency: 0,
+    outstandingPayments: 0,
     recentJobs: [],
   };
-  const allJobs = dashboardStats.recentJobs || [];
 
+  const allJobs = dashboardStats.recentJobs || [];
   const monthlyEarnings = Number(dashboardStats?.monthlyEarnings ?? 0);
   const totalEarnings = Number(dashboardStats?.totalEarnings ?? 0);
   const earningsChange = Number(dashboardStats?.earningsChange ?? 0);
   const efficiency = Number(dashboardStats?.efficiency ?? 0);
   const totalJobs = Number(dashboardStats?.totalJobs ?? 0);
+  const outstandingPayments = Number(dashboardStats?.outstandingPayments ?? 0);
 
   function getStatusBadgeStyle(status) {
     if (status === "completed")
@@ -92,26 +99,7 @@ export default function DashboardScreen() {
           activeOpacity={0.7}
           onPress={() => navigation.navigate("Profile")}
         >
-          <View
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              borderWidth: 1,
-              borderColor: colors.primaryBorder,
-              backgroundColor: colors.bgCard,
-              overflow: "hidden",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Image
-              source={{
-                uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn",
-              }}
-              style={{ width: "100%", height: "100%" }}
-            />
-          </View>
+          <Avatar name={user?.name} uri={user?.avatar} size={32} />
         </TouchableOpacity>
       </LinearGradient>
 
@@ -120,7 +108,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={loadingSummary}
+            refreshing={isRefreshing}
             onRefresh={onRefresh}
             tintColor={colors.refreshColor}
             colors={[colors.refreshColor]}
@@ -145,66 +133,127 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
-        {/* Summary Card */}
+        {/* Local Drafts Banner */}
+        {drafts.length > 0 && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate("DraftsList")}
+            activeOpacity={0.9}
+            style={{
+              backgroundColor: colors.primaryBg,
+              padding: 16,
+              borderRadius: 12,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderWidth: 1,
+              borderColor: colors.primaryBorder
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.bgPrimary, alignItems: 'center', justifyContent: 'center' }}>
+                <Files size={18} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={{ fontFamily: 'Space Grotesk', fontSize: 13, fontWeight: '700', color: colors.textPrimary }}>
+                  {drafts.length} Local {drafts.length === 1 ? 'Draft' : 'Drafts'} Pending
+                </Text>
+                <Text style={{ fontFamily: 'Inter', fontSize: 10, color: colors.textSecondary }}>Saved locally. Tap to review & upload.</Text>
+              </View>
+            </View>
+            <View style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+              <Text style={{ color: colors.bgPrimary, fontSize: 10, fontWeight: '800', fontFamily: 'Space Grotesk' }}>VIEW</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Summary Card - Financial Intelligence */}
         <View
           style={{
             width: "100%",
             backgroundColor: colors.bgSurface,
             padding: 16,
-            borderRadius: 12,
+            borderRadius: 16,
             borderWidth: 1,
             borderColor: colors.primaryBorder,
             marginBottom: 16,
-            overflow: "hidden",
           }}
         >
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 11,
-              color: colors.textSecondary,
-              textTransform: "uppercase",
-              letterSpacing: 2,
-              marginBottom: 8,
-            }}
-          >
-            This Month Earnings
-          </Text>
-          <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
-            <View style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.primary }}>
-                {formatCurrency(monthlyEarnings)}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: earningsChange >= 0 ? colors.secondary : colors.danger,
-                }}
-              >
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 1.5 }}>
+              This Month
+            </Text>
+            <View style={{ backgroundColor: (earningsChange >= 0 ? colors.secondary : colors.danger) + "15", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+              <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: earningsChange >= 0 ? colors.secondary : colors.danger }}>
                 {earningsChange >= 0 ? `+${earningsChange}%` : `${earningsChange}%`}
               </Text>
             </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 10,
-                  color: colors.textMuted,
-                  textTransform: "uppercase",
-                  letterSpacing: 2,
-                  marginBottom: 2,
-                }}
-              >
-                Total (All-time)
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1, backgroundColor: colors.bgPrimary, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.borderLight }}>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textMuted, textTransform: "uppercase", marginBottom: 4 }}>Paid</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "800", color: colors.secondary }}>
+                {formatCurrency(Number(dashboardStats?.monthlyPaidEarnings ?? 0))}
               </Text>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 12, fontWeight: "700", color: colors.textPrimary }}>
+            </View>
+            <View style={{ flex: 1, backgroundColor: colors.bgPrimary, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.borderLight }}>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textMuted, textTransform: "uppercase", marginBottom: 4 }}>To Collect</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "800", color: colors.textPrimary }}>
+                {formatCurrency(Number(dashboardStats?.monthlyPendingEarnings ?? 0))}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 12, opacity: 0.3 }} />
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View>
+              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textDisabled, textTransform: "uppercase" }}>Total Earnings</Text>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, marginTop: 2 }}>
                 {formatCurrency(totalEarnings)}
               </Text>
             </View>
           </View>
         </View>
+
+        {/* Outstanding Payments Card */}
+        {outstandingPayments > 0 && (
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate("JobHistory")}
+            style={{
+              width: "100%",
+              backgroundColor: colors.bgCard,
+              padding: 16,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.warningBorder,
+              marginBottom: 16,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.warningIcon }} />
+                <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.warningIcon, textTransform: "uppercase", letterSpacing: 1 }}>
+                  Payments Pending
+                </Text>
+              </View>
+              <Text style={{ fontFamily: "Space Grotesk", fontSize: 22, fontWeight: "800", color: colors.textPrimary }}>
+                {formatCurrency(outstandingPayments)}
+              </Text>
+              <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                From completed service jobs
+              </Text>
+            </View>
+            <View style={{ backgroundColor: colors.warningBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
+              <Text style={{ color: colors.warningIcon, fontSize: 10, fontWeight: "800" }}>RECOVER</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Stats Row */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
@@ -237,7 +286,7 @@ export default function DashboardScreen() {
             }}
           >
             <Text style={{ fontFamily: "Inter", fontSize: 11, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>
-              Efficiency
+              Success Rate
             </Text>
             <View style={{ flexDirection: "row", alignItems: "baseline" }}>
               <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.secondary }}>
@@ -312,12 +361,19 @@ export default function DashboardScreen() {
                   }}
                 >
                   <View style={{ flex: 1, paddingRight: 16 }}>
-                    <Text
-                      style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "600", color: colors.textPrimary, marginBottom: 4 }}
-                      numberOfLines={1}
-                    >
-                      {job.customerName || job.customerId?.name || "Unknown"}
-                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <Text
+                        style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "600", color: colors.textPrimary }}
+                        numberOfLines={1}
+                      >
+                        {job.customerName || job.customerId?.name || "Unknown"}
+                      </Text>
+                      {job.priority === "urgent" && (
+                        <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
+                          <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                        </View>
+                      )}
+                    </View>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textSecondary }}>
                         ID: #{job._id?.slice(-6).toUpperCase() || "NEW"}

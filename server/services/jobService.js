@@ -3,7 +3,7 @@ import Job from "#models/Job.js";
 import Customer from "#models/Customer.js";
 
 // Constants
-import { ErrorMessages, DefaultPagination } from "#constants/generalConstants.js";
+import { ErrorMessages, DefaultPagination, JobStatus } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -32,16 +32,34 @@ async function createJob(userId, jobData) {
 /**
  * Get paginated jobs for a user, with optional filters
  */
-async function getJobs(userId, { customerId, startDate, endDate, status, page = 1, pageSize = DefaultPagination.PAGE_SIZE } = {}) {
+async function getJobs(userId, { customerId, startDate, endDate, status, isPaid, applianceType, search = "", page = 1, pageSize = DefaultPagination.PAGE_SIZE } = {}) {
   const skip = (Number(page) - 1) * Number(pageSize);
   const query = { userId };
 
   if (customerId) query.customerId = customerId;
   if (status) query.status = status;
+  if (applianceType) query.applianceType = applianceType;
+  if (isPaid !== undefined) query.isPaid = isPaid === "true" || isPaid === true;
+
   if (startDate || endDate) {
     query.serviceDate = {};
     if (startDate) query.serviceDate.$gte = new Date(startDate);
     if (endDate) query.serviceDate.$lte = new Date(endDate);
+  }
+
+  // Keyword search: match against applianceType or issue fields
+  if (search && search.trim()) {
+    const keywords = search.trim().split(/\s+/).filter(Boolean);
+    const regexps = keywords.map(kw => new RegExp(kw, "i"));
+
+    query.$and = regexps.map(regex => ({
+      $or: [
+        { applianceType: { $regex: regex } },
+        { issue: { $regex: regex } },
+        { serviceDone: { $regex: regex } },
+        { warranty: { $regex: regex } },
+      ]
+    }));
   }
 
   const [data, total] = await Promise.all([
@@ -89,8 +107,15 @@ async function repeatJob(userId, jobId) {
     applianceType: original.applianceType,
     issue: original.issue,
     serviceDone: "",
+    diagnosticFee: original.diagnosticFee,
     amount: original.amount,
-    status: "pending",
+    lineItems: original.lineItems,
+    partsUsed: original.partsUsed,
+    warranty: original.warranty,
+    location: original.location,
+    priority: original.priority,
+    internalNotes: original.internalNotes,
+    status: JobStatus.PENDING,
     serviceDate: new Date(),
     nextReminderDate: null,
   });
@@ -130,6 +155,15 @@ async function getJobById(userId, jobId) {
   return job;
 }
 
+/**
+ * Permanently delete a job
+ */
+async function deleteJob(userId, jobId) {
+  const job = await Job.findOne({ _id: jobId, userId });
+  if (!job) throw new AppError(ErrorMessages.JOB_NOT_FOUND, HttpStatus.NOT_FOUND);
+  await job.deleteOne();
+}
+
 const JobService = {
   createJob,
   getJobs,
@@ -137,6 +171,7 @@ const JobService = {
   getJobById,
   repeatJob,
   updateJob,
+  deleteJob,
 };
 
 export default JobService;

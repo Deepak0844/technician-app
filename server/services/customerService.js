@@ -1,4 +1,5 @@
 // Models
+import mongoose from "mongoose";
 import Customer from "#models/Customer.js";
 
 // Constants
@@ -74,9 +75,15 @@ async function updateCustomer(userId, customerId, data) {
 }
 
 /**
- * Delete customer by ID
+ * Delete customer by ID - check for associated jobs first
  */
 async function deleteCustomer(userId, customerId) {
+  const Job = mongoose.model("Job");
+  const jobCount = await Job.countDocuments({ customerId });
+  if (jobCount > 0) {
+    throw new AppError(`Cannot delete customer with ${jobCount} associated jobs.`, HttpStatus.BAD_REQUEST);
+  }
+
   const customer = await Customer.findOneAndDelete({ _id: customerId, userId });
   if (!customer) throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
   return customer;

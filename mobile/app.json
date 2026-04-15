@@ -2,19 +2,20 @@
   "expo": {
     "name": "Technician App",
     "slug": "technician-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "backgroundColor": "#000000",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
     "notification": {
       "icon": "./assets/icon.png",
-      "color": "#c899ff"
+      "color": "#7c3aed",
+      "iosDisplayInForeground": true
     },
     "ios": {
       "supportsTablet": false,
@@ -62,7 +63,19 @@
           "locationAlwaysPermission": "Allow Technician App to access your location even when the app is in the background.",
           "isAndroidBackgroundLocationEnabled": false
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "ndkVersion": "27.1.12297006",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ],
+      "./plugins/withAsyncStorageMaven"
     ]
   }
 }

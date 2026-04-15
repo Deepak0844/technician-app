@@ -3,13 +3,16 @@ import React from "react";
 import { View, ScrollView, TouchableOpacity, Text, ActivityIndicator, TextInput, Alert } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetMeQuery, useLogoutMutation, useUpdateMeMutation } from "@services/api/authApi";
+import { useLazyGetJobsQuery } from "@services/api/jobApi";
 import { clearCredentials, updateUser } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
-import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2 } from "lucide-react-native";
+import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2, Briefcase, Download, Loader2, Zap } from "lucide-react-native";
+import { exportJobsToCSV } from "@utils/exportUtils";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
-import ThemeToggle from "@components/ThemeToggle";
+import ThemeToggle from "../components/ThemeToggle";
+import Avatar from "../components/Avatar";
 
 export default function ProfileScreen() {
   const dispatch = useDispatch();
@@ -19,6 +22,7 @@ export default function ProfileScreen() {
   const { data: meResponse, isLoading } = useGetMeQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
+  const [triggerExport, { isFetching: isExporting }] = useLazyGetJobsQuery();
   const user = React.useMemo(() => meResponse?.data ?? cachedUser ?? {}, [meResponse?.data, cachedUser]);
 
   const [isEditing, setIsEditing] = React.useState(false);
@@ -69,6 +73,25 @@ export default function ProfileScreen() {
     await logout().catch(() => {});
     await StorageUtils.clearToken();
     dispatch(clearCredentials());
+  }
+
+  async function handleExportData() {
+    Alert.alert("Export Data", "This will generate a CSV file of all your jobs and earnings history. Would you like to proceed?", [
+      { text: "Cancel", style: "cancel" },
+      { 
+        text: "Export", 
+        onPress: async () => {
+          try {
+            const result = await triggerExport({ pageSize: 1000 }).unwrap();
+            if (result?.data) {
+              await exportJobsToCSV(result.data);
+            }
+          } catch (err) {
+            Alert.alert("Export Failed", "Could not fetch job data for export.");
+          }
+        }
+      }
+    ]);
   }
 
   if (isLoading && !cachedUser) {
@@ -125,34 +148,19 @@ export default function ProfileScreen() {
       >
         {/* Avatar Section */}
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 16 }}>
-          <View
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              backgroundColor: colors.bgCardAlt,
-              borderWidth: 2,
+          <Avatar 
+            name={isEditing ? editedName : user.name || user.phone} 
+            uri={user.avatar} 
+            size={64} 
+            style={{ 
+              borderWidth: 2, 
               borderColor: colors.secondary,
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 12,
               shadowColor: colors.secondary,
               shadowOpacity: 0.3,
               shadowRadius: 16,
               shadowOffset: { width: 0, height: 0 },
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 22,
-                fontWeight: "800",
-                color: colors.textPrimary,
-              }}
-            >
-              {(isEditing ? editedName : user.name || user.phone || "T")[0]?.toUpperCase() || "T"}
-            </Text>
-          </View>
+            }} 
+          />
           
           {isEditing ? (
             <View style={{ height: 28, justifyContent: "center" }}>
@@ -272,6 +280,61 @@ export default function ProfileScreen() {
           <ProfileRow label="Address" value={user.address} colors={colors} isEditing={isEditing} editedValue={editedAddress} onValueChange={setEditedAddress} placeholder="Shop / business address" multiline />
         </View>
 
+        {/* Business Identity Card */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => navigation.navigate("SetupProfile")}
+          style={{
+            backgroundColor: colors.bgCardAlt,
+            borderRadius: 12,
+            padding: 18,
+            marginBottom: 16,
+            borderWidth: 1,
+            borderColor: colors.primaryBorder,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.primaryBg,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
+                borderWidth: 1,
+                borderColor: colors.primaryBorder,
+              }}
+            >
+              <Briefcase color={colors.primary} size={16} />
+            </View>
+            <View>
+              <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                Company Branding
+              </Text>
+              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                Update your business identity
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              backgroundColor: colors.bgSurface,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: colors.textMuted, fontSize: 10 }}>➔</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* App Settings Card */}
         <View
           style={{
@@ -342,8 +405,99 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
+          {/* Business Branding Row */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate("SetupProfile")}
+            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: colors.primaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                  borderWidth: 1,
+                  borderColor: colors.primaryBorder,
+                }}
+              >
+                <Zap color={colors.primary} size={16} />
+              </View>
+              <View>
+                <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                  Business Branding & Profile
+                </Text>
+                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                  Setup company details & logo
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: colors.bgSurface,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: colors.textMuted, fontSize: 10 }}>➔</Text>
+            </View>
+          </TouchableOpacity>
+
           {/* Theme Toggle Row */}
           <ThemeToggle />
+
+          {/* Export Data Row */}
+          <View style={{ height: 1.5, backgroundColor: colors.border, marginVertical: 18, opacity: 0.5 }} />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleExportData}
+            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: colors.primaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                  borderWidth: 1,
+                  borderColor: colors.primaryBorder,
+                }}
+              >
+                <Download color={colors.primary} size={16} />
+              </View>
+              <View>
+                <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                  Export Business Data
+                </Text>
+                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                  Download history as CSV
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: colors.bgSurface,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: colors.textMuted, fontSize: 10 }}>➔</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}

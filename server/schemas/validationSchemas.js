@@ -29,6 +29,17 @@ const locationSchema = z.object({
 });
 
 /**
+ * Job: Line item entry
+ */
+const lineItemSchema = z.object({
+  id: z.string().optional(),
+  description: z.string().default(""),
+  qty: z.number().min(0).default(1),
+  rate: z.number().min(0).default(0),
+  note: z.string().optional().default(""),
+});
+
+/**
  * Customer: Upsert
  */
 export const upsertCustomerSchema = z.object({
@@ -67,7 +78,7 @@ export const createJobSchema = z.object({
   serviceDone: z.string().optional().default(""),
   amount: z.number().min(0).optional().default(0),
   diagnosticFee: z.number().min(0).optional().default(0),
-  lineItems: z.array(z.any()).optional().default([]),
+  lineItems: z.array(lineItemSchema).optional().default([]),
   status: z.enum(["pending", "in_progress", "completed", "cancelled"]).optional().default("pending"),
   serviceDate: z.string().min(1, "Service date is required"),
   nextReminderDate: z.string().optional().nullable(),
@@ -88,6 +99,7 @@ export const jobListQuerySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   status: z.string().optional(),
+  search: z.string().optional().default(""),
   page: z.string().optional().default("1"),
   pageSize: z.string().optional().default("20"),
 });

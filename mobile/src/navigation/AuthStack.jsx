@@ -16,12 +16,9 @@ export default function AuthStack() {
   const isFirstLogin = useSelector((state) => state.auth.isFirstLogin);
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isFirstLogin ? (
-        <Stack.Screen name={RouteNames.SETUP_PROFILE} component={SetupProfileScreen} />
-      ) : (
-        <Stack.Screen name={RouteNames.OTP_LOGIN} component={OtpLoginScreen} />
-      )}
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={isFirstLogin ? RouteNames.SETUP_PROFILE : RouteNames.OTP_LOGIN}>
+      <Stack.Screen name={RouteNames.OTP_LOGIN} component={OtpLoginScreen} />
+      <Stack.Screen name={RouteNames.SETUP_PROFILE} component={SetupProfileScreen} />
     </Stack.Navigator>
   );
 }

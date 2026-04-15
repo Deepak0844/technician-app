@@ -27,8 +27,8 @@ export const createJob = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const getJobs = asyncHandler(async (req, res) => {
-  const { customerId, startDate, endDate, status, page, pageSize } = req.query;
-  const result = await JobService.getJobs(req.user._id, { customerId, startDate, endDate, status, page, pageSize });
+  const { customerId, startDate, endDate, status, search, page, pageSize } = req.query;
+  const result = await JobService.getJobs(req.user._id, { customerId, startDate, endDate, status, search, page, pageSize });
   return ResponseUtils.success(res, result, HttpStatus.OK, SuccessMessages.JOBS_LOADED);
 });
 
@@ -70,4 +70,14 @@ export const getJobById = asyncHandler(async (req, res) => {
 export const updateJob = asyncHandler(async (req, res) => {
   const job = await JobService.updateJob(req.user._id, req.params.jobId, req.body);
   return ResponseUtils.success(res, job, HttpStatus.OK, SuccessMessages.JOB_UPDATED);
+});
+
+/**
+ * @desc    Delete a job permanently
+ * @route   DELETE /api/v1/jobs/:jobId
+ * @access  Private
+ */
+export const deleteJob = asyncHandler(async (req, res) => {
+  await JobService.deleteJob(req.user._id, req.params.jobId);
+  return ResponseUtils.success(res, null, HttpStatus.OK, SuccessMessages.JOB_DELETED);
 });
