@@ -1,4 +1,4 @@
-import api from "@services/api";
+import api from "../api";
 import { ApiUrls } from "@constants/appConstants";
 import { TagTypes } from "@constants/apiTags";
 import ApiUtils from "@services/api/apiUtils";
