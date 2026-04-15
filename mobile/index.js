@@ -1,14 +1,6 @@
 import React, { useEffect } from "react";
-import {
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  Image,
-  Dimensions,
-} from "react-native";
-
-const { width, height } = Dimensions.get("window");
 import { Provider, useDispatch, useSelector } from "react-redux";
+import * as SplashScreen from "expo-splash-screen";
 import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
@@ -17,23 +9,14 @@ import {
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
-// Disable the strict mode warning for Reanimated reading from shared values during render
-// (often triggered by third-party UI libraries like BottomSheet or Gluestack)
-configureReanimatedLogger({
-  level: ReanimatedLogLevel.warn,
-  strict: false,
-});
-
 import "./global.css";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
 // Store
 import store from "./src/store/index";
-import { initializeAuth } from "./src/store/slices/authSlice";
+import { clearCredentials } from "./src/store/slices/authSlice";
+import StorageUtils from "./src/utils/storageUtils";
 import { initializeTheme } from "./src/store/slices/themeSlice";
-
-// ... (skipping some imports for brevity in TargetContent matching)
 
 // Navigation
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -43,10 +26,20 @@ import NotificationUtils from "./src/utils/notificationUtils";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 
 // Api slices (side-effect imports to register endpoints with the store)
-import "./src/services/api/authApi";
+import { authApi } from "./src/services/api/authApi";
 import "./src/services/api/customerApi";
 import "./src/services/api/jobApi";
 import "./src/services/api/dashboardApi";
+
+// Disable the strict mode warning for Reanimated reading from shared values during render
+// (often triggered by third-party UI libraries like BottomSheet or Gluestack)
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
+
+// Keep the native splash visible until bootstrap (auth + theme) completes
+SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -69,8 +62,17 @@ function AppBootstrap() {
 
   useEffect(
     function bootstrap() {
-      dispatch(initializeAuth());
       dispatch(initializeTheme());
+      StorageUtils.getToken().then((token) => {
+        if (!token) {
+          dispatch(clearCredentials()); // no token → tokenLoaded = true immediately
+          return;
+        }
+        // Token exists → validate with server; authSlice.extraReducers handles the result
+        dispatch(
+          authApi.endpoints.getMe.initiate(undefined, { forceRefetch: true }),
+        );
+      });
     },
     [dispatch],
   );
@@ -99,14 +101,16 @@ function AppBootstrap() {
   }, []);
 
   const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
+  const isReady = tokenLoaded && isThemeInitialized;
 
-  if (!tokenLoaded || !isThemeInitialized) {
-    return (
-      <View style={styles.splash}>
-        <ActivityIndicator size="large" color="#6366f1" />
-      </View>
-    );
-  }
+  useEffect(
+    function hideSplashWhenReady() {
+      if (isReady) SplashScreen.hideAsync();
+    },
+    [isReady],
+  );
+
+  if (!isReady) return null; // native splash is still covering the screen
 
   return <AppNavigator />;
 }
@@ -131,15 +135,6 @@ function App() {
     </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  splash: {
-    flex: 1,
-    backgroundColor: "#000000",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
 
 registerRootComponent(App);
 

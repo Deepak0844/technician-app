@@ -45,6 +45,7 @@
       ]
     },
     "plugins": [
+      "expo-splash-screen",
       [
         "expo-contacts",
         {

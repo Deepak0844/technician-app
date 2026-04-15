@@ -23,5 +23,4 @@ const getDevBaseUrl = () => {
 };
 
 const API_BASE_URL = __DEV__ ? getDevBaseUrl() : PROD_BASE_URL;
-console.log(`API Base URL: ${API_BASE_URL}`);
 export { API_BASE_URL };
