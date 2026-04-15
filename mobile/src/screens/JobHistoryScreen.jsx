@@ -4,7 +4,7 @@ import { FlatList, View, TouchableOpacity, RefreshControl } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
-import { ArrowLeft, Search , Filter, X, Check } from "lucide-react-native";
+import { ArrowLeft, Search, Filter, X, Check } from "lucide-react-native";
 import { useGetJobsQuery } from "@services/api/jobApi";
 import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
@@ -69,9 +69,11 @@ export default function JobHistoryScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       <Box style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
-
         {/* TopAppBar */}
         <LinearGradient
           colors={colors.gradientHeader}
@@ -95,7 +97,14 @@ export default function JobHistoryScreen() {
             >
               <ArrowLeft color={colors.indigo} size={20} />
             </TouchableOpacity>
-            <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 14,
+                fontWeight: "700",
+                color: colors.indigo,
+              }}
+            >
               {route.params?.customerId ? "Customer History" : "Job History"}
             </Text>
           </View>
@@ -109,7 +118,14 @@ export default function JobHistoryScreen() {
 
         <Box style={{ flex: 1, padding: 16, paddingBottom: 0 }}>
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 24,
+                fontWeight: "700",
+                color: colors.textPrimary,
+              }}
+            >
               {route.params?.customerId ? "Service History" : "History"}
             </Text>
           </View>
@@ -135,14 +151,25 @@ export default function JobHistoryScreen() {
                 backgroundColor: colors.bgInput,
               }}
             >
-              <Search color={colors.textSecondary} size={18} style={{ marginRight: 10 }} />
+              <Search
+                color={colors.textSecondary}
+                size={18}
+                style={{ marginRight: 10 }}
+              />
               <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
                 <InputField
                   placeholder="Search jobs..."
                   placeholderTextColor={colors.placeholderText}
                   value={search}
                   onChangeText={setSearch}
-                  style={{ fontFamily: "Inter", fontSize: 13, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 13,
+                    color: colors.textPrimary,
+                    flex: 1,
+                    height: "100%",
+                    backgroundColor: "transparent",
+                  }}
                 />
               </Input>
             </View>
@@ -152,35 +179,93 @@ export default function JobHistoryScreen() {
                 width: 48,
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: isFilterOpen || applianceFilter || isPaidFilter !== undefined ? colors.primaryBg : colors.bgInput,
+                backgroundColor:
+                  isFilterOpen || applianceFilter || isPaidFilter !== undefined
+                    ? colors.primaryBg
+                    : colors.bgInput,
                 borderWidth: 1.5,
-                borderColor: applianceFilter || isPaidFilter !== undefined ? colors.primaryBorder : colors.border,
+                borderColor:
+                  applianceFilter || isPaidFilter !== undefined
+                    ? colors.primaryBorder
+                    : colors.border,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Filter color={applianceFilter || isPaidFilter !== undefined ? colors.primary : colors.textSecondary} size={20} />
+              <Filter
+                color={
+                  applianceFilter || isPaidFilter !== undefined
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+                size={20}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Active Filter Chips */}
           {(applianceFilter || isPaidFilter !== undefined) && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
               {isPaidFilter !== undefined && (
                 <TouchableOpacity
                   onPress={() => setIsPaidFilter(undefined)}
-                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.successBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.successBorder }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.successBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.successBorder,
+                  }}
                 >
-                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.success, marginRight: 4 }}>{isPaidFilter ? "PAID" : "UNPAID"}</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.success,
+                      marginRight: 4,
+                    }}
+                  >
+                    {isPaidFilter ? "PAID" : "UNPAID"}
+                  </Text>
                   <X size={12} color={colors.success} />
                 </TouchableOpacity>
               )}
               {applianceFilter && (
                 <TouchableOpacity
                   onPress={() => setApplianceFilter(undefined)}
-                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: colors.primaryBorder }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.primaryBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
+                  }}
                 >
-                  <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "700", color: colors.primary, marginRight: 4 }}>{applianceFilter}</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                      marginRight: 4,
+                    }}
+                  >
+                    {applianceFilter}
+                  </Text>
                   <X size={12} color={colors.primary} />
                 </TouchableOpacity>
               )}
@@ -200,11 +285,15 @@ export default function JobHistoryScreen() {
                 colors={[colors.indigo]}
               />
             }
-            ListHeaderComponent={loadingJobs && (
-              <View style={{ marginBottom: 16 }}>
-                {[1, 2, 3, 4].map((i) => <JobCardSkeleton key={i} />)}
-              </View>
-            )}
+            ListHeaderComponent={
+              loadingJobs && (
+                <View style={{ marginBottom: 16 }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <JobCardSkeleton key={i} />
+                  ))}
+                </View>
+              )
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -223,14 +312,48 @@ export default function JobHistoryScreen() {
                     borderLeftColor: getStatusBorderColor(item.status),
                   }}
                 >
-                  <HStack style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <HStack
+                    style={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
                     <HStack style={{ alignItems: "center", gap: 8 }}>
-                      <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }} numberOfLines={1}>
-                        {item.customerId?.name || item.customerName || "Customer"}
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.customerId?.name ||
+                          item.customerName ||
+                          "Customer"}
                       </Text>
                       {item.priority === "urgent" && (
-                        <View style={{ backgroundColor: "#fee2e2", paddingHorizontal: 6, paddingVertical: 1, borderRadius: 4, borderWidth: 0.5, borderColor: "#ef4444" }}>
-                          <Text style={{ fontSize: 7, fontWeight: "800", color: "#b91c1c", textTransform: "uppercase" }}>Urgent</Text>
+                        <View
+                          style={{
+                            backgroundColor: "#fee2e2",
+                            paddingHorizontal: 6,
+                            paddingVertical: 1,
+                            borderRadius: 4,
+                            borderWidth: 0.5,
+                            borderColor: "#ef4444",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 7,
+                              fontWeight: "800",
+                              color: "#b91c1c",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Urgent
+                          </Text>
                         </View>
                       )}
                     </HStack>
@@ -250,44 +373,87 @@ export default function JobHistoryScreen() {
                     </HStack>
                   </HStack>
 
-                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, color: colors.primary, fontWeight: "700", letterSpacing: 1, marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 14,
+                      color: colors.primary,
+                      fontWeight: "700",
+                      letterSpacing: 1,
+                      marginBottom: 16,
+                    }}
+                  >
                     {item.applianceType}
                     {item.issue ? (
-                      <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>
-                        {" "}• {item.issue}
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          color: colors.textMuted,
+                          fontWeight: "500",
+                        }}
+                      >
+                        {" "}
+                        • {item.issue}
                       </Text>
                     ) : null}
                   </Text>
 
-                  <HStack style={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>
+                  <HStack
+                    style={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 16,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                      }}
+                    >
                       {formatCurrency(item.amount)}
                     </Text>
-                    <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2 }}>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        color: colors.textSecondary,
+                        textTransform: "uppercase",
+                        letterSpacing: 2,
+                      }}
+                    >
                       #{item._id.substring(0, 6).toUpperCase()}
                     </Text>
                   </HStack>
                 </View>
               </TouchableOpacity>
             )}
-            ListEmptyComponent={!loadingJobs && (
-              <View style={{ alignItems: "center", marginTop: 60 }}>
-                <Search size={48} color={colors.border} style={{ marginBottom: 16 }} />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    color: colors.textMuted,
-                    textAlign: "center",
-                    fontWeight: "700",
-                    letterSpacing: 2,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  No jobs found matching your filters
-                </Text>
-              </View>
-            )}
+            ListEmptyComponent={
+              !loadingJobs && (
+                <View style={{ alignItems: "center", marginTop: 60 }}>
+                  <Search
+                    size={48}
+                    color={colors.border}
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      color: colors.textMuted,
+                      textAlign: "center",
+                      fontWeight: "700",
+                      letterSpacing: 2,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    No jobs found matching your filters
+                  </Text>
+                </View>
+              )
+            }
           />
         </Box>
 
@@ -302,15 +468,58 @@ export default function JobHistoryScreen() {
           onChange={(index) => setIsFilterOpen(index >= 0)}
         >
           <BottomSheetView style={{ padding: 24 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>Filters</Text>
-              <TouchableOpacity onPress={() => { setIsPaidFilter(undefined); setApplianceFilter(undefined); bottomSheetRef.current?.close(); }}>
-                <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: colors.danger }}>RESET ALL</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 24,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 20,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                Filters
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsPaidFilter(undefined);
+                  setApplianceFilter(undefined);
+                  bottomSheetRef.current?.close();
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: colors.danger,
+                  }}
+                >
+                  RESET ALL
+                </Text>
               </TouchableOpacity>
             </View>
 
             {/* Payment Filter */}
-            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Payment Status</Text>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 10,
+                fontWeight: "800",
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                marginBottom: 12,
+              }}
+            >
+              Payment Status
+            </Text>
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 32 }}>
               {[
                 { id: undefined, label: "All" },
@@ -326,37 +535,87 @@ export default function JobHistoryScreen() {
                     borderRadius: 12,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: isPaidFilter === item.id ? colors.successBg : colors.bgSurface,
+                    backgroundColor:
+                      isPaidFilter === item.id
+                        ? colors.successBg
+                        : colors.bgSurface,
                     borderWidth: 1.5,
-                    borderColor: isPaidFilter === item.id ? colors.success : colors.border,
+                    borderColor:
+                      isPaidFilter === item.id ? colors.success : colors.border,
                   }}
                 >
-                  <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: isPaidFilter === item.id ? colors.success : colors.textPrimary }}>{item.label}</Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color:
+                        isPaidFilter === item.id
+                          ? colors.success
+                          : colors.textPrimary,
+                    }}
+                  >
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Appliance Filter */}
-            <Text style={{ fontFamily: "Inter", fontSize: 10, fontWeight: "800", color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Appliance Type</Text>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 10,
+                fontWeight: "800",
+                color: colors.textSecondary,
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                marginBottom: 12,
+              }}
+            >
+              Appliance Type
+            </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
               {ApplianceTypes.map((type) => (
                 <TouchableOpacity
                   key={type}
-                  onPress={() => setApplianceFilter(applianceFilter === type ? undefined : type)}
+                  onPress={() =>
+                    setApplianceFilter(
+                      applianceFilter === type ? undefined : type,
+                    )
+                  }
                   style={{
                     paddingHorizontal: 16,
                     paddingVertical: 10,
                     borderRadius: 10,
-                    backgroundColor: applianceFilter === type ? colors.primaryBg : colors.bgSurface,
+                    backgroundColor:
+                      applianceFilter === type
+                        ? colors.primaryBg
+                        : colors.bgSurface,
                     borderWidth: 1.5,
-                    borderColor: applianceFilter === type ? colors.primary : colors.border,
+                    borderColor:
+                      applianceFilter === type ? colors.primary : colors.border,
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 8,
                   }}
                 >
-                  <Text style={{ fontFamily: "Inter", fontSize: 12, fontWeight: "700", color: applianceFilter === type ? colors.primary : colors.textPrimary }}>{type}</Text>
-                  {applianceFilter === type && <Check size={14} color={colors.primary} />}
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color:
+                        applianceFilter === type
+                          ? colors.primary
+                          : colors.textPrimary,
+                    }}
+                  >
+                    {type}
+                  </Text>
+                  {applianceFilter === type && (
+                    <Check size={14} color={colors.primary} />
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -374,7 +633,18 @@ export default function JobHistoryScreen() {
                 marginTop: 40,
               }}
             >
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.bgPrimary, textTransform: "uppercase", letterSpacing: 2 }}>Apply Filters</Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 14,
+                  fontWeight: "700",
+                  color: colors.bgPrimary,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                }}
+              >
+                Apply Filters
+              </Text>
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheet>
