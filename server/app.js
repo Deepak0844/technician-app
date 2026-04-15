@@ -12,7 +12,7 @@ import connectToDatabase from "#config/db.js";
 import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages } from "#constants/generalConstants.js";
+import { ErrorMessages, RateLimits, SuccessMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -64,11 +64,11 @@ app.use(
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: Env.NODE_ENV === "production" ? 200 : 5000,
+  windowMs: RateLimits.WINDOW_MS,
+  max: Env.NODE_ENV === "production" ? RateLimits.MAX_PROD : RateLimits.MAX_DEV,
   standardHeaders: true,
   legacyHeaders: false,
-  message: "Too many requests from this IP, please try again after 15 minutes",
+  message: ErrorMessages.RATE_LIMIT_EXCEEDED,
 });
 
 app.use(limiter);
@@ -99,9 +99,7 @@ app.get("/", (_req, res) => {
 });
 
 app.get(`${BASE_URL}/health`, (_req, res) => {
-  res
-    .status(HttpStatus.OK)
-    .json({ status: "ok", message: "Server is healthy" });
+  ResponseUtils.success(res, { status: "ok" }, HttpStatus.OK, SuccessMessages.SERVER_HEALTHY);
 });
 
 // 404 handler
@@ -125,7 +123,7 @@ app.use((err, req, res, _next) => {
     const field = Object.keys(err.keyValue || {})[0] || "field";
     return ResponseUtils.error(
       res,
-      `A record with that ${field} already exists.`,
+      ErrorMessages.DUPLICATE_FIELD(field),
       HttpStatus.CONFLICT,
     );
   }

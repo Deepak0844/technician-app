@@ -1,7 +1,17 @@
+// Third-party
 import jwt from "jsonwebtoken";
 
 // Config
 import Env from "#config/env.js";
+
+// Constants
+import {
+  AUTH_COOKIE_NAME,
+  CookieConfig,
+} from "#constants/generalConstants.js";
+
+// Utils
+import ResponseUtils from "#utils/responseUtils.js";
 
 /**
  * Sign a JWT for a given user id
@@ -22,29 +32,30 @@ function verifyToken(token) {
  * Mobile apps (React Native) have no browser cookie jar, so they read token from response body
  * and store it in expo-secure-store.
  */
-function sendTokenResponse(user, statusCode, res, message = "Success") {
+function sendTokenResponse(user, statusCode, res, message) {
   const token = signToken(user._id);
 
   const cookieOptions = {
-    httpOnly: true,
-    sameSite: "strict",
+    httpOnly: CookieConfig.HTTP_ONLY,
+    sameSite: CookieConfig.SAME_SITE,
     secure: Env.NODE_ENV === "production",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: CookieConfig.MAX_AGE_MS,
   };
 
-  res.cookie("token", token, cookieOptions);
+  res.cookie(AUTH_COOKIE_NAME, token, cookieOptions);
 
-  return res.status(statusCode).json({
-    success: true,
-    message,
-    data: {
-      token, // mobile clients store this in expo-secure-store
+  return ResponseUtils.success(
+    res,
+    {
+      token,
       _id: user._id,
       phone: user.phone,
       name: user.name,
-      isFirstLogin: !user.name, // true when user has never set their name
+      isFirstLogin: !user.name,
     },
-  });
+    statusCode,
+    message,
+  );
 }
 
 const TokenUtils = {

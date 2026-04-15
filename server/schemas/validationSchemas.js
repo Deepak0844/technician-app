@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+// Constants
+import {
+  JobStatus,
+  PriorityLevels,
+  PaymentMethods,
+} from "#constants/generalConstants.js";
+
 // Shared max constraints
 const MAX_TEXT_LENGTH = 2000;
 const MAX_SHORT_TEXT = 255;
@@ -194,19 +201,19 @@ const jobSharedFields = {
     .optional()
     .default([]),
   status: z
-    .enum(["pending", "in_progress", "completed", "cancelled"])
+    .nativeEnum(JobStatus)
     .optional()
-    .default("pending"),
+    .default(JobStatus.PENDING),
   serviceDate: z.string().min(1, "Service date is required"),
   nextReminderDate: z.string().optional().nullable(),
   warranty: z.string().max(MAX_SHORT_TEXT).optional().default(""),
   internalNotes: z.string().max(MAX_TEXT_LENGTH).optional().default(""),
-  priority: z.enum(["normal", "urgent"]).optional().default("normal"),
+  priority: z.nativeEnum(PriorityLevels).optional().default(PriorityLevels.NORMAL),
   isPaid: z.boolean().optional().default(false),
   paymentMethod: z
-    .enum(["cash", "upi", "online", "cheque", "other"])
+    .nativeEnum(PaymentMethods)
     .optional()
-    .default("cash"),
+    .default(PaymentMethods.CASH),
   location: jobLocationSchema,
 };
 

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 // Constants
+import { ErrorMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -19,7 +20,7 @@ function validateBody(schema) {
       }));
       return ResponseUtils.error(
         res,
-        "Validation failed",
+        ErrorMessages.VALIDATION_FAILED,
         HttpStatus.BAD_REQUEST,
         errors,
       );
@@ -42,7 +43,7 @@ function validateQuery(schema) {
       }));
       return ResponseUtils.error(
         res,
-        "Validation failed",
+        ErrorMessages.VALIDATION_FAILED,
         HttpStatus.BAD_REQUEST,
         errors,
       );

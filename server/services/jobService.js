@@ -33,7 +33,7 @@ async function createJob(userId, jobData) {
   targetDay.setHours(0, 0, 0, 0);
   if (targetDay < today) {
     throw new AppError(
-      "Service date cannot be in the past for new jobs.",
+      ErrorMessages.SERVICE_DATE_IN_PAST,
       HttpStatus.BAD_REQUEST,
     );
   }

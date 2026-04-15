@@ -1,6 +1,5 @@
-// Models
+// Third-party
 import mongoose from "mongoose";
-import Customer from "#models/Customer.js";
 
 // Constants
 import {
@@ -11,6 +10,9 @@ import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
 import { AppError } from "#utils/errorUtils.js";
+
+// Models
+import Customer from "#models/Customer.js";
 
 /**
  * Search customers for a given user by name or phone
@@ -94,7 +96,7 @@ async function deleteCustomer(userId, customerId) {
   const jobCount = await Job.countDocuments({ customerId, userId });
   if (jobCount > 0) {
     throw new AppError(
-      `Cannot delete customer with ${jobCount} associated job(s).`,
+      ErrorMessages.CUSTOMER_HAS_JOBS(jobCount),
       HttpStatus.BAD_REQUEST,
     );
   }

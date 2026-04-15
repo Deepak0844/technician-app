@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
 
 // Constants
-import { ApplianceTypes, JobStatus } from "#constants/generalConstants.js";
+import {
+  ApplianceTypes,
+  JobStatus,
+  PriorityLevels,
+  PaymentMethods,
+} from "#constants/generalConstants.js";
 
 const jobSchema = new mongoose.Schema(
   {
@@ -61,8 +66,8 @@ const jobSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["cash", "upi", "online", "cheque", "other"],
-      default: "cash",
+      enum: Object.values(PaymentMethods),
+      default: PaymentMethods.CASH,
     },
     status: {
       type: String,
@@ -92,8 +97,8 @@ const jobSchema = new mongoose.Schema(
     },
     priority: {
       type: String,
-      enum: ["normal", "urgent"],
-      default: "normal",
+      enum: Object.values(PriorityLevels),
+      default: PriorityLevels.NORMAL,
     },
     location: {
       label: String,

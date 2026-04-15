@@ -1,8 +1,5 @@
+// Third-party
 import jwt from "jsonwebtoken";
-
-// Models
-import User from "#models/User.js";
-import TokenBlocklist from "#models/TokenBlocklist.js";
 
 // Config
 import Env from "#config/env.js";
@@ -11,17 +8,18 @@ import Env from "#config/env.js";
 import { ErrorMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
-// Middleware
-import asyncHandler from "#middlewares/asyncHandler.js";
-
 // Utils
 import ResponseUtils from "#utils/responseUtils.js";
+
+// Models
+import User from "#models/User.js";
+import TokenBlocklist from "#models/TokenBlocklist.js";
 
 /**
  * Protect routes — validates JWT from cookie or Authorization header.
  * Also rejects tokens that have been explicitly revoked via logout.
  */
-export const protect = asyncHandler(async (req, res, next) => {
+export const protect = async (req, res, next) => {
   let token;
 
   try {
@@ -80,4 +78,4 @@ export const protect = asyncHandler(async (req, res, next) => {
       HttpStatus.UNAUTHORIZED,
     );
   }
-});
+};

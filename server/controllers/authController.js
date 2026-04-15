@@ -1,19 +1,19 @@
+// Constants
+import { AUTH_COOKIE_NAME, SuccessMessages } from "#constants/generalConstants.js";
+import { HttpStatus } from "#constants/httpConstants.js";
+
+// Utils
+import ResponseUtils from "#utils/responseUtils.js";
+import TokenUtils from "#utils/tokenUtils.js";
+
 // Services
 import AuthService from "#services/authService.js";
 
 // Models
 import TokenBlocklist from "#models/TokenBlocklist.js";
 
-// Constants
-import { SuccessMessages } from "#constants/generalConstants.js";
-import { HttpStatus } from "#constants/httpConstants.js";
-
 // Middleware
 import asyncHandler from "#middlewares/asyncHandler.js";
-
-// Utils
-import ResponseUtils from "#utils/responseUtils.js";
-import TokenUtils from "#utils/tokenUtils.js";
 
 /**
  * @desc    Send OTP via OTPless
@@ -27,7 +27,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     res,
     { sessionId },
     HttpStatus.OK,
-    "OTP sent successfully",
+    SuccessMessages.OTP_SENT,
   );
 });
 
@@ -65,7 +65,7 @@ export const logout = asyncHandler(async (req, res) => {
     });
   }
 
-  res.clearCookie("token", { httpOnly: true, sameSite: "strict" });
+  res.clearCookie(AUTH_COOKIE_NAME, { httpOnly: true, sameSite: "strict" });
   return ResponseUtils.success(
     res,
     {},

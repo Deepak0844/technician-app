@@ -1,27 +1,25 @@
-// No Firebase Admin needed
-
-// Models
-import User from "#models/User.js";
+// Config
+import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages } from "#constants/generalConstants.js";
+import { ErrorMessages, TwoFactor } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
 import { AppError } from "#utils/errorUtils.js";
 
-// Config
-import Env from "#config/env.js";
+// Models
+import User from "#models/User.js";
 
 /**
  * Send OTP via 2factor.in
  */
 async function sendOtp(phone) {
-  const url = `https://2factor.in/API/V1/${Env.TWOFACTOR_API_KEY}/SMS/${phone}/AUTOGEN`;
+  const url = `${TwoFactor.BASE_URL}/${Env.TWOFACTOR_API_KEY}/SMS/${phone}/AUTOGEN`;
   const response = await fetch(url);
   const data = await response.json();
 
-  if (data.Status !== "Success") {
+  if (data.Status !== TwoFactor.STATUS_SUCCESS) {
     throw new AppError(data.Details || ErrorMessages.TWOFACTOR_SEND_FAILED, HttpStatus.BAD_REQUEST);
   }
   
@@ -33,11 +31,11 @@ async function sendOtp(phone) {
  * Verify OTP via 2factor.in and upsert user
  */
 async function verifyOtp(phone, otp, sessionId, name) {
-  const url = `https://2factor.in/API/V1/${Env.TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
+  const url = `${TwoFactor.BASE_URL}/${Env.TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
   const response = await fetch(url);
   const data = await response.json();
 
-  if (data.Status !== "Success" || data.Details !== "OTP Matched") {
+  if (data.Status !== TwoFactor.STATUS_SUCCESS || data.Details !== TwoFactor.OTP_MATCHED) {
     throw new AppError(data.Details || ErrorMessages.TWOFACTOR_OTP_INVALID, HttpStatus.UNAUTHORIZED);
   }
 

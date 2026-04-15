@@ -1,15 +1,15 @@
-// Services
-import DashboardService from "#services/dashboardService.js";
-
 // Constants
 import { SuccessMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
-// Middleware
-import asyncHandler from "#middlewares/asyncHandler.js";
-
 // Utils
 import ResponseUtils from "#utils/responseUtils.js";
+
+// Services
+import DashboardService from "#services/dashboardService.js";
+
+// Middleware
+import asyncHandler from "#middlewares/asyncHandler.js";
 
 /**
  * @desc    Get dashboard summary

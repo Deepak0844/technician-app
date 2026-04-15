@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+// Constants
+import { DefaultPagination, JobStatus } from "#constants/generalConstants.js";
+
 // Models
 import Job from "#models/Job.js";
 
@@ -57,7 +60,7 @@ async function getDashboardSummary(userId) {
         $match: {
           userId: userObjectId,
           serviceDate: { $gte: weekStart, $lt: weekEnd },
-          status: "completed",
+          status: JobStatus.COMPLETED,
         },
       },
       {
@@ -75,7 +78,7 @@ async function getDashboardSummary(userId) {
         $match: {
           userId: userObjectId,
           serviceDate: { $gte: monthStart, $lt: monthEnd },
-          status: "completed",
+          status: JobStatus.COMPLETED,
         },
       },
       {
@@ -111,7 +114,7 @@ async function getDashboardSummary(userId) {
         $match: {
           userId: userObjectId,
           serviceDate: { $gte: prevMonthStart, $lt: prevMonthEnd },
-          status: "completed",
+          status: JobStatus.COMPLETED,
         },
       },
       {
@@ -123,22 +126,22 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Pending jobs (Not started)
-    Job.countDocuments({ userId: userObjectId, status: "pending" }),
+    Job.countDocuments({ userId: userObjectId, status: JobStatus.PENDING }),
 
     // Total jobs all-time
     Job.countDocuments({ userId: userObjectId }),
 
-    // Recent 10 jobs — exclude internalNotes from the summary view
+    // Recent jobs — exclude internalNotes from the summary view
     Job.find({ userId: userObjectId })
       .sort({ serviceDate: -1 })
-      .limit(10)
+      .limit(DefaultPagination.RECENT_JOBS_LIMIT)
       .select("-internalNotes")
       .populate("customerId", "name phone")
       .lean(),
 
     // Outstanding payments total (completed but not paid) - All-time
     Job.aggregate([
-      { $match: { userId: userObjectId, status: "completed", isPaid: false } },
+      { $match: { userId: userObjectId, status: JobStatus.COMPLETED, isPaid: false } },
       {
         $group: {
           _id: null,
@@ -148,11 +151,11 @@ async function getDashboardSummary(userId) {
     ]),
 
     // All-time completed job count
-    Job.countDocuments({ userId: userObjectId, status: "completed" }),
+    Job.countDocuments({ userId: userObjectId, status: JobStatus.COMPLETED }),
 
     // All-time paid earnings
     Job.aggregate([
-      { $match: { userId: userObjectId, status: "completed", isPaid: true } },
+      { $match: { userId: userObjectId, status: JobStatus.COMPLETED, isPaid: true } },
       {
         $group: {
           _id: null,
