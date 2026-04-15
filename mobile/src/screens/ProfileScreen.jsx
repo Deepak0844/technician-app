@@ -1,13 +1,35 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { View, ScrollView, TouchableOpacity, Text, ActivityIndicator, TextInput, Alert } from "react-native";
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  TextInput,
+  Alert,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { useGetMeQuery, useLogoutMutation, useUpdateMeMutation } from "@services/api/authApi";
+import {
+  useGetMeQuery,
+  useLogoutMutation,
+  useUpdateMeMutation,
+} from "@services/api/authApi";
 import { useLazyGetJobsQuery } from "@services/api/jobApi";
 import { clearCredentials, updateUser } from "@store/slices/authSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
-import { LogOut, ArrowLeft, Bell, Receipt, Check, X, Edit2, Briefcase, Download, Zap } from "lucide-react-native";
+import {
+  LogOut,
+  ArrowLeft,
+  Bell,
+  Receipt,
+  Check,
+  X,
+  Edit2,
+  Download,
+  Zap,
+} from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
@@ -23,7 +45,10 @@ export default function ProfileScreen() {
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [updateMe, { isLoading: isUpdating }] = useUpdateMeMutation();
   const [triggerExport] = useLazyGetJobsQuery();
-  const user = React.useMemo(() => meResponse?.data ?? cachedUser ?? {}, [meResponse?.data, cachedUser]);
+  const user = React.useMemo(
+    () => meResponse?.data ?? cachedUser ?? {},
+    [meResponse?.data, cachedUser],
+  );
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [editedName, setEditedName] = React.useState("");
@@ -76,28 +101,40 @@ export default function ProfileScreen() {
   }
 
   async function handleExportData() {
-    Alert.alert("Export Data", "This will generate a CSV file of all your jobs and earnings history. Would you like to proceed?", [
-      { text: "Cancel", style: "cancel" },
-      { 
-        text: "Export", 
-        onPress: async () => {
-          try {
-            const result = await triggerExport({ pageSize: 1000 }).unwrap();
-            if (result?.data) {
-              await exportJobsToCSV(result.data);
+    Alert.alert(
+      "Export Data",
+      "This will generate a CSV file of all your jobs and earnings history. Would you like to proceed?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Export",
+          onPress: async () => {
+            try {
+              const result = await triggerExport({ pageSize: 1000 }).unwrap();
+              if (result?.data) {
+                await exportJobsToCSV(result.data);
+              }
+            } catch (_err) {
+              Alert.alert(
+                "Export Failed",
+                "Could not fetch job data for export.",
+              );
             }
-          } catch (_err) {
-            Alert.alert("Export Failed", "Could not fetch job data for export.");
-          }
-        }
-      }
-    ]);
+          },
+        },
+      ],
+    );
   }
 
   if (isLoading && !cachedUser) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+        edges={["top"]}
+      >
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
           <ActivityIndicator size="large" color={colors.secondary} />
         </View>
       </SafeAreaView>
@@ -105,7 +142,10 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       <LinearGradient
         colors={colors.gradientHeader}
         style={{
@@ -126,7 +166,15 @@ export default function ProfileScreen() {
         >
           <ArrowLeft color={colors.secondary} size={20} />
         </TouchableOpacity>
-        <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.secondary, flex: 1 }}>
+        <Text
+          style={{
+            fontFamily: "Inter",
+            fontSize: 14,
+            fontWeight: "700",
+            color: colors.secondary,
+            flex: 1,
+          }}
+        >
           Profile Settings
         </Text>
         <TouchableOpacity
@@ -143,25 +191,29 @@ export default function ProfileScreen() {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingTop: 10, paddingBottom: 120 }}
+        contentContainerStyle={{
+          padding: 16,
+          paddingTop: 10,
+          paddingBottom: 120,
+        }}
         showsVerticalScrollIndicator={false}
       >
         {/* Avatar Section */}
         <View style={{ alignItems: "center", marginTop: 8, marginBottom: 16 }}>
-          <Avatar 
-            name={isEditing ? editedName : user.name || user.phone} 
-            uri={user.avatar} 
-            size={64} 
-            style={{ 
-              borderWidth: 2, 
+          <Avatar
+            name={isEditing ? editedName : user.name || user.phone}
+            uri={user.avatar}
+            size={64}
+            style={{
+              borderWidth: 2,
               borderColor: colors.secondary,
               shadowColor: colors.secondary,
               shadowOpacity: 0.3,
               shadowRadius: 16,
               shadowOffset: { width: 0, height: 0 },
-            }} 
+            }}
           />
-          
+
           {isEditing ? (
             <View style={{ height: 28, justifyContent: "center" }}>
               <TextInput
@@ -199,7 +251,15 @@ export default function ProfileScreen() {
               </Text>
             </View>
           )}
-          <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 11, letterSpacing: 1, marginTop: 4 }}>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              color: colors.textMuted,
+              fontSize: 11,
+              letterSpacing: 1,
+              marginTop: 4,
+            }}
+          >
             {user.phone}
           </Text>
         </View>
@@ -230,35 +290,68 @@ export default function ProfileScreen() {
           >
             Profile Information
           </Text>
-          <ProfileRow 
-            label="Company Name" 
-            value={user.companyName} 
-            colors={colors} 
+          <ProfileRow
+            label="Company Name"
+            value={user.companyName}
+            colors={colors}
             isEditing={isEditing}
             editedValue={editedCompanyName}
             onValueChange={setEditedCompanyName}
             placeholder="e.g. Acme Repair"
           />
-          <ProfileRow label="Mobile Number" value={user.phone} colors={colors} />
+          <ProfileRow
+            label="Mobile Number"
+            value={user.phone}
+            colors={colors}
+          />
           <ProfileRow
             label="Member Since"
-            value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
+            value={
+              user.createdAt
+                ? new Date(user.createdAt).toLocaleDateString()
+                : "—"
+            }
             colors={colors}
           />
 
-          <View style={{ height: isEditing ? 64 : 0, overflow: "hidden", marginTop: isEditing ? 10 : 0 }}>
+          <View
+            style={{
+              height: isEditing ? 64 : 0,
+              overflow: "hidden",
+              marginTop: isEditing ? 10 : 0,
+            }}
+          >
             {isEditing && (
               <TouchableOpacity
                 onPress={handleSave}
                 disabled={isUpdating}
                 activeOpacity={0.8}
-                style={{ backgroundColor: colors.primary, borderRadius: 8, height: 44, flexDirection: "row", alignItems: "center", justifyContent: "center" }}
+                style={{
+                  backgroundColor: colors.primary,
+                  borderRadius: 8,
+                  height: 44,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
                 {isUpdating ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <>
-                    <Text style={{ color: "#FFFFFF", fontWeight: "800", fontFamily: "Space Grotesk", fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginRight: 8 }}>Save Changes</Text>
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontWeight: "800",
+                        fontFamily: "Space Grotesk",
+                        fontSize: 12,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
+                        marginRight: 8,
+                      }}
+                    >
+                      Save Changes
+                    </Text>
                     <Check color="#FFFFFF" size={16} />
                   </>
                 )}
@@ -268,72 +361,72 @@ export default function ProfileScreen() {
         </View>
 
         {/* Invoice Details Card */}
-        <View style={{ backgroundColor: colors.bgCardAlt, borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.borderLight, borderLeftWidth: 4, borderLeftColor: colors.secondary }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <Receipt size={14} color={colors.secondary} />
-            <Text style={{ fontFamily: "Space Grotesk", color: colors.secondary, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2 }}>Invoice Details</Text>
-          </View>
-          <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10, marginBottom: 14, lineHeight: 15 }}>
-            These details appear on your PDF invoices sent to customers.
-          </Text>
-          <ProfileRow label="Email" value={user.email} colors={colors} isEditing={isEditing} editedValue={editedEmail} onValueChange={setEditedEmail} placeholder="you@example.com" keyboardType="email-address" />
-          <ProfileRow label="Address" value={user.address} colors={colors} isEditing={isEditing} editedValue={editedAddress} onValueChange={setEditedAddress} placeholder="Shop / business address" multiline />
-        </View>
-
-        {/* Business Identity Card */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => navigation.navigate("SetupProfile")}
+        <View
           style={{
             backgroundColor: colors.bgCardAlt,
             borderRadius: 12,
-            padding: 18,
+            padding: 14,
             marginBottom: 16,
             borderWidth: 1,
-            borderColor: colors.primaryBorder,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            borderColor: colors.borderLight,
+            borderLeftWidth: 4,
+            borderLeftColor: colors.secondary,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: colors.primaryBg,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-                borderWidth: 1,
-                borderColor: colors.primaryBorder,
-              }}
-            >
-              <Briefcase color={colors.primary} size={16} />
-            </View>
-            <View>
-              <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
-                Company Branding
-              </Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
-                Update your business identity
-              </Text>
-            </View>
-          </View>
           <View
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
-              backgroundColor: colors.bgSurface,
+              flexDirection: "row",
               alignItems: "center",
-              justifyContent: "center",
+              gap: 8,
+              marginBottom: 14,
             }}
           >
-            <Text style={{ color: colors.textMuted, fontSize: 10 }}>➔</Text>
+            <Receipt size={14} color={colors.secondary} />
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                color: colors.secondary,
+                fontSize: 10,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+              }}
+            >
+              Invoice Details
+            </Text>
           </View>
-        </TouchableOpacity>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              color: colors.textDisabled,
+              fontSize: 10,
+              marginBottom: 14,
+              lineHeight: 15,
+            }}
+          >
+            These details appear on your PDF invoices sent to customers.
+          </Text>
+          <ProfileRow
+            label="Email"
+            value={user.email}
+            colors={colors}
+            isEditing={isEditing}
+            editedValue={editedEmail}
+            onValueChange={setEditedEmail}
+            placeholder="you@example.com"
+            keyboardType="email-address"
+          />
+          <ProfileRow
+            label="Address"
+            value={user.address}
+            colors={colors}
+            isEditing={isEditing}
+            editedValue={editedAddress}
+            onValueChange={setEditedAddress}
+            placeholder="Shop / business address"
+            multiline
+          />
+        </View>
 
         {/* App Settings Card */}
         <View
@@ -364,7 +457,12 @@ export default function ProfileScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => navigation.navigate("Reminders")}
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View
@@ -383,10 +481,23 @@ export default function ProfileScreen() {
                 <Bell color={colors.secondary} size={16} />
               </View>
               <View>
-                <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: "600",
+                  }}
+                >
                   Notification Reminders
                 </Text>
-                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textDisabled,
+                    fontSize: 10,
+                  }}
+                >
                   Check system status
                 </Text>
               </View>
@@ -409,7 +520,12 @@ export default function ProfileScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => navigation.navigate("SetupProfile")}
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 20,
+            }}
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View
@@ -428,10 +544,23 @@ export default function ProfileScreen() {
                 <Zap color={colors.primary} size={16} />
               </View>
               <View>
-                <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: "600",
+                  }}
+                >
                   Business Branding & Profile
                 </Text>
-                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textDisabled,
+                    fontSize: 10,
+                  }}
+                >
                   Setup company details & logo
                 </Text>
               </View>
@@ -454,11 +583,22 @@ export default function ProfileScreen() {
           <ThemeToggle />
 
           {/* Export Data Row */}
-          <View style={{ height: 1.5, backgroundColor: colors.border, marginVertical: 18, opacity: 0.5 }} />
+          <View
+            style={{
+              height: 1.5,
+              backgroundColor: colors.border,
+              marginVertical: 18,
+              opacity: 0.5,
+            }}
+          />
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleExportData}
-            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View
@@ -477,10 +617,23 @@ export default function ProfileScreen() {
                 <Download color={colors.primary} size={16} />
               </View>
               <View>
-                <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: "600",
+                  }}
+                >
                   Export Business Data
                 </Text>
-                <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 10 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textDisabled,
+                    fontSize: 10,
+                  }}
+                >
                   Download history as CSV
                 </Text>
               </View>
@@ -501,7 +654,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity activeOpacity={0.8} onPress={handleLogout} disabled={isLoggingOut}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+        >
           <LinearGradient
             colors={[colors.dangerGradientStart, colors.dangerGradientEnd]}
             start={{ x: 0, y: 0 }}
@@ -541,11 +698,40 @@ export default function ProfileScreen() {
   );
 }
 
-function ProfileRow({ label, value, colors, isEditing, editedValue, onValueChange, placeholder, keyboardType, multiline, autoCapitalize }) {
+function ProfileRow({
+  label,
+  value,
+  colors,
+  isEditing,
+  editedValue,
+  onValueChange,
+  placeholder,
+  keyboardType,
+  multiline,
+  autoCapitalize,
+}) {
   const isMultiline = multiline && isEditing;
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: isMultiline ? "flex-start" : "center", minHeight: 32, marginBottom: 12 }}>
-      <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 10, textTransform: "uppercase", letterSpacing: 1.5, flex: 0.4, marginTop: isMultiline ? 6 : 0 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: isMultiline ? "flex-start" : "center",
+        minHeight: 32,
+        marginBottom: 12,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: "Inter",
+          color: colors.textMuted,
+          fontSize: 10,
+          textTransform: "uppercase",
+          letterSpacing: 1.5,
+          flex: 0.4,
+          marginTop: isMultiline ? 6 : 0,
+        }}
+      >
         {label}
       </Text>
       <View style={{ flex: 0.6, minHeight: 32, justifyContent: "center" }}>
@@ -572,7 +758,16 @@ function ProfileRow({ label, value, colors, isEditing, editedValue, onValueChang
             }}
           />
         ) : (
-          <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", fontSize: 12, textAlign: "right" }} numberOfLines={multiline ? 3 : 1}>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              color: colors.textPrimary,
+              fontWeight: "700",
+              fontSize: 12,
+              textAlign: "right",
+            }}
+            numberOfLines={multiline ? 3 : 1}
+          >
             {value || "—"}
           </Text>
         )}

@@ -45,6 +45,20 @@ export const ApplianceTypes = [
 ];
 
 /**
+ * Appliance options with emoji — shared across filter modal and add/edit job
+ */
+export const ApplianceOptions = [
+  { value: "AC", emoji: "❄️", label: "AC" },
+  { value: "Refrigerator", emoji: "🧊", label: "Refrigerator" },
+  { value: "Washing Machine", emoji: "👕", label: "Washing Machine" },
+  { value: "Microwave", emoji: "♨️", label: "Microwave" },
+  { value: "Dishwasher", emoji: "🫙", label: "Dishwasher" },
+  { value: "Geyser", emoji: "🔥", label: "Geyser" },
+  { value: "TV", emoji: "📺", label: "TV" },
+  { value: "Other", emoji: "🔧", label: "Other" },
+];
+
+/**
  * Job status options
  */
 export const JobStatuses = {
@@ -70,7 +84,6 @@ export const PaymentMethods = {
   UPI: "upi",
   ONLINE: "online",
   CHEQUE: "cheque",
-  OTHER: "other",
 };
 
 /**

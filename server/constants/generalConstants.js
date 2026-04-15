@@ -102,7 +102,6 @@ export const PaymentMethods = {
   UPI: "upi",
   ONLINE: "online",
   CHEQUE: "cheque",
-  OTHER: "other",
 };
 
 /**

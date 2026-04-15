@@ -195,7 +195,7 @@ async function getDashboardSummary(userId) {
       ((currentMonthlyTotal - prevMonthlyEarnings) / prevMonthlyEarnings) * 100,
     );
   } else if (currentMonthlyTotal > 0) {
-    earningsChange = 100;
+    earningsChange = null;
   }
 
   return {
