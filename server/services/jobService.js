@@ -75,7 +75,7 @@ async function getJobs(
   if (customerId) query.customerId = customerId;
   if (status) query.status = status;
   if (applianceType) query.applianceType = applianceType;
-  if (isPaid !== undefined) query.isPaid = isPaid === "true" || isPaid === true;
+  if (isPaid !== undefined) query.isPaid = isPaid;
 
   if (startDate || endDate) {
     query.serviceDate = {};

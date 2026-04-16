@@ -27,7 +27,7 @@ export const createJob = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get all jobs (with optional filters: customerId, startDate, endDate, status)
+ * @desc    Get all jobs (with optional filters: customerId, startDate, endDate, status, isPaid, applianceType, search)
  * @route   GET /api/v1/jobs
  * @access  Private
  */

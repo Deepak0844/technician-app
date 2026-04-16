@@ -249,6 +249,11 @@ export const jobListQuerySchema = z.object({
   endDate: z.string().optional(),
   status: z.string().optional(),
   search: z.string().max(MAX_SHORT_TEXT).optional().default(""),
+  isPaid: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === "true")),
+  applianceType: z.string().max(MAX_SHORT_TEXT).optional(),
   page: z.string().optional().default("1"),
   pageSize: z
     .string()
