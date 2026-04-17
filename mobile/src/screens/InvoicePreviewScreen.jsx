@@ -378,7 +378,7 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
     <div class="footer-sub">We appreciate your trust and look forward to serving you again.</div>
     <div class="footer-bar"></div>
     ${techPhone || techEmail ? `<div class="footer-contact">${techPhone ? "📞 " + techPhone : ""}${techPhone && techEmail ? "  " : ""}${techEmail ? "✉️ " + techEmail : ""}</div>` : ""}
-    <div class="footer-ref">Invoice ${invoiceNumber} · Generated ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</div>
+    <div class="footer-ref">Invoice ${invoiceNumber} · Generated ${formatDate(new Date())}</div>
   </div>
 </div>
 </body>

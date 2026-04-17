@@ -20,16 +20,28 @@ export const getLocalDateString = (d) => {
 };
 
 /**
- * Formats a date string as "DD MMM YYYY" (Indian locale)
- * e.g., "2024-01-15" -> "15 Jan 2024"
+ * Formats a date string as "DD/MM/YYYY"
+ * e.g., "2024-01-15" -> "15/01/2024"
  */
 export const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+/**
+ * Formats a date as a compact "DD/MM" string for small UI cards.
+ * e.g., "2024-01-15" -> "15/01"
+ */
+export const formatDateShort = (dateStr) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "—";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${day}/${month}`;
 };

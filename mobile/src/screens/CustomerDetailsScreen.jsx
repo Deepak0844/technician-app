@@ -14,7 +14,7 @@ import { useGetCustomerByIdQuery } from "@services/api/customerApi";
 import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import { openDirections } from "@utils/locationUtils";
-import { formatDate, formatCurrency } from "@utils/formatUtils";
+import { formatDate, formatCurrency, formatDateShort } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
 
@@ -602,11 +602,7 @@ export default function CustomerDetailsScreen() {
               icon={Clock}
               label="Last Service"
               value={
-                lastServiceDate
-                  ? formatDate(lastServiceDate).split(" ")[0] +
-                    " " +
-                    formatDate(lastServiceDate).split(" ")[1]
-                  : "—"
+                  lastServiceDate ? formatDateShort(lastServiceDate) : "—"
               }
               colors={colors}
               accentColor={colors.secondary}

@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
 import { RouteNames } from "@constants/routeNames";
 import { JobStatuses, PriorityLevels } from "@constants/appConstants";
-import { formatCurrency } from "@utils/formatUtils";
+import { formatCurrency, formatDate } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
 
@@ -177,11 +177,8 @@ export default function DashboardScreen() {
               color: colors.textSecondary,
             }}
           >
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
+            {new Date().toLocaleDateString("en-IN", { weekday: "long" })},{" "}
+            {formatDate(new Date())}
           </Text>
         </View>
 

@@ -10,6 +10,7 @@ import {
   XCircle,
 } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
+import { formatDate } from "@utils/formatUtils";
 
 const TimelineSection = ({
   serviceDate,
@@ -122,11 +123,7 @@ const TimelineSection = ({
                     textTransform: "uppercase",
                   }}
                 >
-                  {serviceDate.toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatDate(serviceDate)}
                 </Text>
               </View>
             </View>
@@ -348,13 +345,7 @@ const TimelineSection = ({
                     textTransform: "uppercase",
                   }}
                 >
-                  {nextReminderDate
-                    ? nextReminderDate.toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })
-                    : "NOT SET"}
+                  {nextReminderDate ? formatDate(nextReminderDate) : "NOT SET"}
                 </Text>
               </View>
             </View>

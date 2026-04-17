@@ -281,10 +281,7 @@ export default function RemindersScreen() {
                         <Text
                           style={[s.notifTime, { color: colors.secondary }]}
                         >
-                          {dateObj.toLocaleDateString([], {
-                            month: "short",
-                            day: "numeric",
-                          })}{" "}
+                          {`${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${dateObj.getFullYear()}`}{" "}
                           ·{" "}
                           {dateObj.toLocaleTimeString([], {
                             hour: "2-digit",

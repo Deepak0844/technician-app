@@ -30,7 +30,10 @@ function convertToCSV(data) {
     // Flatten logic
     const customerName = job.customerId?.name || job.customerName || 'N/A';
     const customerPhone = job.customerId?.phone || job.customerPhone || 'N/A';
-    const date = job.serviceDate ? new Date(job.serviceDate).toLocaleDateString() : 'N/A';
+    const d = job.serviceDate ? new Date(job.serviceDate) : null;
+    const date = d
+      ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
+      : "N/A";
     const location = job.location?.address ? job.location.address.replace(/,/g, ' ') : 'N/A';
     const amount = job.amount || 0;
     const paidStatus = job.isPaid ? 'Paid' : 'Unpaid';

@@ -127,11 +127,7 @@ export default function CalendarScreen() {
   });
 
   const selectedDateObj = new Date(selectedDate);
-  const selectedMonthName = selectedDateObj.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const selectedMonthName = `${selectedDateObj.toLocaleDateString("en-IN", { weekday: "long" })}, ${String(selectedDateObj.getDate()).padStart(2, "0")}/${String(selectedDateObj.getMonth() + 1).padStart(2, "0")}/${selectedDateObj.getFullYear()}`;
 
   // Expanded dates for horizontal scroll (180 days range)
   const weekDays = useMemo(() => {

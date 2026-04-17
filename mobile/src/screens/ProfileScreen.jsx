@@ -42,6 +42,7 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
+import { formatDate } from "@utils/formatUtils";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
 import ThemeToggle from "../components/ThemeToggle";
@@ -270,13 +271,7 @@ export default function ProfileScreen() {
                 Member Since
               </Text>
               <Text style={[s.memberBadgeValue, { color: colors.textPrimary }]}>
-                {user.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  : "—"}
+                {user.createdAt ? formatDate(user.createdAt) : "—"}
               </Text>
             </View>
           </View>
