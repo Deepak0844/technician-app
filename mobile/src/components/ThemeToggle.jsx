@@ -26,15 +26,16 @@ export default function ThemeToggle() {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 4,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
         <View
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
+            width: 34,
+            height: 34,
+            borderRadius: 9,
             backgroundColor: isDark
               ? "rgba(200,153,255,0.10)"
               : "rgba(124,58,237,0.10)",

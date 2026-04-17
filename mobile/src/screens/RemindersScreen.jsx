@@ -1,24 +1,49 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ActivityIndicator, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  StyleSheet,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Bell, BellOff, Trash2, Clock } from "lucide-react-native";
+import {
+  Bell,
+  BellOff,
+  Trash2,
+  Clock,
+  ArrowLeft,
+  ShieldCheck,
+  ShieldX,
+  Info,
+} from "lucide-react-native";
 import * as Notifications from "expo-notifications";
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
 
 export default function RemindersScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const [permissionStatus, setPermissionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [scheduledNotifications, setScheduledNotifications] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchScheduled = async function() {
+  const fetchScheduled = async function () {
     try {
       const list = await Notifications.getAllScheduledNotificationsAsync();
-      // Sort by date ascending
       const sorted = list.sort((a, b) => {
-        const timeA = a.trigger.type === 'calendar' ? new Date(a.trigger.nextTriggerDate).getTime() : a.trigger.value;
-        const timeB = b.trigger.type === 'calendar' ? new Date(b.trigger.nextTriggerDate).getTime() : b.trigger.value;
+        const timeA =
+          a.trigger.type === "calendar"
+            ? new Date(a.trigger.nextTriggerDate).getTime()
+            : a.trigger.value;
+        const timeB =
+          b.trigger.type === "calendar"
+            ? new Date(b.trigger.nextTriggerDate).getTime()
+            : b.trigger.value;
         return timeA - timeB;
       });
       setScheduledNotifications(sorted);
@@ -27,7 +52,7 @@ export default function RemindersScreen() {
     }
   };
 
-  const onRefresh = useCallback(async function() {
+  const onRefresh = useCallback(async function () {
     setIsRefreshing(true);
     await fetchScheduled();
     setIsRefreshing(false);
@@ -53,207 +78,489 @@ export default function RemindersScreen() {
     await fetchScheduled();
   };
 
+  const hasPermission = permissionStatus === "granted";
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgSecondary }} edges={["top"]}>
-      <ScrollView 
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }} 
+    <SafeAreaView
+      style={[s.root, { backgroundColor: colors.bgPrimary }]}
+      edges={["top", "bottom"]}
+    >
+      {/* ── Header ──────────────────────────────────────── */}
+      <View style={[s.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={s.headerBtn}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft color={colors.textPrimary} size={20} />
+        </TouchableOpacity>
+        <Text style={[s.headerTitle, { color: colors.textPrimary }]}>
+          Reminders
+        </Text>
+        <View style={s.headerBtn} />
+      </View>
+
+      <ScrollView
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
       >
-
-        {/* Header */}
-        <View style={{ marginBottom: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5, marginBottom: 6, fontFamily: "Space Grotesk" }}>
-            Reminders
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textDisabled, lineHeight: 18, fontFamily: "Inter" }}>
-            Scheduled locally on your device for maximum reliability and privacy.
-          </Text>
-        </View>
-
-        {/* Action Bar */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
-              <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>
-                {scheduledNotifications.length} Scheduled
+        {/* ── Permission Banner ────────────────────────── */}
+        <View
+          style={[
+            s.permBanner,
+            {
+              backgroundColor: hasPermission
+                ? colors.successBg
+                : colors.dangerBg,
+              borderColor: hasPermission
+                ? colors.successBorder
+                : colors.dangerBorder,
+            },
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <>
+              {hasPermission ? (
+                <ShieldCheck size={18} color={colors.success} />
+              ) : (
+                <ShieldX size={18} color={colors.danger} />
+              )}
+              <Text
+                style={[
+                  s.permBannerText,
+                  { color: hasPermission ? colors.success : colors.danger },
+                ]}
+              >
+                {hasPermission
+                  ? "Notifications are enabled"
+                  : "Notifications disabled — enable in device Settings"}
               </Text>
-            </View>
-          </View>
-          {scheduledNotifications.length > 0 && (
-            <TouchableOpacity onPress={handleCancelAll} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <BellOff size={12} color={colors.danger} />
-              <Text style={{ color: colors.danger, fontSize: 11, fontWeight: "700" }}>CANCEL ALL</Text>
-            </TouchableOpacity>
+            </>
           )}
         </View>
 
-        {/* Scheduled List */}
-        {scheduledNotifications.length > 0 ? (
-          <View style={{ marginBottom: 24 }}>
-            {scheduledNotifications.map((notif) => {
-              const triggerTime = notif.trigger.type === 'calendar' ? notif.trigger.nextTriggerDate : notif.trigger.value;
-              const dateObj = new Date(triggerTime);
-              return (
-                <View 
-                  key={notif.identifier}
-                  style={{ 
-                    backgroundColor: colors.bgCard, 
-                    borderRadius: 20, 
-                    padding: 18, 
-                    marginBottom: 12, 
-                    borderWidth: 1, 
-                    borderColor: colors.border,
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    shadowColor: colors.primaryMuted,
-                    shadowOpacity: 0.05,
-                    shadowRadius: 10,
-                    shadowOffset: { width: 0, height: 4 },
-                  }}
-                >
-                  <View style={{ flex: 1, paddingRight: 12 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                      <Bell size={12} color={colors.primary} />
-                      <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700", fontFamily: "Space Grotesk" }}>
+        <View style={s.body}>
+          {/* ── Count + Cancel All ───────────────────────── */}
+          <View style={s.countRow}>
+            <View
+              style={[
+                s.countPill,
+                {
+                  backgroundColor: colors.primaryBg,
+                  borderColor: colors.primaryBorder,
+                },
+              ]}
+            >
+              <Bell size={12} color={colors.primary} />
+              <Text style={[s.countPillText, { color: colors.primary }]}>
+                {scheduledNotifications.length} scheduled
+              </Text>
+            </View>
+            {scheduledNotifications.length > 0 && (
+              <TouchableOpacity
+                onPress={handleCancelAll}
+                style={[
+                  s.cancelAllBtn,
+                  {
+                    backgroundColor: colors.dangerBg,
+                    borderColor: colors.dangerBorder,
+                  },
+                ]}
+                activeOpacity={0.7}
+              >
+                <BellOff size={12} color={colors.danger} />
+                <Text style={[s.cancelAllText, { color: colors.danger }]}>
+                  Cancel all
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* ── Scheduled List ──────────────────────────── */}
+          {scheduledNotifications.length > 0 ? (
+            <View
+              style={[
+                s.card,
+                {
+                  backgroundColor: colors.bgCardAlt,
+                  borderColor: colors.borderLight,
+                },
+              ]}
+            >
+              {scheduledNotifications.map((notif, idx) => {
+                const triggerTime =
+                  notif.trigger.type === "calendar"
+                    ? notif.trigger.nextTriggerDate
+                    : notif.trigger.value;
+                const dateObj = new Date(triggerTime);
+                const isLast = idx === scheduledNotifications.length - 1;
+                return (
+                  <View
+                    key={notif.identifier}
+                    style={[
+                      s.notifRow,
+                      !isLast && {
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.border + "66",
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        s.notifIconBox,
+                        {
+                          backgroundColor: colors.primaryBg,
+                          borderColor: colors.primaryBorder,
+                        },
+                      ]}
+                    >
+                      <Bell size={14} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[s.notifTitle, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
                         {notif.content.title}
                       </Text>
-                    </View>
-                    <Text style={{ color: colors.textMuted, fontSize: 12, fontFamily: "Inter", marginBottom: 10 }} numberOfLines={1}>
-                      {notif.content.body}
-                    </Text>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={{ backgroundColor: colors.bgSurface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Clock size={10} color={colors.secondary} />
-                        <Text style={{ color: colors.secondary, fontSize: 10, fontWeight: "700", textTransform: "uppercase" }}>
-                          {dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' })} at {dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <Text
+                        style={[s.notifBody, { color: colors.textMuted }]}
+                        numberOfLines={1}
+                      >
+                        {notif.content.body}
+                      </Text>
+                      <View style={s.notifTimeRow}>
+                        <Clock size={11} color={colors.secondary} />
+                        <Text
+                          style={[s.notifTime, { color: colors.secondary }]}
+                        >
+                          {dateObj.toLocaleDateString([], {
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          ·{" "}
+                          {dateObj.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </Text>
                       </View>
                     </View>
+                    <TouchableOpacity
+                      onPress={() => handleCancelOne(notif.identifier)}
+                      style={[
+                        s.deleteBtn,
+                        { backgroundColor: colors.dangerBg },
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={14} color={colors.danger} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity 
-                    onPress={() => handleCancelOne(notif.identifier)} 
-                    style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.danger + "10", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <Trash2 size={16} color={colors.danger} />
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View style={{ padding: 40, alignItems: 'center', backgroundColor: colors.bgCard, borderRadius: 24, marginBottom: 24, borderWidth: 1, borderColor: colors.border, borderStyle: 'dotted' }}>
-            <BellOff size={40} color={colors.textDisabled} style={{ marginBottom: 16, opacity: 0.5 }} />
-            <Text style={{ color: colors.textDisabled, fontSize: 14, fontFamily: 'Inter', textAlign: 'center', fontWeight: "600" }}>No upcoming reminders scheduled.</Text>
-            <Text style={{ color: colors.textFaint, fontSize: 12, fontFamily: 'Inter', textAlign: 'center', marginTop: 4 }}>New jobs will appear here automatically.</Text>
-          </View>
-        )}
-
-        {/* Schedule Strategy Card */}
-        <View
-          style={{
-            backgroundColor: colors.bgSurface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 10, fontWeight: "700", color: colors.textDisabled, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, fontFamily: "Inter" }}>
-            Schedule Strategy
-          </Text>
-          <Text style={{ fontSize: 20, fontWeight: "800", color: colors.primary, marginBottom: 8, fontFamily: "Space Grotesk" }}>
-            60 min · 30 min · 15 min
-          </Text>
-          <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 20, fontFamily: "Inter" }}>
-            The app schedules three high-priority alerts directly on your device when a job is created or updated. These fire even if you are offline.
-          </Text>
-        </View>
-
-        {/* System Permissions Card */}
-        <View
-          style={{
-            backgroundColor: colors.bgSurface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 10, fontWeight: "700", color: colors.textDisabled, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, fontFamily: "Inter" }}>
-            System Permissions
-          </Text>
-          {loading ? (
-            <ActivityIndicator color={colors.primary} size="small" style={{ marginTop: 8 }} />
-          ) : permissionStatus === "granted" ? (
-            <View
-              style={{
-                backgroundColor: colors.secondaryBg,
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                alignSelf: "flex-start",
-                marginBottom: 8,
-              }}
-            >
-              <Text style={{ color: colors.secondary, fontSize: 11, fontWeight: "700", fontFamily: "Inter" }}>
-                ✓ Notifications Active
-              </Text>
+                );
+              })}
             </View>
           ) : (
             <View
-              style={{
-                backgroundColor: colors.dangerBg,
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                alignSelf: "flex-start",
-                marginTop: 6,
-              }}
+              style={[
+                s.emptyCard,
+                {
+                  backgroundColor: colors.bgCardAlt,
+                  borderColor: colors.borderLight,
+                },
+              ]}
             >
-              <Text style={{ color: colors.danger, fontSize: 11, fontWeight: "700", fontFamily: "Inter" }}>
-                ✗ Permission Denied — Enable in Settings
+              <BellOff size={36} color={colors.textDisabled} />
+              <Text style={[s.emptyTitle, { color: colors.textMuted }]}>
+                No reminders scheduled
+              </Text>
+              <Text style={[s.emptySubtitle, { color: colors.textDisabled }]}>
+                New jobs will appear here automatically.
               </Text>
             </View>
           )}
-          <Text style={{ fontSize: 13, color: colors.textMuted, lineHeight: 20, marginTop: 8, fontFamily: "Inter" }}>
-            Reminders require &quot;Allow Notifications&quot; permission to wake your screen and play sounds.
-          </Text>
-        </View>
 
-        {/* How It Works Card */}
-        <View
-          style={{
-            backgroundColor: colors.bgSurface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 10, fontWeight: "700", color: colors.textDisabled, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, fontFamily: "Inter" }}>
-            How It Works
-          </Text>
-          {[
-            "① Save a new job or update an existing appointment",
-            "② App calculates reminder times (60, 30, 15m before)",
-            "③ Reminders are registered into the OS notification tray",
-            "④ Device wakes up and alerts you at the exact time",
-            "⑤ No internet or server connection needed to fire",
-          ].map((step, i) => (
-            <Text key={i} style={{ fontSize: 12, color: colors.textMuted, lineHeight: 22, fontFamily: "Inter" }}>
-              {step}
+          {/* ── Schedule Strategy ────────────────────────── */}
+          <View
+            style={[
+              s.card,
+              {
+                backgroundColor: colors.bgCardAlt,
+                borderColor: colors.borderLight,
+                borderLeftWidth: 4,
+                borderLeftColor: colors.primary,
+              },
+            ]}
+          >
+            <Text style={[s.cardLabel, { color: colors.primary }]}>
+              Schedule Strategy
             </Text>
-          ))}
-        </View>
+            <View style={s.strategyRow}>
+              {["60 min", "30 min", "15 min"].map((t) => (
+                <View
+                  key={t}
+                  style={[
+                    s.strategyPill,
+                    {
+                      backgroundColor: colors.primaryBg,
+                      borderColor: colors.primaryBorder,
+                    },
+                  ]}
+                >
+                  <Clock size={11} color={colors.primary} />
+                  <Text style={[s.strategyPillText, { color: colors.primary }]}>
+                    {t}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[s.cardBody, { color: colors.textMuted }]}>
+              Three alerts fire before each job — directly on your device, even
+              when offline.
+            </Text>
+          </View>
 
+          {/* ── How It Works ─────────────────────────────── */}
+          <View
+            style={[
+              s.card,
+              {
+                backgroundColor: colors.bgCardAlt,
+                borderColor: colors.borderLight,
+                borderLeftWidth: 4,
+                borderLeftColor: colors.secondary,
+              },
+            ]}
+          >
+            <View style={s.cardLabelRow}>
+              <Info size={13} color={colors.secondary} />
+              <Text style={[s.cardLabel, { color: colors.secondary }]}>
+                How It Works
+              </Text>
+            </View>
+            {[
+              "Save or update a job with a service date",
+              "App calculates 60, 30 & 15 min reminder times",
+              "Reminders are registered in the OS notification tray",
+              "Device alerts you at the exact time — no internet needed",
+            ].map((step, i) => (
+              <View key={i} style={s.stepRow}>
+                <View
+                  style={[s.stepDot, { backgroundColor: colors.secondary }]}
+                />
+                <Text style={[s.stepText, { color: colors.textMuted }]}>
+                  {step}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    height: 56,
+    borderBottomWidth: 1,
+  },
+  headerBtn: { padding: 10, width: 44 },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "Space Grotesk",
+  },
+  permBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  permBannerText: {
+    fontSize: 13,
+    fontFamily: "Inter",
+    fontWeight: "600",
+    flex: 1,
+  },
+  body: {
+    padding: 16,
+    gap: 12,
+  },
+  countRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  countPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  countPillText: {
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontWeight: "700",
+  },
+  cancelAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  cancelAllText: {
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontWeight: "700",
+  },
+  card: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+    padding: 14,
+  },
+  notifRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 11,
+    gap: 10,
+  },
+  notifIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  notifTitle: {
+    fontSize: 13,
+    fontFamily: "Space Grotesk",
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  notifBody: {
+    fontSize: 11,
+    fontFamily: "Inter",
+    marginBottom: 5,
+  },
+  notifTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  notifTime: {
+    fontSize: 11,
+    fontFamily: "Inter",
+    fontWeight: "600",
+  },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  emptyCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 36,
+    alignItems: "center",
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontFamily: "Space Grotesk",
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    fontFamily: "Inter",
+    textAlign: "center",
+  },
+  cardLabel: {
+    fontSize: 11,
+    fontFamily: "Space Grotesk",
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 10,
+  },
+  cardLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  cardBody: {
+    fontSize: 13,
+    fontFamily: "Inter",
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  strategyRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  strategyPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  strategyPillText: {
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontWeight: "700",
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginBottom: 8,
+  },
+  stepDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    flexShrink: 0,
+  },
+  stepText: {
+    fontSize: 13,
+    fontFamily: "Inter",
+    lineHeight: 20,
+    flex: 1,
+  },
+});

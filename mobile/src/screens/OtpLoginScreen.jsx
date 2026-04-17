@@ -78,6 +78,7 @@ export default function OtpLoginScreen() {
     return () => {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function OtpLoginScreen() {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   function startCooldown() {
