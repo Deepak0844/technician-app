@@ -324,12 +324,13 @@ export default function JobDetailsScreen() {
             }}
           />
 
+          {/* Job ID row + status badges */}
           <View
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              marginBottom: 16,
+              marginBottom: 8,
             }}
           >
             <View
@@ -337,7 +338,7 @@ export default function JobDetailsScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 8,
-                marginBottom: 4,
+                flexShrink: 1,
               }}
             >
               <Text
@@ -376,16 +377,6 @@ export default function JobDetailsScreen() {
                 </View>
               )}
             </View>
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 24,
-                fontWeight: "700",
-                color: colors.textPrimary,
-              }}
-            >
-              {job?.applianceType || "General Service"}
-            </Text>
             <View style={{ gap: 6, alignItems: "flex-end" }}>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
@@ -442,6 +433,19 @@ export default function JobDetailsScreen() {
               </View>
             </View>
           </View>
+
+          {/* Appliance name — full width below the header row */}
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 24,
+              fontWeight: "700",
+              color: colors.textPrimary,
+              marginBottom: 8,
+            }}
+          >
+            {job?.applianceType || "General Service"}
+          </Text>
 
           <View
             style={{
