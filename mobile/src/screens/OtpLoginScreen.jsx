@@ -1,9 +1,21 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef } from "react";
-import { Alert, KeyboardAvoidingView, Platform, View, Animated, Easing, TouchableOpacity } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  Animated,
+  Easing,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { useDispatch } from "react-redux";
 import { useNavigation } from "@react-navigation/native";
-import { useSendOtpMutation, useVerifyOtpMutation } from "@services/api/authApi";
+import {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+} from "@services/api/authApi";
 import { setCredentials } from "@store/slices/authSlice";
 import { RouteNames } from "@constants/routeNames";
 import StorageUtils from "@utils/storageUtils";
@@ -19,7 +31,14 @@ import { Input, InputField } from "@components/ui/input";
 import { ButtonSpinner } from "@components/ui/button";
 
 // Icons
-import { Terminal, ShieldCheck, Smartphone, ArrowRight, Fingerprint, Lock, KeyRound } from "lucide-react-native";
+import {
+  Wrench,
+  ShieldCheck,
+  Smartphone,
+  ArrowRight,
+  KeyRound,
+  ChevronLeft,
+} from "lucide-react-native";
 
 export default function OtpLoginScreen() {
   const [phone, setPhone] = useState("");
@@ -34,23 +53,42 @@ export default function OtpLoginScreen() {
   const [sendOtp, { isLoading: isSending }] = useSendOtpMutation();
   const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
 
-  // Scanner Line Animation
-  const scanAnim = useRef(new Animated.Value(0)).current;
+  // Icon pulse animation
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  // Step slide animation
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.loop(
-      Animated.timing(scanAnim, {
-        toValue: 1,
-        duration: 3000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
     ).start();
-    // Clean up resend countdown on unmount
-    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
-  }, [scanAnim]);
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
 
-  /** Start a 60-second resend cooldown to prevent OTP spam. */
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [step]);
+
   function startCooldown() {
     setResendCooldown(60);
     cooldownRef.current = setInterval(() => {
@@ -64,25 +102,31 @@ export default function OtpLoginScreen() {
     }, 1000);
   }
 
-  const translateY = scanAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-40, 40],
-  });
-
   async function handleSendOtp() {
     const trimmedPhone = phone.trim();
-    if (!trimmedPhone) { Alert.alert("Error", "Please enter your phone number"); return; }
+    if (!trimmedPhone) {
+      Alert.alert("Error", "Please enter your phone number");
+      return;
+    }
     if (!/^\+?\d{7,15}$/.test(trimmedPhone)) {
-      Alert.alert("Error", "Please enter a valid phone number (7\u201315 digits, optional leading +)");
+      Alert.alert(
+        "Error",
+        "Please enter a valid phone number (7–15 digits, optional leading +)",
+      );
       return;
     }
     try {
       const res = await sendOtp({ phone: trimmedPhone }).unwrap();
       setSessionId(res.data.sessionId);
+      slideAnim.setValue(40);
       setStep("otp");
       startCooldown();
     } catch (error) {
-      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to send OTP";
+      const errorMsg =
+        error?.data?.message ||
+        error?.data ||
+        error?.message ||
+        "Failed to send OTP";
       Alert.alert("Error", String(errorMsg));
     }
   }
@@ -94,149 +138,213 @@ export default function OtpLoginScreen() {
       setSessionId(res.data.sessionId);
       startCooldown();
     } catch (error) {
-      const errorMsg = error?.data?.message || error?.data || error?.message || "Failed to resend OTP";
+      const errorMsg =
+        error?.data?.message ||
+        error?.data ||
+        error?.message ||
+        "Failed to resend OTP";
       Alert.alert("Error", String(errorMsg));
     }
   }
 
   async function handleVerifyOtp() {
-    if (!otp.trim()) { Alert.alert("Error", "Please enter the OTP"); return; }
-    if (!sessionId) { Alert.alert("Error", "Session ID missing. Please resend OTP."); return; }
+    if (!otp.trim()) {
+      Alert.alert("Error", "Please enter the OTP");
+      return;
+    }
+    if (!sessionId) {
+      Alert.alert("Error", "Session ID missing. Please resend OTP.");
+      return;
+    }
     try {
-      const result = await verifyOtp({ phone: phone.trim(), otp: otp.trim(), sessionId }).unwrap();
+      const result = await verifyOtp({
+        phone: phone.trim(),
+        otp: otp.trim(),
+        sessionId,
+      }).unwrap();
       const { token, isFirstLogin, ...user } = result?.data ?? {};
       await StorageUtils.saveToken(token);
       dispatch(setCredentials({ token, user, isFirstLogin: !!isFirstLogin }));
-      
-      if (isFirstLogin) {
-        navigation.navigate(RouteNames.SETUP_PROFILE);
-      }
+      if (isFirstLogin) navigation.navigate(RouteNames.SETUP_PROFILE);
     } catch (error) {
-      const errorMsg = error?.data?.message || error?.data || error?.message || "OTP verification failed";
+      const errorMsg =
+        error?.data?.message ||
+        error?.data ||
+        error?.message ||
+        "OTP verification failed";
       Alert.alert("Error", String(errorMsg));
     }
   }
 
+  function handleBack() {
+    slideAnim.setValue(-40);
+    setOtp("");
+    setStep("phone");
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    setResendCooldown(0);
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Aesthetic Background Elements */}
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}>
+        {/* Background blobs */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <View
             style={{
               position: "absolute",
-              top: "-10%",
-              left: "-10%",
-              width: "40%",
-              height: "40%",
-              backgroundColor: colors.primaryMuted,
-              opacity: 0.2,
+              top: -80,
+              right: -60,
+              width: 260,
+              height: 260,
               borderRadius: 999,
-              transform: [{ scale: 1.5 }],
-              shadowColor: colors.primaryMuted,
-              shadowRadius: 100,
-              shadowOpacity: 1,
+              backgroundColor: colors.primaryMuted,
+              opacity: 0.13,
             }}
           />
           <View
             style={{
               position: "absolute",
-              bottom: "-5%",
-              right: "-5%",
-              width: "30%",
-              height: "30%",
-              backgroundColor: colors.secondary,
-              opacity: 0.1,
+              bottom: -60,
+              left: -80,
+              width: 220,
+              height: 220,
               borderRadius: 999,
-              shadowColor: colors.secondary,
-              shadowRadius: 100,
-              shadowOpacity: 1,
+              backgroundColor: colors.secondary,
+              opacity: 0.09,
             }}
           />
         </View>
 
-        {/* TopAppBar */}
-        <LinearGradient
-          colors={colors.gradientHeaderOverlay}
+        {/* Top bar */}
+        <View
           style={{
-            position: "absolute",
-            top: 0,
-            width: "100%",
-            zIndex: 50,
+            paddingHorizontal: 20,
+            paddingTop: 12,
+            paddingBottom: 8,
             flexDirection: "row",
             alignItems: "center",
-            justifyContent: "space-between",
-            paddingHorizontal: 16,
-            paddingTop: 40,
-            paddingBottom: 24,
           }}
         >
-          <TouchableOpacity
-            style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-            activeOpacity={0.7}
-          >
-            <Terminal color={colors.indigo} size={20} />
-            <Text style={{ fontFamily: "Inter", fontSize: 14, textTransform: "uppercase", letterSpacing: 4, color: colors.textMuted }}>
-              Technician App
-            </Text>
-          </TouchableOpacity>
-          <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "800", letterSpacing: -0.5, color: colors.indigo }}>
-            LOGIN
-          </Text>
-        </LinearGradient>
-
-        {/* Main Content */}
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 16, zIndex: 10 }}>
-          <View style={{ width: "100%", maxWidth: 400, marginTop: 40 }}>
-
-            {/* Branding */}
-            <View style={{ alignItems: "center", marginBottom: 48 }}>
-              <View
+          {step === "otp" ? (
+            <TouchableOpacity
+              onPress={handleBack}
+              activeOpacity={0.7}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                paddingVertical: 4,
+                paddingRight: 12,
+              }}
+            >
+              <ChevronLeft color={colors.primary} size={20} />
+              <Text
                 style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: 16,
-                  backgroundColor: colors.bgCard,
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  overflow: "hidden",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
+                  fontFamily: "Inter",
+                  fontSize: 14,
+                  color: colors.primary,
+                  fontWeight: "600",
                 }}
               >
-                <ShieldCheck color={colors.primary} size={40} />
-                <Animated.View
-                  style={{ transform: [{ translateY }], position: "absolute", width: "100%", height: 2 }}
-                >
-                  <LinearGradient
-                    colors={["transparent", colors.primary, "transparent"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </Animated.View>
-              </View>
-              <Heading
-                size="3xl"
-                style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.textPrimary, textAlign: "center", marginBottom: 8 }}
+                Back
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
+              <Wrench color={colors.primary} size={18} />
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 13,
+                  textTransform: "uppercase",
+                  letterSpacing: 3,
+                  color: colors.textMuted,
+                }}
               >
-                Technician Portal
-              </Heading>
-              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary, textAlign: "center" }}>
-                Please verify your identity
+                Technician App
               </Text>
             </View>
+          )}
+        </View>
 
-            {/* Input Form */}
-            <VStack space="xl">
+        {/* Main content */}
+        <View
+          style={{ flex: 1, justifyContent: "center", paddingHorizontal: 28 }}
+        >
+          {/* Logo + Title */}
+          <View style={{ alignItems: "center", marginBottom: 32 }}>
+            <Animated.View
+              style={{
+                transform: [{ scale: pulseAnim }],
+                width: 72,
+                height: 72,
+                borderRadius: 20,
+                backgroundColor: colors.bgCard,
+                borderWidth: 1.5,
+                borderColor: colors.borderLight,
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 24,
+                shadowColor: colors.primary,
+                shadowOpacity: 0.18,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 6 },
+              }}
+            >
+              <ShieldCheck color={colors.primary} size={36} strokeWidth={1.8} />
+            </Animated.View>
+
+            <Heading
+              size="2xl"
+              style={{
+                fontFamily: "Space Grotesk",
+                fontWeight: "700",
+                color: colors.textPrimary,
+                textAlign: "center",
+                letterSpacing: -0.5,
+                marginBottom: 6,
+              }}
+            >
+              {step === "phone" ? "Welcome back" : "Enter your code"}
+            </Heading>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 14,
+                color: colors.textSecondary,
+                textAlign: "center",
+                lineHeight: 20,
+              }}
+            >
+              {step === "phone"
+                ? "Enter your phone number to receive\na one-time passcode"
+                : `We sent a 6-digit code to\n${phone}`}
+            </Text>
+          </View>
+
+          {/* Input Card */}
+          <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+            <VStack space="lg">
               {step === "phone" ? (
                 <Box>
                   <Text
-                    style={{ fontFamily: "Inter", fontSize: 11, textTransform: "uppercase", letterSpacing: 2, color: colors.textSecondary, marginBottom: 8, marginLeft: 4 }}
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                      letterSpacing: 1.5,
+                      color: colors.textMuted,
+                      marginBottom: 8,
+                      marginLeft: 2,
+                    }}
                   >
                     Phone Number
                   </Text>
@@ -245,22 +353,38 @@ export default function OtpLoginScreen() {
                       flexDirection: "row",
                       alignItems: "center",
                       paddingHorizontal: 16,
-                      height: 56,
-                      borderRadius: 12,
-                      borderWidth: 2,
+                      height: 54,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
                       borderColor: colors.borderInput,
                       backgroundColor: colors.bgInput,
                     }}
                   >
-                    <Smartphone color={colors.textSecondary} size={24} style={{ marginRight: 12 }} />
-                    <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
+                    <Smartphone
+                      color={colors.textSecondary}
+                      size={20}
+                      style={{ marginRight: 12 }}
+                    />
+                    <Input
+                      variant="unstyled"
+                      style={{ flex: 1, height: "100%" }}
+                    >
                       <InputField
-                        placeholder="+1 (555) 000-0000"
+                        placeholder="+91 98765 43210"
                         placeholderTextColor={colors.placeholderText}
                         keyboardType="phone-pad"
                         value={phone}
                         onChangeText={setPhone}
-                        style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
+                        returnKeyType="done"
+                        onSubmitEditing={handleSendOtp}
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 15,
+                          color: colors.textPrimary,
+                          flex: 1,
+                          height: "100%",
+                          backgroundColor: "transparent",
+                        }}
                       />
                     </Input>
                   </View>
@@ -268,159 +392,161 @@ export default function OtpLoginScreen() {
               ) : (
                 <Box>
                   <Text
-                    style={{ fontFamily: "Inter", fontSize: 11, textTransform: "uppercase", letterSpacing: 2, color: colors.secondary, marginBottom: 8, marginLeft: 4 }}
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      textTransform: "uppercase",
+                      letterSpacing: 1.5,
+                      color: colors.textMuted,
+                      marginBottom: 8,
+                      marginLeft: 2,
+                    }}
                   >
-                    Enter the code sent to your phone
+                    Verification Code
                   </Text>
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
                       paddingHorizontal: 16,
-                      height: 56,
-                      borderRadius: 12,
-                      borderWidth: 2,
+                      height: 54,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
                       borderColor: colors.secondaryBorder,
                       backgroundColor: colors.bgInput,
                     }}
                   >
-                    <KeyRound color={colors.secondary} size={24} style={{ marginRight: 12 }} />
-                    <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
+                    <KeyRound
+                      color={colors.secondary}
+                      size={20}
+                      style={{ marginRight: 12 }}
+                    />
+                    <Input
+                      variant="unstyled"
+                      style={{ flex: 1, height: "100%" }}
+                    >
                       <InputField
-                        placeholder="000 000"
+                        placeholder="• • • • • •"
                         placeholderTextColor={colors.placeholderText}
                         keyboardType="number-pad"
                         value={otp}
                         onChangeText={setOtp}
                         maxLength={6}
-                        style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", letterSpacing: 8, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
+                        returnKeyType="done"
+                        onSubmitEditing={handleVerifyOtp}
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 22,
+                          fontWeight: "700",
+                          letterSpacing: 10,
+                          color: colors.textPrimary,
+                          flex: 1,
+                          height: "100%",
+                          backgroundColor: "transparent",
+                        }}
                       />
                     </Input>
                   </View>
                 </Box>
               )}
 
-              {/* Action Button */}
+              {/* Primary CTA */}
               <TouchableOpacity
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 onPress={step === "phone" ? handleSendOtp : handleVerifyOtp}
                 disabled={isSending || isVerifying}
                 style={{
                   width: "100%",
-                  height: 56,
-                  borderRadius: 12,
+                  height: 54,
+                  borderRadius: 14,
                   overflow: "hidden",
-                  marginTop: 8,
+                  marginTop: 4,
                   shadowColor: colors.primary,
-                  shadowOpacity: 0.15,
-                  shadowRadius: 20,
-                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
                 }}
               >
                 <LinearGradient
                   colors={colors.gradientPrimary}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                  }}
                 >
                   {isSending || isVerifying ? (
                     <ButtonSpinner color={colors.bgPrimary} />
                   ) : (
                     <>
-                      <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: colors.bgPrimary }}>
-                        {step === "phone" ? "Send OTP" : "Verify & Login"}
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontWeight: "700",
+                          fontSize: 15,
+                          letterSpacing: 0.5,
+                          color: colors.bgPrimary,
+                        }}
+                      >
+                        {step === "phone" ? "Send Otp" : "Verify & Sign In"}
                       </Text>
-                      <ArrowRight color={colors.bgPrimary} size={20} />
+                      <ArrowRight
+                        color={colors.bgPrimary}
+                        size={18}
+                        strokeWidth={2.5}
+                      />
                     </>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
 
-              {/* Help links */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 4, marginTop: 8 }}>
-                <TouchableOpacity onPress={() => Alert.alert("Help", "Contact IT Service Desk")}>
-                  <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: colors.textSecondary }}>
-                    Help Center
-                  </Text>
-                </TouchableOpacity>
-                {step === "otp" ? (
+              {/* Resend (OTP step only) */}
+              {step === "otp" && (
+                <View style={{ alignItems: "center", marginTop: 4 }}>
                   <TouchableOpacity
-                    onPress={resendCooldown > 0 ? undefined : handleResendOtp}
+                    onPress={handleResendOtp}
                     disabled={resendCooldown > 0 || isSending}
+                    activeOpacity={0.7}
                   >
-                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: resendCooldown > 0 ? colors.textMuted : colors.primary }}>
-                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 13,
+                        color:
+                          resendCooldown > 0
+                            ? colors.textMuted
+                            : colors.primary,
+                        fontWeight: resendCooldown > 0 ? "400" : "600",
+                      }}
+                    >
+                      {resendCooldown > 0
+                        ? `Resend code in ${resendCooldown}s`
+                        : "Resend code"}
                     </Text>
                   </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity onPress={() => Alert.alert("Change Method", "Login method options")}>
-                    <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: -0.5, color: colors.textSecondary }}>
-                      Change Method
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              )}
             </VStack>
-
-            {/* Divider */}
-            <View style={{ marginTop: 64, flexDirection: "row", alignItems: "center", gap: 16 }}>
-              <LinearGradient
-                colors={colors.gradientDivider}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ flex: 1, height: 1 }}
-              />
-              <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: 4, color: colors.textMuted }}>
-                Secure Login
-              </Text>
-              <LinearGradient
-                colors={colors.gradientDivider}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{ flex: 1, height: 1 }}
-              />
-            </View>
-
-            {/* Bottom Action */}
-            <View style={{ marginTop: 32, flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
-              <Text style={{ fontFamily: "Inter", fontSize: 14, color: colors.textSecondary }}>
-                Don&apos;t have an account?
-              </Text>
-              <TouchableOpacity
-                style={{ marginLeft: 4 }}
-                onPress={() => Alert.alert("Sign Up", "Contact administrator to provision a new technician account.")}
-              >
-                <Text style={{ fontFamily: "Inter", fontWeight: "700", fontSize: 14, color: colors.primary }}>
-                  Sign up
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </Animated.View>
         </View>
 
-        {/* Decorative Bottom Shell */}
-        <View
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingHorizontal: 24,
-            paddingBottom: 24,
-            paddingTop: 16,
-            opacity: 0.6,
-          }}
-        >
-          <Text style={{ fontFamily: "Inter", fontSize: 10, textTransform: "uppercase", letterSpacing: 4, color: colors.textFaint }}>
-            Secure Session
+        {/* Footer */}
+        <View style={{ paddingBottom: 28, alignItems: "center" }}>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 11,
+              color: colors.textFaint,
+              letterSpacing: 0.5,
+            }}
+          >
+            Authorized personnel only · Secure session
           </Text>
-          <View style={{ flexDirection: "row", gap: 16 }}>
-            <Fingerprint color={colors.textFaint} size={16} />
-            <Lock color={colors.textFaint} size={16} />
-          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
