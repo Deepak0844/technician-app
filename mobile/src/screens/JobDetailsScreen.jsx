@@ -32,7 +32,11 @@ import {
   useRepeatJobMutation,
   useUpdateJobMutation,
 } from "@services/api/jobApi";
-import { JobStatuses, PriorityLevels } from "@constants/appConstants";
+import {
+  JobStatuses,
+  PaymentMethods,
+  PriorityLevels,
+} from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -94,19 +98,66 @@ export default function JobDetailsScreen() {
 
   const handleJobActions = () => {
     const isJobPaid = !!job.isPaid;
+
+    const doMarkPaid = (paymentMethod) => {
+      const isNonCompleted = job.status !== JobStatuses.COMPLETED;
+      const message = isNonCompleted
+        ? `This job is still ${job.status.replace("_", " ").toUpperCase()}. Marking it as paid will also mark it as Completed. Continue?`
+        : "Confirm marking this job as paid?";
+      Alert.alert("Mark as Paid?", message, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Mark as Paid",
+          onPress: async () => {
+            try {
+              await updateJob({
+                id: job._id,
+                isPaid: true,
+                paymentMethod,
+                status: JobStatuses.COMPLETED,
+              }).unwrap();
+              Alert.alert(
+                "Success",
+                isNonCompleted
+                  ? "Job marked as Completed and Paid."
+                  : "Job marked as Paid.",
+              );
+            } catch (_err) {
+              Alert.alert("Error", "Failed to update payment status.");
+            }
+          },
+        },
+      ]);
+    };
+
     Alert.alert("Job Actions", "Manage this job record and lifecycle.", [
       { text: "Cancel", style: "cancel" },
       {
         text: isJobPaid ? "Mark as UNPAID" : "Mark as PAID",
-        onPress: async () => {
-          try {
-            await updateJob({ id: job._id, isPaid: !isJobPaid }).unwrap();
-            Alert.alert(
-              "Success",
-              `Job marked as ${!isJobPaid ? "PAID" : "UNPAID"}`,
-            );
-          } catch (_err) {
-            Alert.alert("Error", "Failed to update payment status.");
+        onPress: () => {
+          if (isJobPaid) {
+            (async () => {
+              try {
+                await updateJob({ id: job._id, isPaid: false }).unwrap();
+                Alert.alert("Success", "Job marked as UNPAID.");
+              } catch (_err) {
+                Alert.alert("Error", "Failed to update payment status.");
+              }
+            })();
+          } else {
+            Alert.alert("Payment Method", "How was the payment received?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Cash", onPress: () => doMarkPaid(PaymentMethods.CASH) },
+              { text: "UPI", onPress: () => doMarkPaid(PaymentMethods.UPI) },
+              {
+                text: "Online",
+                onPress: () => doMarkPaid(PaymentMethods.ONLINE),
+              },
+              {
+                text: "Cheque",
+                onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
+              },
+            ]);
           }
         },
       },
@@ -154,15 +205,39 @@ export default function JobDetailsScreen() {
     ]);
   };
 
-  const handleUpdateStatus = async (newStatus) => {
-    try {
-      await updateJob({ id: job._id, status: newStatus }).unwrap();
+  const handleUpdateStatus = (newStatus) => {
+    const isPaidAndReopening =
+      job.isPaid && newStatus !== JobStatuses.COMPLETED;
+
+    const doUpdate = async () => {
+      try {
+        await updateJob({
+          id: job._id,
+          status: newStatus,
+          ...(isPaidAndReopening ? { isPaid: false } : {}),
+        }).unwrap();
+        Alert.alert(
+          "Success",
+          isPaidAndReopening
+            ? `Status changed to ${newStatus.replace("_", " ")} and payment reset to Unpaid.`
+            : `Status updated to ${newStatus.replace("_", " ")}.`,
+        );
+      } catch (_err) {
+        Alert.alert("Error", "Failed to update status.");
+      }
+    };
+
+    if (isPaidAndReopening) {
       Alert.alert(
-        "Success",
-        `Status updated to ${newStatus.replace("_", " ")}`,
+        "Reset Payment?",
+        "This job is marked as Paid. Changing the status will also reset the payment to Unpaid. Continue?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Yes, Continue", onPress: doUpdate },
+        ],
       );
-    } catch (_err) {
-      Alert.alert("Error", "Failed to update status.");
+    } else {
+      doUpdate();
     }
   };
 

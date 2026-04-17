@@ -92,6 +92,15 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       0,
     );
 
+    const resolvedStatus =
+      isPaid && status !== JobStatuses.COMPLETED
+        ? JobStatuses.COMPLETED
+        : status;
+
+    // If editing a paid job and status is moved away from COMPLETED, reset isPaid to false
+    const resolvedIsPaid =
+      editingJob?.isPaid && status !== JobStatuses.COMPLETED ? false : isPaid;
+
     const payload = {
       customerId: selectedCustomer._id || selectedCustomer.serverId,
       applianceType: appliance,
@@ -99,7 +108,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       serviceDone: serviceDone.trim(),
       diagnosticFee: parsedFee,
       amount: parsedAmount + partsTotal + parsedFee, // Total = Service + Parts + Diagnostic Fee
-      status: status,
+      status: resolvedStatus,
       serviceDate: finalDate.toISOString(),
       nextReminderDate: nextReminderDate
         ? nextReminderDate.toISOString()
@@ -109,7 +118,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       partsUsed: partsUsed,
       priority: priority,
       internalNotes: internalNotes,
-      isPaid: isPaid,
+      isPaid: resolvedIsPaid,
       paymentMethod: paymentMethod,
     };
 
@@ -118,8 +127,8 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
         await updateJob({ id: editingJob._id, ...payload }).unwrap();
         await NotificationUtils.cancelJobReminders(editingJob._id);
         if (
-          status !== JobStatuses.COMPLETED &&
-          status !== JobStatuses.CANCELLED
+          resolvedStatus !== JobStatuses.COMPLETED &&
+          resolvedStatus !== JobStatuses.CANCELLED
         ) {
           await NotificationUtils.scheduleJobReminders({
             _id: editingJob._id,
@@ -127,7 +136,14 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
             serviceDate: finalDate.toISOString(),
           });
         }
-        Alert.alert("Success", "Job updated successfully.");
+        Alert.alert(
+          "Success",
+          resolvedStatus !== status
+            ? "Job marked as Completed and Paid."
+            : resolvedIsPaid !== isPaid
+              ? "Job updated and payment reset to Unpaid."
+              : "Job updated successfully.",
+        );
       } else {
         const result = await createJob(payload).unwrap();
         if (result?.data?._id)

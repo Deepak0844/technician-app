@@ -210,6 +210,21 @@ async function updateJob(userId, jobId, updateData) {
       );
   }
 
+  // Business rule: a paid job must be completed
+  if (updateData.isPaid === true) {
+    updateData.status = JobStatus.COMPLETED;
+  }
+
+  // Business rule: if status is being moved away from completed on a paid job, reset isPaid
+  if (
+    job.isPaid &&
+    updateData.status &&
+    updateData.status !== JobStatus.COMPLETED &&
+    updateData.isPaid !== true
+  ) {
+    updateData.isPaid = false;
+  }
+
   const updated = await Job.findByIdAndUpdate(
     jobId,
     {
