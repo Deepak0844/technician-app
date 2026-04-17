@@ -228,15 +228,17 @@ export const createJobSchema = z.object({
 
 /**
  * Job: Update (all fields optional, customerId can be changed)
+ * Strip .default() from all shared fields so absent fields don't
+ * overwrite existing DB values with their defaults (e.g. amount → 0).
  */
 export const updateJobSchema = z.object({
   customerId: z.string().min(1).max(64).optional(),
   ...Object.fromEntries(
-    Object.entries(jobSharedFields).map(([k, v]) => [
-      k,
-      // Make each field optional for partial updates, preserving defaults where needed
-      v.optional(),
-    ]),
+    Object.entries(jobSharedFields).map(([k, v]) => {
+      // Unwrap ZodDefault so missing fields are truly undefined, not defaulted
+      const unwrapped = v instanceof z.ZodDefault ? v.removeDefault() : v;
+      return [k, unwrapped.optional()];
+    }),
   ),
 });
 

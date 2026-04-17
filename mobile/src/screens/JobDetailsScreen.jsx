@@ -138,7 +138,11 @@ export default function JobDetailsScreen() {
           if (isJobPaid) {
             (async () => {
               try {
-                await updateJob({ id: job._id, isPaid: false }).unwrap();
+                await updateJob({
+                  id: job._id,
+                  isPaid: false,
+                  paymentMethod: null,
+                }).unwrap();
                 Alert.alert("Success", "Job marked as UNPAID.");
               } catch (_err) {
                 Alert.alert("Error", "Failed to update payment status.");
@@ -168,7 +172,7 @@ export default function JobDetailsScreen() {
             const res = await repeatJob(job._id).unwrap();
             Alert.alert(
               "Success",
-              "A new pending job has been created with this job's details.",
+              "A new pending job has been created with this job's details. Please review and update the service date.",
             );
             navigation.navigate(RouteNames.JOB_DETAILS, { job: res.data });
           } catch (err) {
@@ -305,7 +309,7 @@ export default function JobDetailsScreen() {
         }
       >
         {/* Quick Lifecycle Action - Zero-Tap Workflow */}
-        {!isCompleted && !isSyncing && (
+        {!isCompleted && job.status !== JobStatuses.CANCELLED && !isSyncing && (
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() =>

@@ -414,7 +414,12 @@ export default function AddJobScreen() {
           onReminderPress={() => setShowReminderCalendar(true)}
           onClearReminder={() => setNextReminderDate(null)}
           isPaid={isPaid}
-          setIsPaid={setIsPaid}
+          setIsPaid={(val) => {
+            setIsPaid(val);
+            if (val && status !== JobStatuses.COMPLETED) {
+              setStatus(JobStatuses.COMPLETED);
+            }
+          }}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
         />
@@ -686,6 +691,8 @@ export default function AddJobScreen() {
         setShowStatusSheet={setShowStatusSheet}
         status={status}
         setStatus={setStatus}
+        isPaid={isPaid}
+        setIsPaid={setIsPaid}
         showReminderCalendar={showReminderCalendar}
         setShowReminderCalendar={setShowReminderCalendar}
         nextReminderDate={nextReminderDate}
