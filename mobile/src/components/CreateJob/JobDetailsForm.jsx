@@ -66,6 +66,72 @@ const JobDetailsForm = ({
       </View>
 
       <View style={{ padding: 20 }}>
+        {/* Priority Selection — shown first as it's the most critical triage info */}
+        <Text
+          style={{
+            fontFamily: "Inter",
+            color: colors.textDisabled,
+            fontSize: 8,
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: 4,
+            marginBottom: 12,
+            marginLeft: 4,
+          }}
+        >
+          Job Priority
+        </Text>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
+          {["normal", "urgent"].map((p) => {
+            const isSelected = priority === p;
+            const isUrgent = p === "urgent";
+            return (
+              <TouchableOpacity
+                key={p}
+                onPress={() => setPriority(p)}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 14,
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  backgroundColor: isSelected
+                    ? isUrgent
+                      ? "#fef2f2"
+                      : colors.primaryBg
+                    : colors.bgCard,
+                  borderColor: isSelected
+                    ? isUrgent
+                      ? "#ef4444"
+                      : colors.primary
+                    : colors.border,
+                }}
+              >
+                <Text style={{ fontSize: 16 }}>{isUrgent ? "⚡" : "🟢"}</Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 11,
+                    fontWeight: "800",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    color: isSelected
+                      ? isUrgent
+                        ? "#b91c1c"
+                        : colors.primary
+                      : colors.textDisabled,
+                  }}
+                >
+                  {p}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Appliance Selector — 2-column emoji grid */}
         <Text
           style={{
@@ -370,72 +436,6 @@ const JobDetailsForm = ({
         </Text>
 
         <View style={{ height: 32 }} />
-
-        {/* Priority Selection */}
-        <Text
-          style={{
-            fontFamily: "Inter",
-            color: colors.textDisabled,
-            fontSize: 8,
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: 4,
-            marginBottom: 12,
-            marginLeft: 4,
-          }}
-        >
-          Job Priority
-        </Text>
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
-          {["normal", "urgent"].map((p) => {
-            const isSelected = priority === p;
-            const isUrgent = p === "urgent";
-            return (
-              <TouchableOpacity
-                key={p}
-                onPress={() => setPriority(p)}
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  paddingVertical: 14,
-                  borderRadius: 14,
-                  borderWidth: 1.5,
-                  backgroundColor: isSelected
-                    ? isUrgent
-                      ? "#fef2f2"
-                      : colors.primaryBg
-                    : colors.bgCard,
-                  borderColor: isSelected
-                    ? isUrgent
-                      ? "#ef4444"
-                      : colors.primary
-                    : colors.border,
-                }}
-              >
-                <Text style={{ fontSize: 16 }}>{isUrgent ? "⚡" : "🟢"}</Text>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 11,
-                    fontWeight: "800",
-                    textTransform: "uppercase",
-                    letterSpacing: 2,
-                    color: isSelected
-                      ? isUrgent
-                        ? "#b91c1c"
-                        : colors.primary
-                      : colors.textDisabled,
-                  }}
-                >
-                  {p}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
 
         {/* Internal Notes */}
         <View
