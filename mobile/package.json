@@ -3,6 +3,7 @@
   "version": "1.1.0",
   "main": "index.js",
   "scripts": {
+    "preandroid-prebuild": "node scripts/set-dev-host.js",
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "android-prebuild": "npm run prebuild:android && expo run:android",
