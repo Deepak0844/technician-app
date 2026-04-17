@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   StyleSheet,
+  Linking,
+  AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -21,7 +23,6 @@ import {
 } from "lucide-react-native";
 import * as Notifications from "expo-notifications";
 import { useNavigation } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
 import useTheme from "@hooks/useTheme";
 
 export default function RemindersScreen() {
@@ -31,6 +32,7 @@ export default function RemindersScreen() {
   const [loading, setLoading] = useState(true);
   const [scheduledNotifications, setScheduledNotifications] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const appState = useRef(AppState.currentState);
 
   const fetchScheduled = async function () {
     try {
@@ -67,6 +69,28 @@ export default function RemindersScreen() {
     }
     init();
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      async (nextState) => {
+        if (
+          appState.current.match(/inactive|background/) &&
+          nextState === "active"
+        ) {
+          const { status } = await Notifications.getPermissionsAsync();
+          setPermissionStatus(status);
+          await fetchScheduled();
+        }
+        appState.current = nextState;
+      },
+    );
+    return () => subscription.remove();
+  }, []);
+
+  function handleOpenSettings() {
+    Linking.openSettings();
+  }
 
   const handleCancelAll = async () => {
     await Notifications.cancelAllScheduledNotificationsAsync();
@@ -142,8 +166,22 @@ export default function RemindersScreen() {
               >
                 {hasPermission
                   ? "Notifications are enabled"
-                  : "Notifications disabled — enable in device Settings"}
+                  : "Notifications are disabled"}
               </Text>
+              {!hasPermission && (
+                <TouchableOpacity
+                  onPress={handleOpenSettings}
+                  style={[
+                    s.enableBtn,
+                    {
+                      backgroundColor: colors.danger,
+                    },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <Text style={s.enableBtnText}>Enable</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -399,6 +437,18 @@ const s = StyleSheet.create({
     fontFamily: "Inter",
     fontWeight: "600",
     flex: 1,
+  },
+  enableBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    flexShrink: 0,
+  },
+  enableBtnText: {
+    fontSize: 12,
+    fontFamily: "Inter",
+    fontWeight: "700",
+    color: "#fff",
   },
   body: {
     padding: 16,
