@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ScrollView,
   Alert,
@@ -223,6 +224,49 @@ export default function AddJobScreen() {
 
   const [updateCustomer, { isLoading: isUpdatingCustomer }] =
     useUpdateCustomerMutation();
+
+  function resetForm() {
+    setSelectedCustomer(initialCustomer || null);
+    setAppliance(ApplianceTypes[0]);
+    setIssue("");
+    setServiceDone("");
+    setDiagnosticFee("");
+    setServiceDate(
+      initialDate
+        ? (() => {
+            const [y, m, d] = initialDate.split("-").map(Number);
+            return new Date(y, m - 1, d);
+          })()
+        : new Date(),
+    );
+    setWarranty("No Warranty");
+    setCustomWarranty("");
+    setShowCustomWarranty(false);
+    setAmount("");
+    setPartsUsed([]);
+    setNextReminderDate(null);
+    setSelectedLocation(null);
+    setPriority(PriorityLevels.NORMAL);
+    setInternalNotes("");
+    setStatus(JobStatuses.PENDING);
+    setIsPaid(false);
+    setPaymentMethod(PaymentMethods.CASH);
+    setSelectedTime("10:00 AM");
+    setNewLocationAddress("");
+    setNewLocationLabel("");
+    setNewLocationLat(null);
+    setNewLocationLng(null);
+    setSaveToProfile(true);
+  }
+
+  // Reset form every time this screen comes into focus (only for new jobs)
+  useFocusEffect(
+    useCallback(() => {
+      if (!editingJob) {
+        resetForm();
+      }
+    }, [editingJob]),
+  );
 
   const handleFinish = () => {
     if (origin === "Calendar") {
