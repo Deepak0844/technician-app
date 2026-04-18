@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TouchableOpacity, Modal, Pressable } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Text } from "@components/ui/text";
 import CustomClockPicker from "@components/CreateJob/CustomClockPicker";
 import AddLocationModal from "@components/CreateJob/AddLocationModal";
@@ -92,8 +93,13 @@ export default function AddJobModals({
               </TouchableOpacity>
             </View>
             <Calendar
-              minDate={
-                !editingJob ? new Date().toISOString().split("T")[0] : undefined
+              current={serviceDate.toISOString().split("T")[0]}
+              renderArrow={(direction) =>
+                direction === "left" ? (
+                  <ChevronLeft size={20} color={colors.primary} />
+                ) : (
+                  <ChevronRight size={20} color={colors.primary} />
+                )
               }
               theme={{
                 calendarBackground: colors.bgCard,
@@ -168,6 +174,13 @@ export default function AddJobModals({
             </View>
             <Calendar
               minDate={new Date().toISOString().split("T")[0]}
+              renderArrow={(direction) =>
+                direction === "left" ? (
+                  <ChevronLeft size={20} color={colors.secondary} />
+                ) : (
+                  <ChevronRight size={20} color={colors.secondary} />
+                )
+              }
               theme={{
                 calendarBackground: colors.bgCard,
                 textSectionTitleColor: colors.secondary,

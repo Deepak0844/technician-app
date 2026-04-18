@@ -35,6 +35,8 @@ import {
   Plus,
   Zap,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react-native";
 
 // Constants for Pixel-Perfect Layout
@@ -263,6 +265,7 @@ export default function CalendarScreen() {
                     fontFamily: "Space Grotesk",
                     fontSize: 30,
                     fontWeight: "700",
+                    lineHeight: 38,
                     color: colors.textPrimary,
                   }}
                 >
@@ -426,6 +429,13 @@ export default function CalendarScreen() {
             >
               <Calendar
                 current={selectedDate}
+                renderArrow={(direction) =>
+                  direction === "left" ? (
+                    <ChevronLeft size={20} color={colors.primary} />
+                  ) : (
+                    <ChevronRight size={20} color={colors.primary} />
+                  )
+                }
                 onDayPress={(day) => {
                   handleSelectDate(day.dateString);
                   setIsMonthVisible(false);
