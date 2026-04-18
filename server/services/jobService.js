@@ -188,6 +188,15 @@ async function repeatJob(userId, jobId) {
     status: JobStatus.PENDING,
     serviceDate: new Date(),
     nextReminderDate: null,
+    events: [
+      {
+        action: "created",
+        to: JobStatus.PENDING,
+        isPaid: false,
+        note: `Job repeated from #${original._id.toString().slice(-6).toUpperCase()}.`,
+        at: new Date(),
+      },
+    ],
   });
 
   return await Job.findById(repeated._id)
@@ -222,6 +231,19 @@ async function updateJob(userId, jobId, updateData) {
   // Business rule: a paid job must be completed
   if (updateData.isPaid === true) {
     updateData.status = JobStatus.COMPLETED;
+  }
+
+  // Business rule: a cancelled job can only be reactivated to pending
+  if (
+    job.status === JobStatus.CANCELLED &&
+    updateData.status &&
+    updateData.status !== JobStatus.PENDING &&
+    updateData.status !== JobStatus.CANCELLED
+  ) {
+    throw new AppError(
+      ErrorMessages.CANCELLED_JOB_TRANSITION,
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   // Business rule: if status is being moved away from completed on a paid job, reset isPaid

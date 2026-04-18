@@ -26,6 +26,9 @@ import {
   ShieldCheck,
   Info,
   RotateCcw,
+  XCircle,
+  RotateCw,
+  CreditCard,
 } from "lucide-react-native";
 import {
   useGetJobByIdQuery,
@@ -103,6 +106,9 @@ export default function JobDetailsScreen() {
   const isLockedFinal =
     job.status === JobStatuses.COMPLETED && job.isPaid === true;
 
+  // A cancelled job is locked from normal editing — use Reactivate instead
+  const isCancelledJob = job.status === JobStatuses.CANCELLED;
+
   // Job is scheduled for a future date
   const isFutureJob = new Date(job.serviceDate) > new Date();
 
@@ -133,6 +139,33 @@ export default function JobDetailsScreen() {
       ],
     );
   };
+  const handleReactivate = () => {
+    Alert.alert(
+      "Reactivate Job?",
+      "This will set the job back to Pending so you can reschedule and update it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Yes, Reactivate",
+          onPress: async () => {
+            try {
+              await updateJob({
+                id: job._id,
+                status: JobStatuses.PENDING,
+              }).unwrap();
+              Alert.alert("Reactivated", "Job is now Pending.");
+            } catch (err) {
+              Alert.alert(
+                "Error",
+                err?.data?.message || "Failed to reactivate job.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const doMarkPaid = (paymentMethod) => {
     const isNonCompleted = job.status !== JobStatuses.COMPLETED;
     const message = isNonCompleted
@@ -167,12 +200,11 @@ export default function JobDetailsScreen() {
   const handleJobActions = () => {
     Alert.alert("Job Actions", "Manage this job record and lifecycle.", [
       { text: "Cancel", style: "cancel" },
-      ...(!isLockedFinal
+      ...(!isLockedFinal && !isCancelledJob
         ? [
             {
               text: "Edit Job",
-              onPress: () =>
-                navigation.navigate(RouteNames.ADD_JOB, { editingJob: job }),
+              onPress: () => navigation.navigate(RouteNames.ADD_JOB, { job }),
             },
           ]
         : []),
@@ -182,10 +214,10 @@ export default function JobDetailsScreen() {
           try {
             const res = await repeatJob(job._id).unwrap();
             Alert.alert(
-              "Success",
-              "A new pending job has been created with this job's details. Please review and update the service date.",
+              "Job Repeated",
+              "A copy has been created. Please update the service date and any other details before saving.",
             );
-            navigation.navigate(RouteNames.JOB_DETAILS, { job: res.data });
+            navigation.navigate(RouteNames.ADD_JOB, { job: res.data });
           } catch (err) {
             Alert.alert("Error", err?.data?.message || "Failed to repeat job.");
           }
@@ -221,15 +253,77 @@ export default function JobDetailsScreen() {
   };
 
   const handleUpdateStatus = (newStatus) => {
-    const doUpdate = async () => {
+    const performUpdate = async (extraPayload = {}) => {
       try {
-        await updateJob({ id: job._id, status: newStatus }).unwrap();
+        await updateJob({
+          id: job._id,
+          status: newStatus,
+          ...extraPayload,
+        }).unwrap();
         Alert.alert(
           "Success",
-          `Status updated to ${newStatus.replace("_", " ")}.`,
+          extraPayload.isPaid
+            ? "Job marked as Completed and Paid."
+            : `Status updated to ${newStatus.replace("_", " ")}.`,
         );
       } catch (_err) {
         Alert.alert("Error", "Failed to update status.");
+      }
+    };
+
+    const doUpdate = () => {
+      if (newStatus === JobStatuses.COMPLETED && !job.isPaid) {
+        Alert.alert(
+          "Complete Job",
+          "Would you also like to collect payment now?",
+          [
+            {
+              text: "Complete Only",
+              onPress: () => performUpdate(),
+            },
+            {
+              text: "Complete & Mark Paid",
+              onPress: () =>
+                Alert.alert("Payment Method", "How was the payment received?", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Cash",
+                    onPress: () =>
+                      performUpdate({
+                        isPaid: true,
+                        paymentMethod: PaymentMethods.CASH,
+                      }),
+                  },
+                  {
+                    text: "UPI",
+                    onPress: () =>
+                      performUpdate({
+                        isPaid: true,
+                        paymentMethod: PaymentMethods.UPI,
+                      }),
+                  },
+                  {
+                    text: "Online",
+                    onPress: () =>
+                      performUpdate({
+                        isPaid: true,
+                        paymentMethod: PaymentMethods.ONLINE,
+                      }),
+                  },
+                  {
+                    text: "Cheque",
+                    onPress: () =>
+                      performUpdate({
+                        isPaid: true,
+                        paymentMethod: PaymentMethods.CHEQUE,
+                      }),
+                  },
+                ]),
+            },
+          ],
+        );
+      } else {
+        performUpdate();
       }
     };
 
@@ -1211,36 +1305,38 @@ export default function JobDetailsScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate(RouteNames.ADD_JOB, { job })}
-            activeOpacity={0.7}
-            style={{
-              backgroundColor: colors.bgCard,
-              borderWidth: 1,
-              borderColor: colors.borderLight,
-              height: 56,
-              paddingHorizontal: 24,
-              borderRadius: 12,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 8,
-            }}
-          >
-            <Edit2 color={colors.secondary} size={20} />
-            <Text
+          {!isLockedFinal && !isCancelledJob && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate(RouteNames.ADD_JOB, { job })}
+              activeOpacity={0.7}
               style={{
-                fontFamily: "Space Grotesk",
-                color: colors.secondary,
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                fontSize: 12,
+                backgroundColor: colors.bgCard,
+                borderWidth: 1,
+                borderColor: colors.borderLight,
+                height: 56,
+                paddingHorizontal: 24,
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
               }}
             >
-              Edit
-            </Text>
-          </TouchableOpacity>
+              <Edit2 color={colors.secondary} size={20} />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.secondary,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  fontSize: 12,
+                }}
+              >
+                Edit
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Quick Status Change Actions */}
@@ -1377,7 +1473,7 @@ export default function JobDetailsScreen() {
                   disabled={isSyncing}
                   activeOpacity={0.7}
                   style={{
-                    flex: job.status === JobStatuses.PENDING ? 1 : 1,
+                    flex: 1,
                     backgroundColor: colors.successBg,
                     borderWidth: 1,
                     borderColor: colors.successBorder,
@@ -1404,6 +1500,151 @@ export default function JobDetailsScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
+            )}
+
+            {/* Collect Payment shortcut for active jobs */}
+            {(job.status === JobStatuses.PENDING ||
+              job.status === JobStatuses.IN_PROGRESS) && (
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert(
+                    "Collect Payment",
+                    "How was the payment received? This will also mark the job as Completed.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Cash",
+                        onPress: () => doMarkPaid(PaymentMethods.CASH),
+                      },
+                      {
+                        text: "UPI",
+                        onPress: () => doMarkPaid(PaymentMethods.UPI),
+                      },
+                      {
+                        text: "Online",
+                        onPress: () => doMarkPaid(PaymentMethods.ONLINE),
+                      },
+                      {
+                        text: "Cheque",
+                        onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
+                      },
+                    ],
+                  )
+                }
+                disabled={isSyncing}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  height: 52,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.primaryBorder,
+                  backgroundColor: colors.primaryBg,
+                }}
+              >
+                <CreditCard color={colors.primary} size={18} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: colors.primary,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    fontSize: 11,
+                  }}
+                >
+                  Collect Payment & Complete
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Cancel Job for active jobs */}
+            {(job.status === JobStatuses.PENDING ||
+              job.status === JobStatuses.IN_PROGRESS) && (
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert(
+                    "Cancel Job?",
+                    "Are you sure you want to cancel this job? You can reactivate it later.",
+                    [
+                      { text: "No, Keep It", style: "cancel" },
+                      {
+                        text: "Yes, Cancel Job",
+                        style: "destructive",
+                        onPress: () =>
+                          handleUpdateStatus(JobStatuses.CANCELLED),
+                      },
+                    ],
+                  )
+                }
+                disabled={isSyncing}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  height: 52,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: colors.dangerBorder ?? colors.danger,
+                  backgroundColor: colors.dangerBg ?? "transparent",
+                }}
+              >
+                <XCircle color={colors.danger} size={18} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: colors.danger,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    fontSize: 11,
+                  }}
+                >
+                  Cancel Job
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Reactivate for cancelled jobs */}
+            {isCancelledJob && (
+              <TouchableOpacity
+                onPress={handleReactivate}
+                disabled={isSyncing}
+                activeOpacity={0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginTop: 16,
+                  height: 56,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.warningBorder,
+                  backgroundColor: colors.warningBg,
+                }}
+              >
+                <RotateCw color={colors.warningIcon} size={18} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: colors.warningIcon,
+                    fontWeight: "700",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                    fontSize: 11,
+                  }}
+                >
+                  Reactivate Job
+                </Text>
+              </TouchableOpacity>
             )}
           </>
         )}

@@ -16,6 +16,8 @@ export const ErrorMessages = {
   SERVICE_DATE_IN_PAST: "Service date cannot be in the past for new jobs.",
   JOB_REOPEN_FORBIDDEN:
     "Only jobs that are completed and paid can be reopened.",
+  CANCELLED_JOB_TRANSITION:
+    "A cancelled job can only be reactivated to Pending.",
   VALIDATION_FAILED: "Validation failed",
   RATE_LIMIT_EXCEEDED:
     "Too many requests from this IP, please try again after 15 minutes",
