@@ -727,7 +727,7 @@ export default function InvoicePreviewScreen() {
         id: job._id,
         lineItems,
         partsUsed,
-        amount: grandTotal,
+        amount: subtotal, // Service line items subtotal; parts live in partsUsed[], diagnostic fee is separate
         isPaid,
         paymentMethod,
         status: isPaid ? JobStatuses.COMPLETED : job.status,

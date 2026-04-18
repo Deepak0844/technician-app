@@ -678,66 +678,73 @@ export default function JobDetailsScreen() {
               >
                 Total Job Amount
               </Text>
-              <View
-                style={{ flexDirection: "row", alignItems: "baseline", gap: 8 }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 28,
-                    fontWeight: "700",
-                    color: colors.primary,
-                  }}
-                >
-                  {formatCurrency(job?.amount)}
-                </Text>
-                {job?.partsUsed?.length > 0 && (
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      color: colors.textMuted,
-                    }}
-                  >
-                    (incl. spares)
-                  </Text>
-                )}
-              </View>
-              {job?.partsUsed?.length > 0 && (
-                <View style={{ marginTop: 8, gap: 2 }}>
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      color: colors.textSecondary,
-                    }}
-                  >
-                    Labor:{" "}
-                    {formatCurrency(
-                      job?.amount -
-                        job.partsUsed.reduce(
-                          (acc, p) => acc + p.price * p.quantity,
-                          0,
-                        ),
-                    )}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      color: colors.textSecondary,
-                    }}
-                  >
-                    Spares:{" "}
-                    {formatCurrency(
-                      job.partsUsed.reduce(
-                        (acc, p) => acc + p.price * p.quantity,
-                        0,
-                      ),
-                    )}
-                  </Text>
-                </View>
-              )}
+              {(() => {
+                const jobPartsTotal = (job?.partsUsed || []).reduce(
+                  (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+                  0,
+                );
+                const grandTotal =
+                  (job?.amount || 0) +
+                  (job?.diagnosticFee || 0) +
+                  jobPartsTotal;
+                return (
+                  <>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "baseline",
+                        gap: 8,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 28,
+                          fontWeight: "700",
+                          color: colors.primary,
+                        }}
+                      >
+                        {formatCurrency(grandTotal)}
+                      </Text>
+                    </View>
+                    <View style={{ marginTop: 8, gap: 2 }}>
+                      {(job?.amount || 0) > 0 && (
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 10,
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          Service: {formatCurrency(job.amount)}
+                        </Text>
+                      )}
+                      {(job?.diagnosticFee || 0) > 0 && (
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 10,
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          Diagnostic Fee: {formatCurrency(job.diagnosticFee)}
+                        </Text>
+                      )}
+                      {jobPartsTotal > 0 && (
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 10,
+                            color: colors.textSecondary,
+                          }}
+                        >
+                          Spares: {formatCurrency(jobPartsTotal)}
+                        </Text>
+                      )}
+                    </View>
+                  </>
+                );
+              })()}
             </View>
           </View>
         </View>

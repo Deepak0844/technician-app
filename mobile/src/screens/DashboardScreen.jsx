@@ -776,7 +776,15 @@ export default function DashboardScreen() {
                         color: colors.primary,
                       }}
                     >
-                      {formatCurrency(job.amount)}
+                      {formatCurrency(
+                        (job.amount || 0) +
+                          (job.diagnosticFee || 0) +
+                          (job.partsUsed || []).reduce(
+                            (acc, p) =>
+                              acc + (p.price || 0) * (p.quantity || 0),
+                            0,
+                          ),
+                      )}
                     </Text>
                     <View
                       style={{

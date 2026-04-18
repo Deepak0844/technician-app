@@ -1,6 +1,3 @@
-// Third-party
-import mongoose from "mongoose";
-
 // Constants
 import {
   ErrorMessages,
@@ -13,6 +10,7 @@ import { AppError } from "#utils/errorUtils.js";
 
 // Models
 import Customer from "#models/Customer.js";
+import Job from "#models/Job.js";
 
 /**
  * Search customers for a given user by name or phone
@@ -92,7 +90,6 @@ async function updateCustomer(userId, customerId, data) {
  * Delete customer by ID - check for associated jobs first
  */
 async function deleteCustomer(userId, customerId) {
-  const Job = mongoose.model("Job");
   const jobCount = await Job.countDocuments({ customerId, userId });
   if (jobCount > 0) {
     throw new AppError(

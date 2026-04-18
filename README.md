@@ -125,7 +125,7 @@ cd mobile
 npm install
 ```
 
-The dev API URL is resolved automatically: the host IP is read from the Expo dev server (`Constants.expoConfig.hostUri`), so it works correctly on any network or machine without hardcoding an IP address. The default API port is 9000; override it with `EXPO_PUBLIC_DEV_PORT` if your server runs on a different port. On physical devices where Expo host detection might not resolve correctly, set `EXPO_PUBLIC_DEV_HOST` explicitly.
+The dev API URL is resolved automatically: before every `npm start / android / ios`, the `scripts/set-dev-host.js` pre-hook writes your machine's current LAN IP to `mobile/.env` as `EXPO_PUBLIC_DEV_HOST`, so the app always connects to the right server without hardcoding an IP. The default API port is 9000; override it with `EXPO_PUBLIC_DEV_PORT` if your server runs on a different port. If the script cannot detect the correct IP (e.g. on a physical device on a different subnet), set `EXPO_PUBLIC_DEV_HOST` manually.
 
 For production, create `mobile/.env` with your deployed server URL:
 
@@ -134,7 +134,7 @@ EXPO_PUBLIC_API_URL=https://your-deployed-server.com/api/v1
 
 # Optional overrides (for dev):
 # EXPO_PUBLIC_DEV_PORT=3000          # API server port (default: 9000)
-# EXPO_PUBLIC_DEV_HOST=192.168.x.x   # Override host if Expo host detection fails
+# EXPO_PUBLIC_DEV_HOST=192.168.x.x   # Auto-set by scripts/set-dev-host.js; override if needed
 ```
 
 > Keep `mobile/.env` out of version control — it contains your private backend URL.

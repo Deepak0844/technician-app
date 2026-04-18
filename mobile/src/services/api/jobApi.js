@@ -52,6 +52,22 @@ export const jobApi = api.injectEndpoints({
       query: (customerId) => ({ url: ApiUrls.JOBS_BY_CUSTOMER(customerId) }),
       providesTags: ApiUtils.paginatedTags(TagTypes.JOBS),
     }),
+    // Infinite-scroll variant used by CustomerDetailsScreen
+    getJobsByCustomerPaged: builder.infiniteQuery({
+      infiniteQueryOptions: {
+        initialPageParam: 1,
+        refetchCachedPages: false,
+        getNextPageParam: (lastPage) =>
+          lastPage.pagination?.hasNext
+            ? lastPage.pagination.page + 1
+            : undefined,
+      },
+      query: ({ queryArg: customerId, pageParam }) => ({
+        url: ApiUrls.JOBS_BY_CUSTOMER(customerId),
+        params: { page: pageParam, pageSize: 20 },
+      }),
+      providesTags: () => ApiUtils.listTags(TagTypes.JOBS),
+    }),
     repeatJob: builder.mutation({
       query: (jobId) => ({ url: ApiUrls.JOB_REPEAT(jobId), method: "post" }),
       invalidatesTags: (result, error, arg) => [
@@ -88,6 +104,7 @@ export const {
   useUpdateJobMutation,
   useGetJobByIdQuery,
   useGetJobsByCustomerQuery,
+  useGetJobsByCustomerPagedInfiniteQuery,
   useRepeatJobMutation,
   useDeleteJobMutation,
   useReopenJobMutation,

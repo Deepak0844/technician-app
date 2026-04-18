@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  FlatList,
   ScrollView,
   View,
   TouchableOpacity,
@@ -11,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useGetCustomerByIdQuery } from "@services/api/customerApi";
-import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
+import { useGetJobsByCustomerPagedInfiniteQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import { openDirections } from "@utils/locationUtils";
 import { formatDate, formatCurrency, formatDateShort } from "@utils/formatUtils";
@@ -238,7 +239,14 @@ function JobRow({ job, colors, onPress }) {
             color: colors.textPrimary,
           }}
         >
-          {formatCurrency(job.amount)}
+          {formatCurrency(
+            (job.amount || 0) +
+              (job.diagnosticFee || 0) +
+              (job.partsUsed || []).reduce(
+                (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+                0,
+              ),
+          )}
         </Text>
         <View
           style={{
@@ -279,20 +287,28 @@ export default function CustomerDetailsScreen() {
     refetch: refetchCustomer,
   } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
   const {
-    data: jobsResponse,
+    data: jobsData,
     isLoading: loadingJobsApi,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refetch: refetchJobs,
-  } = useGetJobsByCustomerQuery(customerId, { skip: !customerId });
+  } = useGetJobsByCustomerPagedInfiniteQuery(customerId, {
+    skip: !customerId,
+  });
 
   const [selectedAppliance, setSelectedAppliance] = React.useState(null);
-  const [refreshing, setRefreshing] = React.useState(false);
+  const hasScrolledRef = React.useRef(false);
 
-  const rawJobs = jobsResponse?.data;
-  const jobs = React.useMemo(() => {
-    if (Array.isArray(rawJobs)) return rawJobs;
-    if (rawJobs && Array.isArray(rawJobs.data)) return rawJobs.data;
-    return [];
-  }, [rawJobs]);
+  // Flatten all fetched pages into a single array
+  const jobs = React.useMemo(
+    () => jobsData?.pages.flatMap((p) => p.data) ?? [],
+    [jobsData],
+  );
+
+  // Total job count comes from the server (accurate even before all pages load)
+  const totalJobCount =
+    jobsData?.pages[0]?.pagination?.total ?? jobs.length;
 
   const filteredJobs = React.useMemo(() => {
     if (!selectedAppliance) return jobs;
@@ -301,10 +317,9 @@ export default function CustomerDetailsScreen() {
     );
   }, [jobs, selectedAppliance]);
 
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await Promise.all([refetchCustomer(), refetchJobs()]);
-    setRefreshing(false);
+  const onRefresh = React.useCallback(() => {
+    hasScrolledRef.current = false;
+    Promise.all([refetchCustomer(), refetchJobs()]);
   }, [refetchCustomer, refetchJobs]);
 
   const rawCustomer = custResponse?.data;
@@ -325,14 +340,31 @@ export default function CustomerDetailsScreen() {
       if (!stats[type].lastDate || date > new Date(stats[type].lastDate)) {
         stats[type].lastDate = job.serviceDate;
       }
-      stats[type].totalSpent += parseFloat(job.amount) || 0;
+      stats[type].totalSpent +=
+        (parseFloat(job.amount) || 0) +
+        (parseFloat(job.diagnosticFee) || 0) +
+        (job.partsUsed || []).reduce(
+          (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+          0,
+        );
     });
     return Object.entries(stats).map(([type, data]) => ({ type, ...data }));
   }, [jobs]);
 
   // Summary stats
   const totalSpent = React.useMemo(
-    () => jobs.reduce((sum, j) => sum + (parseFloat(j.amount) || 0), 0),
+    () =>
+      jobs.reduce(
+        (sum, j) =>
+          sum +
+          (parseFloat(j.amount) || 0) +
+          (parseFloat(j.diagnosticFee) || 0) +
+          (j.partsUsed || []).reduce(
+            (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+            0,
+          ),
+        0,
+      ),
     [jobs],
   );
   const lastServiceDate = React.useMemo(() => {
@@ -361,85 +393,71 @@ export default function CustomerDetailsScreen() {
       ? customer.locations[0]
       : null;
 
-  return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
-      edges={["top"]}
-    >
-      {/* ── Top bar ── */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          height: 52,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
+  function renderHeader() {
+    return (
+      <View>
+        {/* ── Top bar ── */}
+        <View
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: colors.bgCard,
-            borderWidth: 1,
-            borderColor: colors.border,
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
-          }}
-          activeOpacity={0.7}
-        >
-          <ArrowLeft color={colors.textPrimary} size={18} />
-        </TouchableOpacity>
-
-        <Text
-          style={{
-            fontFamily: "Space Grotesk",
-            fontWeight: "700",
-            fontSize: 14,
-            color: colors.textPrimary,
-            letterSpacing: 1,
-            textTransform: "uppercase",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            height: 52,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
           }}
         >
-          Customer Profile
-        </Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.bgCard,
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft color={colors.textPrimary} size={18} />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
-          }
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: colors.primaryBg,
-            borderWidth: 1,
-            borderColor: colors.primaryBorder,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          activeOpacity={0.7}
-        >
-          <Edit3 color={colors.primary} size={16} />
-        </TouchableOpacity>
-      </View>
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontWeight: "700",
+              fontSize: 14,
+              color: colors.textPrimary,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+            }}
+          >
+            Customer Profile
+          </Text>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
+            }
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.primaryBg,
+              borderWidth: 1,
+              borderColor: colors.primaryBorder,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <Edit3 color={colors.primary} size={16} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── Hero Section ── */}
         <LinearGradient
           colors={[colors.primaryBgStrong, colors.bgPrimary]}
@@ -587,7 +605,7 @@ export default function CustomerDetailsScreen() {
             <StatCard
               icon={Briefcase}
               label="Total Jobs"
-              value={jobs.length}
+              value={totalJobCount}
               colors={colors}
               accentColor={colors.primary}
             />
@@ -601,9 +619,7 @@ export default function CustomerDetailsScreen() {
             <StatCard
               icon={Clock}
               label="Last Service"
-              value={
-                  lastServiceDate ? formatDateShort(lastServiceDate) : "—"
-              }
+              value={lastServiceDate ? formatDateShort(lastServiceDate) : "—"}
               colors={colors}
               accentColor={colors.secondary}
             />
@@ -950,211 +966,248 @@ export default function CustomerDetailsScreen() {
             </View>
           )}
 
-          {/* ── Job History ── */}
-          <View style={{ marginBottom: 40 }}>
+          {/* ── Job History header ── */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 14,
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <Briefcase size={14} color={colors.primary} />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                {selectedAppliance
+                  ? `${selectedAppliance} Jobs`
+                  : "Job History"}
+              </Text>
+              {filteredJobs.length > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.primaryBg,
+                    borderRadius: 8,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    {filteredJobs.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate(RouteNames.TABS, {
+                  screen: RouteNames.JOB_HISTORY,
+                  params: { customerId },
+                })
+              }
+              activeOpacity={0.7}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.primary,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                View All
+              </Text>
+              <ChevronRight color={colors.primary} size={13} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Empty states (only shown when jobs list itself is empty) */}
+          {isLoading && jobs.length === 0 ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              style={{ marginTop: 16, marginBottom: 16 }}
+            />
+          ) : jobs.length === 0 ? (
             <View
               style={{
-                flexDirection: "row",
+                backgroundColor: colors.bgCard,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderStyle: "dashed",
+                borderColor: colors.primaryBorder,
+                padding: 32,
                 alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 14,
+                marginBottom: 40,
               }}
             >
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                style={{
+                  width: 60,
+                  height: 60,
+                  backgroundColor: colors.primaryBg,
+                  borderRadius: 30,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 14,
+                }}
               >
-                <Briefcase size={14} color={colors.primary} />
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                  }}
-                >
-                  {selectedAppliance
-                    ? `${selectedAppliance} Jobs`
-                    : "Job History"}
-                </Text>
-                {filteredJobs.length > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: colors.primaryBg,
-                      borderRadius: 8,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 10,
-                        fontWeight: "700",
-                        color: colors.primary,
-                      }}
-                    >
-                      {filteredJobs.length}
-                    </Text>
-                  </View>
-                )}
+                <CalendarPlus color={colors.primary} size={26} />
               </View>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.textPrimary,
+                  fontWeight: "700",
+                  fontSize: 16,
+                  marginBottom: 6,
+                  textAlign: "center",
+                }}
+              >
+                No Jobs Yet
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textMuted,
+                  fontSize: 13,
+                  textAlign: "center",
+                  lineHeight: 19,
+                  marginBottom: 20,
+                  paddingHorizontal: 10,
+                }}
+              >
+                {"This customer doesn't have any jobs yet. Create the first one!"}
+              </Text>
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate(RouteNames.TABS, {
-                    screen: RouteNames.JOB_HISTORY,
-                    params: { customerId },
-                  })
+                  navigation.navigate(RouteNames.ADD_JOB, { customer })
                 }
-                activeOpacity={0.7}
-                style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    color: colors.primary,
-                    fontWeight: "700",
-                    fontSize: 12,
-                  }}
-                >
-                  View All
-                </Text>
-                <ChevronRight color={colors.primary} size={13} />
-              </TouchableOpacity>
-            </View>
-
-            {isLoading && jobs.length === 0 ? (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-                style={{ marginTop: 16 }}
-              />
-            ) : jobs.length === 0 ? (
-              /* Empty state */
-              <View
+                activeOpacity={0.75}
                 style={{
-                  backgroundColor: colors.bgCard,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderStyle: "dashed",
-                  borderColor: colors.primaryBorder,
-                  padding: 32,
+                  flexDirection: "row",
                   alignItems: "center",
+                  gap: 8,
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  shadowColor: colors.primary,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
                 }}
               >
-                <View
-                  style={{
-                    width: 60,
-                    height: 60,
-                    backgroundColor: colors.primaryBg,
-                    borderRadius: 30,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: 14,
-                  }}
-                >
-                  <CalendarPlus color={colors.primary} size={26} />
-                </View>
+                <CalendarPlus color="#fff" size={15} />
                 <Text
                   style={{
                     fontFamily: "Space Grotesk",
-                    color: colors.textPrimary,
+                    color: "#fff",
                     fontWeight: "700",
-                    fontSize: 16,
-                    marginBottom: 6,
-                    textAlign: "center",
-                  }}
-                >
-                  No Jobs Yet
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    color: colors.textMuted,
                     fontSize: 13,
-                    textAlign: "center",
-                    lineHeight: 19,
-                    marginBottom: 20,
-                    paddingHorizontal: 10,
                   }}
                 >
-                  {
-                    "This customer doesn't have any jobs yet. Create the first one!"
-                  }
+                  Create First Job
                 </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate(RouteNames.ADD_JOB, { customer })
-                  }
-                  activeOpacity={0.75}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                    backgroundColor: colors.primary,
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    shadowColor: colors.primary,
-                    shadowOpacity: 0.3,
-                    shadowRadius: 8,
-                    shadowOffset: { width: 0, height: 2 },
-                    elevation: 4,
-                  }}
-                >
-                  <CalendarPlus color="#fff" size={15} />
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      color: "#fff",
-                      fontWeight: "700",
-                      fontSize: 13,
-                    }}
-                  >
-                    Create First Job
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : filteredJobs.length === 0 ? (
-              <View
+              </TouchableOpacity>
+            </View>
+          ) : filteredJobs.length === 0 ? (
+            <View
+              style={{
+                backgroundColor: colors.bgCard,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <AlertCircle color={colors.textDisabled} size={20} />
+              <Text
                 style={{
-                  backgroundColor: colors.bgCard,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: 20,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 12,
+                  fontFamily: "Inter",
+                  fontSize: 13,
+                  color: colors.textMuted,
                 }}
               >
-                <AlertCircle color={colors.textDisabled} size={20} />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 13,
-                    color: colors.textMuted,
-                  }}
-                >
-                  No jobs for {selectedAppliance}. Tap the chip above to reset.
-                </Text>
-              </View>
-            ) : (
-              filteredJobs.map((job) => (
-                <JobRow
-                  key={job._id || Math.random().toString()}
-                  job={job}
-                  colors={colors}
-                  onPress={() =>
-                    navigation.navigate(RouteNames.JOB_DETAILS, { job })
-                  }
-                />
-              ))
-            )}
-          </View>
+                No jobs for {selectedAppliance}. Tap the chip above to reset.
+              </Text>
+            </View>
+          ) : null}
         </View>
+      </View>
+    );
+  }
 
-        <View style={{ height: 96 }} />
-      </ScrollView>
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
+      <FlatList
+        data={filteredJobs}
+        keyExtractor={(item) => item._id || Math.random().toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 150 }}
+        ListHeaderComponent={renderHeader}
+        onScrollBeginDrag={() => {
+          hasScrolledRef.current = true;
+        }}
+        onEndReached={() => {
+          if (hasScrolledRef.current && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
+        refreshControl={
+          <RefreshControl
+            refreshing={loadingJobsApi && !isFetchingNextPage && !!jobsData}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        renderItem={({ item: job }) => (
+          <View style={{ paddingHorizontal: 16 }}>
+            <JobRow
+              job={job}
+              colors={colors}
+              onPress={() =>
+                navigation.navigate(RouteNames.JOB_DETAILS, { job })
+              }
+            />
+          </View>
+        )}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={{ paddingVertical: 16, alignItems: "center" }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : (
+            <View style={{ height: 40 }} />
+          )
+        }
+      />
 
       {/* ── Floating Add Job button ── */}
       {jobs.length > 0 && (

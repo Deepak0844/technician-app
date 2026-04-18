@@ -118,11 +118,16 @@ app.use((_req, _res, next) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
-  // MongoDB CastError — invalid ObjectId
+  // MongoDB CastError — invalid ObjectId or other types
   if (err.name === "CastError") {
+    const isObjectId = err.kind === "ObjectId";
+    const message = isObjectId 
+      ? "Invalid ID format" 
+      : `Invalid format for field '${err.path}'`;
+      
     return ResponseUtils.error(
       res,
-      "Invalid ID format",
+      message,
       HttpStatus.BAD_REQUEST,
     );
   }

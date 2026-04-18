@@ -87,10 +87,6 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       }
     }
 
-    const partsTotal = (partsUsed || []).reduce(
-      (acc, p) => acc + p.price * p.quantity,
-      0,
-    );
 
     // Force COMPLETED status when user marks a job as paid
     const resolvedStatus =
@@ -104,7 +100,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       issue: issue.trim(),
       serviceDone: serviceDone.trim(),
       diagnosticFee: parsedFee,
-      amount: parsedAmount + partsTotal + parsedFee, // Total = Service + Parts + Diagnostic Fee
+      amount: parsedAmount, // Service / labour charge only; parts live in partsUsed[], diagnostic fee is separate
       status: resolvedStatus,
       serviceDate: finalDate.toISOString(),
       nextReminderDate: nextReminderDate

@@ -8,6 +8,7 @@ import { HttpStatus } from "#constants/httpConstants.js";
 // Utils
 import ResponseUtils from "#utils/responseUtils.js";
 import TokenUtils from "#utils/tokenUtils.js";
+import logger from "#utils/logger.js";
 
 // Services
 import AuthService from "#services/authService.js";
@@ -63,8 +64,9 @@ export const logout = asyncHandler(async (req, res) => {
       { token: req.token },
       { token: req.token, expiresAt: new Date(req.tokenExp * 1000) },
       { upsert: true },
-    ).catch(() => {
+    ).catch((err) => {
       // Non-fatal — log but don't block the logout response
+      logger.error({ err }, "TokenBlocklist upsert failed during logout");
     });
   }
 

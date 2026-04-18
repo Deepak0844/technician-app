@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages } from "#constants/generalConstants.js";
+import { AUTH_COOKIE_NAME, ErrorMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -23,8 +23,8 @@ export const protect = async (req, res, next) => {
   let token;
 
   try {
-    if (req.cookies?.token) {
-      token = req.cookies.token;
+    if (req.cookies?.[AUTH_COOKIE_NAME]) {
+      token = req.cookies[AUTH_COOKIE_NAME];
     } else if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
     }

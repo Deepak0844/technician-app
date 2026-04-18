@@ -468,7 +468,15 @@ export default function JobHistoryScreen() {
                         color: colors.textPrimary,
                       }}
                     >
-                      {formatCurrency(item.amount)}
+                      {formatCurrency(
+                        (item.amount || 0) +
+                          (item.diagnosticFee || 0) +
+                          (item.partsUsed || []).reduce(
+                            (acc, p) =>
+                              acc + (p.price || 0) * (p.quantity || 0),
+                            0,
+                          ),
+                      )}
                     </Text>
                     <Text
                       style={{

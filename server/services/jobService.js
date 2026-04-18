@@ -94,8 +94,18 @@ async function getJobs(
 
   // Keyword search: match against applianceType or issue fields
   if (search && search.trim()) {
-    const keywords = search.trim().split(/\s+/).filter(Boolean);
-    const regexps = keywords.map((kw) => new RegExp(kw, "i"));
+    const MAX_KEYWORDS = 10;
+    const MAX_KEYWORD_LENGTH = 50;
+    const keywords = search
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, MAX_KEYWORDS)
+      .map((kw) => kw.slice(0, MAX_KEYWORD_LENGTH));
+
+    // Escape regex special characters to prevent SyntaxError and ReDoS
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regexps = keywords.map((kw) => new RegExp(escapeRegex(kw), "i"));
 
     query.$and = regexps.map((regex) => ({
       $or: [

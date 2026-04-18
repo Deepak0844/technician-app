@@ -35,7 +35,12 @@ function convertToCSV(data) {
       ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`
       : "N/A";
     const location = job.location?.address ? job.location.address.replace(/,/g, ' ') : 'N/A';
-    const amount = job.amount || 0;
+    const partsTotal = (job.partsUsed || []).reduce(
+      (acc, p) => acc + (Number(p.price) || 0) * (Number(p.quantity) || 0),
+      0,
+    );
+    const amount =
+      (Number(job.amount) || 0) + (Number(job.diagnosticFee) || 0) + partsTotal;
     const paidStatus = job.isPaid ? 'Paid' : 'Unpaid';
 
     return [
