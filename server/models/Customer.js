@@ -24,6 +24,10 @@ const customerSchema = new mongoose.Schema(
       lowercase: true,
       default: "",
     },
+    avatar: {
+      type: String,
+      default: "",
+    },
     locations: [
       {
         label: {

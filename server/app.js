@@ -12,7 +12,11 @@ import connectToDatabase from "#config/db.js";
 import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages } from "#constants/generalConstants.js";
+import {
+  ErrorMessages,
+  RateLimits,
+  SuccessMessages,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -24,7 +28,6 @@ import authRoutes from "#routes/authRoutes.js";
 import customerRoutes from "#routes/customerRoutes.js";
 import jobRoutes from "#routes/jobRoutes.js";
 import dashboardRoutes from "#routes/dashboardRoutes.js";
-
 
 // Create Express app
 const app = express();
@@ -41,7 +44,7 @@ if (Env.NODE_ENV !== "test") {
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
+  }),
 );
 
 // CORS
@@ -60,23 +63,23 @@ app.use(
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: Env.NODE_ENV === "production" ? 200 : 5000,
+  windowMs: RateLimits.WINDOW_MS,
+  max: Env.NODE_ENV === "production" ? RateLimits.MAX_PROD : RateLimits.MAX_DEV,
   standardHeaders: true,
   legacyHeaders: false,
-  message: "Too many requests from this IP, please try again after 15 minutes",
+  message: ErrorMessages.RATE_LIMIT_EXCEEDED,
 });
 
 app.use(limiter);
 
 // Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: "50kb" }));
+app.use(express.urlencoded({ extended: false, limit: "50kb" }));
 app.use(cookieParser());
 
 // Request logging
@@ -93,11 +96,19 @@ app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 
 // Base route — health check
 app.get("/", (_req, res) => {
-  ResponseUtils.success(res, { message: "Technician App API is running", version: "1.0.0" });
+  ResponseUtils.success(res, {
+    message: "Technician App API is running",
+    version: "1.0.0",
+  });
 });
 
 app.get(`${BASE_URL}/health`, (_req, res) => {
-  res.status(HttpStatus.OK).json({ status: "ok", message: "Server is healthy" });
+  ResponseUtils.success(
+    res,
+    { status: "ok" },
+    HttpStatus.OK,
+    SuccessMessages.SERVER_HEALTHY,
+  );
 });
 
 // 404 handler
@@ -107,12 +118,37 @@ app.use((_req, _res, next) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
-  const statusCode = err.status || err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+  // MongoDB CastError — invalid ObjectId or other types
+  if (err.name === "CastError") {
+    const isObjectId = err.kind === "ObjectId";
+    const message = isObjectId 
+      ? "Invalid ID format" 
+      : `Invalid format for field '${err.path}'`;
+      
+    return ResponseUtils.error(
+      res,
+      message,
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  // MongoDB duplicate key error
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyValue || {})[0] || "field";
+    return ResponseUtils.error(
+      res,
+      ErrorMessages.DUPLICATE_FIELD(field),
+      HttpStatus.CONFLICT,
+    );
+  }
+
+  const statusCode =
+    err.status || err.statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
   const message = err.message || ErrorMessages.SERVER_ERROR;
 
   logger.error(
     { statusCode, method: req.method, url: req.originalUrl, stack: err.stack },
-    message
+    message,
   );
 
   ResponseUtils.error(res, message, statusCode);

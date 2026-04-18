@@ -1,7 +1,12 @@
 import mongoose from "mongoose";
 
 // Constants
-import { ApplianceTypes, JobStatus } from "#constants/generalConstants.js";
+import {
+  ApplianceTypes,
+  JobStatus,
+  PriorityLevels,
+  PaymentMethods,
+} from "#constants/generalConstants.js";
 
 const jobSchema = new mongoose.Schema(
   {
@@ -42,13 +47,32 @@ const jobSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    lineItems: [{
-      id: String,
-      description: String,
-      qty: String,
-      rate: String,
-      note: String,
-    }],
+    lineItems: [
+      {
+        id: String,
+        description: String,
+        qty: { type: Number, default: 1, min: 0 },
+        rate: { type: Number, default: 0, min: 0 },
+        note: String,
+      },
+    ],
+    partsUsed: [
+      {
+        name: String,
+        quantity: { type: Number, default: 1, min: 0 },
+        price: { type: Number, default: 0, min: 0 },
+        warranty: { type: String, default: "" },
+      },
+    ],
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paymentMethod: {
+      type: String,
+      enum: Object.values(PaymentMethods),
+      default: PaymentMethods.CASH,
+    },
     status: {
       type: String,
       enum: Object.values(JobStatus),
@@ -70,14 +94,45 @@ const jobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    internalNotes: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    priority: {
+      type: String,
+      enum: Object.values(PriorityLevels),
+      default: PriorityLevels.NORMAL,
+    },
     location: {
       label: String,
       address: String,
       latitude: Number,
       longitude: Number,
     },
+    events: [
+      {
+        action: {
+          type: String,
+          enum: [
+            "created",
+            "status_changed",
+            "marked_paid",
+            "marked_unpaid",
+            "reopened",
+            "edited",
+          ],
+          required: true,
+        },
+        from: { type: String, default: null },
+        to: { type: String, default: null },
+        isPaid: { type: Boolean, default: null },
+        note: { type: String, default: "" },
+        at: { type: Date, default: () => new Date() },
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for date-range queries (calendar view)

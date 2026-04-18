@@ -72,6 +72,7 @@ async function scheduleJobReminders(job) {
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: new Date(triggerTime),
+        channelId: "job-reminders",
       },
     });
   }

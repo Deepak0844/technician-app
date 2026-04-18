@@ -1,22 +1,5 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiConfig";
-import StorageUtils from "../../utils/storageUtils";
-import { ApiUrls } from "../../constants/appConstants";
-
-export const initializeAuth = createAsyncThunk("auth/initialize", async (_, { rejectWithValue }) => {
-  const token = await StorageUtils.getToken();
-  if (!token) return rejectWithValue("no_token");
-  try {
-    const response = await axios.get(`${API_BASE_URL}${ApiUrls.AUTH_ME}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return { token, user: response.data?.data };
-  } catch {
-    await StorageUtils.clearToken();
-    return rejectWithValue("invalid_token");
-  }
-});
+import { createSlice } from "@reduxjs/toolkit";
+import { authApi } from "@services/api/authApi";
 
 const authSlice = createSlice({
   name: "auth",
@@ -62,20 +45,32 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(initializeAuth.fulfilled, (state, action) => {
-        const isFirst = !action.payload.user?.name;
-        state.token = action.payload.token;
-        state.user = action.payload.user;
-        state.isFirstLogin = isFirst;
-        state.isAuthenticated = !isFirst;
-        state.tokenLoaded = true;
+      .addMatcher(authApi.endpoints.getMe.matchFulfilled, (state, action) => {
+        const user = action.payload.data;
+        state.user = user; // keep user in sync on every getMe success
+        if (!state.tokenLoaded) {
+          // Bootstrap phase: also set auth + first-login flags
+          const isFirst = !user?.name;
+          state.isFirstLogin = isFirst;
+          state.isAuthenticated = !isFirst;
+          state.tokenLoaded = true;
+        }
       })
-      .addCase(initializeAuth.rejected, (state) => {
-        state.isAuthenticated = false;
-        state.tokenLoaded = true;
+      .addMatcher(authApi.endpoints.getMe.matchRejected, (state) => {
+        // Only react during bootstrap (tokenLoaded still false).
+        // Post-bootstrap 401s are already handled by customBaseQuery.
+        if (!state.tokenLoaded) {
+          state.isAuthenticated = false;
+          state.tokenLoaded = true;
+        }
       });
   },
 });
 
-export const { setCredentials, clearCredentials, completeFirstLoginSetup, updateUser } = authSlice.actions;
+export const {
+  setCredentials,
+  clearCredentials,
+  completeFirstLoginSetup,
+  updateUser,
+} = authSlice.actions;
 export default authSlice.reducer;

@@ -1,6 +1,7 @@
-
+import mongoose from "mongoose";
 
 // Constants
+import { ErrorMessages } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -17,7 +18,12 @@ function validateBody(schema) {
         field: e.path.join("."),
         message: e.message,
       }));
-      return ResponseUtils.error(res, "Validation failed", HttpStatus.BAD_REQUEST, errors);
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.VALIDATION_FAILED,
+        HttpStatus.BAD_REQUEST,
+        errors,
+      );
     }
     req.body = result.data;
     next();
@@ -35,7 +41,12 @@ function validateQuery(schema) {
         field: e.path.join("."),
         message: e.message,
       }));
-      return ResponseUtils.error(res, "Validation failed", HttpStatus.BAD_REQUEST, errors);
+      return ResponseUtils.error(
+        res,
+        ErrorMessages.VALIDATION_FAILED,
+        HttpStatus.BAD_REQUEST,
+        errors,
+      );
     }
     // Delete old keys and assign validated data since req.query has only a getter in Express 5
     Object.keys(req.query).forEach((key) => delete req.query[key]);
@@ -44,4 +55,24 @@ function validateQuery(schema) {
   };
 }
 
-export { validateBody, validateQuery };
+/**
+ * Validate that a named route param is a valid MongoDB ObjectId.
+ * Returns 400 with a clear message instead of letting Mongoose throw a CastError 500.
+ *
+ * @param {string} paramName - The req.params key to validate (e.g. "jobId", "id")
+ */
+function validateObjectId(paramName) {
+  return (req, res, next) => {
+    const value = req.params[paramName];
+    if (!mongoose.Types.ObjectId.isValid(value)) {
+      return ResponseUtils.error(
+        res,
+        `Invalid ID format for parameter '${paramName}'`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    next();
+  };
+}
+
+export { validateBody, validateQuery, validateObjectId };

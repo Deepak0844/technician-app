@@ -1,6 +1,7 @@
 **/node_modules/
 .env
 .agent/
+.github/
 package-lock.json
 /mobile/android/
 /mobile/ios/

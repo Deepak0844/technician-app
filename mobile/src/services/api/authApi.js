@@ -1,16 +1,24 @@
 import api from "../api";
-import { ApiUrls } from "../../constants/appConstants";
-import { TagTypes, TagIds } from "../../constants/apiTags";
-import ApiUtils from "./apiUtils";
+import { ApiUrls } from "@constants/appConstants";
+import { TagTypes, TagIds } from "@constants/apiTags";
+import ApiUtils from "@services/api/apiUtils";
 
 const authEndpoints = {
   sendOtp: (builder) =>
     builder.mutation({
-      query: (body) => ({ url: ApiUrls.AUTH_SEND_OTP, method: "post", data: body }),
+      query: (body) => ({
+        url: ApiUrls.AUTH_SEND_OTP,
+        method: "post",
+        data: body,
+      }),
     }),
   verifyOtp: (builder) =>
     builder.mutation({
-      query: (body) => ({ url: ApiUrls.AUTH_VERIFY_OTP, method: "post", data: body }),
+      query: (body) => ({
+        url: ApiUrls.AUTH_VERIFY_OTP,
+        method: "post",
+        data: body,
+      }),
     }),
   logout: (builder) =>
     builder.mutation({
@@ -19,11 +27,16 @@ const authEndpoints = {
   getMe: (builder) =>
     builder.query({
       query: () => ({ url: ApiUrls.AUTH_ME }),
-      providesTags: (result, error, arg) => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
+      providesTags: (result, error, arg) =>
+        ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
     }),
   updateMe: (builder) =>
     builder.mutation({
-      query: (body) => ({ url: ApiUrls.AUTH_UPDATE_ME, method: "put", data: body }),
+      query: (body) => ({
+        url: ApiUrls.AUTH_UPDATE_ME,
+        method: "put",
+        data: body,
+      }),
       invalidatesTags: () => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
     }),
 };
@@ -39,4 +52,10 @@ export const authApi = api.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useSendOtpMutation, useVerifyOtpMutation, useLogoutMutation, useGetMeQuery, useUpdateMeMutation } = authApi;
+export const {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+  useLogoutMutation,
+  useGetMeQuery,
+  useUpdateMeMutation,
+} = authApi;

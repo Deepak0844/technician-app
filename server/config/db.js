@@ -3,14 +3,20 @@ import mongoose from "mongoose";
 // Config
 import Env from "#config/env.js";
 
+// Utils
+import logger from "#utils/logger.js";
+
 async function connectToDatabase() {
   try {
     const conn = await mongoose.connect(Env.MONGODB_URI, {
       dbName: "technician-app",
     });
-    console.log(`✅ MongoDB connected: ${conn.connection.host} → DB: ${conn.connection.name}`);
+    logger.info(
+      { host: conn.connection.host, db: conn.connection.name },
+      "✅ MongoDB connected",
+    );
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
+    logger.error({ err: err.message }, "❌ MongoDB connection error");
     process.exit(1);
   }
 }

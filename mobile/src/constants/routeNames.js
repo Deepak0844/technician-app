@@ -12,18 +12,24 @@ export const RouteNames = {
   ADD_JOB: "AddJob",
   JOB_HISTORY: "JobHistory",
   PROFILE: "Profile",
+  CUSTOMERS: "Customers",
 
   // Detail screens (stack)
+  JOB_DETAILS: "JobDetails",
   CUSTOMER_SEARCH: "CustomerSearch",
   CUSTOMER_DETAILS: "CustomerDetails",
+  CREATE_CUSTOMER: "CreateCustomer",
   INVOICE_PREVIEW: "InvoicePreview",
   REMINDERS: "Reminders",
+
+  // Navigator wrappers
+  TABS: "Tabs",
 };
 
 /**
- * Stack names
+ * Root stack names (used in AppNavigator)
  */
 export const StackNames = {
-  AUTH: "AuthStack",
-  MAIN: "MainStack",
+  AUTH: "Auth",
+  MAIN: "Main",
 };

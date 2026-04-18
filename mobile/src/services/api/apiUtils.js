@@ -2,7 +2,7 @@
  * API Utilities for parameter serialization and RTK Query cache tagging.
  * Exact same setup as cloud-drive project for consistency.
  */
-import { TagIds } from "../../constants/apiTags";
+import { TagIds } from "@constants/apiTags";
 
 function convertFalseToString(params, key) {
   if (params[key] === false) {
@@ -22,14 +22,21 @@ function serializeParams(params) {
   let options = "";
   for (const key in params) {
     convertFalseToString(params, key);
-    if ((typeof params[key] !== "object" || params[key] === null) && params[key] !== undefined) {
+    if (
+      (typeof params[key] !== "object" || params[key] === null) &&
+      params[key] !== undefined
+    ) {
       if (params[key] === null) {
         options += `${key}=null&`;
       } else {
         convertStringToFalse(params, key);
         options += `${key}=${params[key]}&`;
       }
-    } else if (typeof params[key] === "object" && params[key] && params[key].length) {
+    } else if (
+      typeof params[key] === "object" &&
+      params[key] &&
+      params[key].length
+    ) {
       params[key].forEach((el) => (options += `${key}=${el}&`));
     }
   }
@@ -56,9 +63,12 @@ function paginatedTags(type) {
 
     let list = [];
     if (Array.isArray(result.data)) list = result.data;
-    else if (result.data.list && Array.isArray(result.data.list)) list = result.data.list;
-    else if (result.data.jobs && Array.isArray(result.data.jobs)) list = result.data.jobs;
-    else if (result.data.customers && Array.isArray(result.data.customers)) list = result.data.customers;
+    else if (result.data.list && Array.isArray(result.data.list))
+      list = result.data.list;
+    else if (result.data.jobs && Array.isArray(result.data.jobs))
+      list = result.data.jobs;
+    else if (result.data.customers && Array.isArray(result.data.customers))
+      list = result.data.customers;
 
     if (!list.length) {
       return [{ type, id: TagIds.LIST }, pageTag];
@@ -82,7 +92,7 @@ function entityTags(type) {
 
     // 2. Check args (for queries or if result is partial/fails)
     if (!id && args) {
-      id = typeof args === 'string' ? args : args.id || args._id;
+      id = typeof args === "string" ? args : args.id || args._id;
     }
 
     if (!id) return [];

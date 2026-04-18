@@ -1,382 +1,1234 @@
-import { SafeAreaView } from "react-native-safe-area-context";
 import React from "react";
-import { ScrollView, View, TouchableOpacity, ActivityIndicator, Image, RefreshControl, Alert, Linking } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import {
+  FlatList,
+  ScrollView,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Linking,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { useGetCustomerByIdQuery } from "@services/api/customerApi";
+import { useGetJobsByCustomerPagedInfiniteQuery } from "@services/api/jobApi";
+import { RouteNames } from "@constants/routeNames";
+import { openDirections } from "@utils/locationUtils";
+import { formatDate, formatCurrency, formatDateShort } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
+import Avatar from "@components/Avatar";
 
-// Services
-import { useGetCustomerByIdQuery, useDeleteCustomerMutation } from "@services/api/customerApi";
-import { useGetJobsByCustomerQuery } from "@services/api/jobApi";
-
-// Gluestack Primitives
+// UI Primitives
 import { Text } from "@components/ui/text";
+
+// Icons
 import {
   ArrowLeft,
-  Edit,
-  Trash2,
+  Edit3,
   Phone,
   CalendarPlus,
   CheckCircle2,
   Wrench,
-  User,
   Navigation as NavIcon,
-  MapPin
+  MapPin,
+  Clock,
+  IndianRupee,
+  Briefcase,
+  ChevronRight,
+  AlertCircle,
 } from "lucide-react-native";
 
-import { openDirections } from "@utils/locationUtils";
+// ─── Stat Card ──────────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, label, value, colors, accentColor }) {
+  const bg = accentColor ? `${accentColor}15` : colors.bgSurface;
+  const iconColor = accentColor || colors.primary;
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.bgCard,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          backgroundColor: bg,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Icon color={iconColor} size={16} />
+      </View>
+      <Text
+        style={{
+          fontFamily: "Space Grotesk",
+          fontSize: 16,
+          fontWeight: "800",
+          color: colors.textPrimary,
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          fontFamily: "Inter",
+          fontSize: 10,
+          color: colors.textMuted,
+          textAlign: "center",
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
+// ─── Quick Action Button ─────────────────────────────────────────────────────
+function ActionButton({ icon: Icon, label, onPress, colors, primary }) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={{
+        flex: 1,
+        alignItems: "center",
+        gap: 6,
+      }}
+    >
+      <View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          backgroundColor: primary ? colors.primary : colors.bgCard,
+          borderWidth: primary ? 0 : 1,
+          borderColor: colors.border,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: primary ? colors.primary : "transparent",
+          shadowOpacity: primary ? 0.3 : 0,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: primary ? 4 : 0,
+        }}
+      >
+        <Icon color={primary ? "#fff" : colors.textMuted} size={20} />
+      </View>
+      <Text
+        style={{
+          fontFamily: "Inter",
+          fontSize: 11,
+          fontWeight: "600",
+          color: primary ? colors.primary : colors.textMuted,
+        }}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Job Row ─────────────────────────────────────────────────────────────────
+function JobRow({ job, colors, onPress }) {
+  const isCompleted = job.status === "completed";
+  const isPending = job.status === "pending";
+  const statusColor = isCompleted
+    ? colors.success
+    : isPending
+      ? colors.warning
+      : colors.primary;
+  const statusBg = isCompleted
+    ? colors.successBg
+    : isPending
+      ? colors.warningBg
+      : colors.primaryBg;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.72}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.bgCard,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginBottom: 10,
+        overflow: "hidden",
+      }}
+    >
+      {/* Status stripe */}
+      <View
+        style={{
+          width: 4,
+          alignSelf: "stretch",
+          backgroundColor: statusColor,
+          borderTopLeftRadius: 14,
+          borderBottomLeftRadius: 14,
+        }}
+      />
+      {/* Icon */}
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          backgroundColor: statusBg,
+          alignItems: "center",
+          justifyContent: "center",
+          marginLeft: 12,
+        }}
+      >
+        <Wrench color={statusColor} size={17} />
+      </View>
+      {/* Content */}
+      <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12 }}>
+        <Text
+          style={{
+            fontFamily: "Space Grotesk",
+            fontWeight: "700",
+            fontSize: 14,
+            color: colors.textPrimary,
+            marginBottom: 3,
+          }}
+          numberOfLines={1}
+        >
+          {job?.applianceType || "General Service"}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Clock color={colors.textDisabled} size={10} />
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 11,
+              color: colors.textMuted,
+            }}
+          >
+            {formatDate(job?.serviceDate)}
+          </Text>
+          <Text style={{ color: colors.textDisabled, fontSize: 11 }}>·</Text>
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 11,
+              color: colors.textDisabled,
+            }}
+          >
+            #{job?._id ? job._id.substring(0, 6).toUpperCase() : "..."}
+          </Text>
+        </View>
+      </View>
+      {/* Right */}
+      <View style={{ alignItems: "flex-end", paddingRight: 14, gap: 4 }}>
+        <Text
+          style={{
+            fontFamily: "Space Grotesk",
+            fontSize: 14,
+            fontWeight: "700",
+            color: colors.textPrimary,
+          }}
+        >
+          {formatCurrency(
+            (job.amount || 0) +
+              (job.diagnosticFee || 0) +
+              (job.partsUsed || []).reduce(
+                (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+                0,
+              ),
+          )}
+        </Text>
+        <View
+          style={{
+            paddingHorizontal: 7,
+            paddingVertical: 2,
+            borderRadius: 6,
+            backgroundColor: statusBg,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "Inter",
+              fontSize: 9,
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: 0.8,
+              color: statusColor,
+            }}
+          >
+            {job.status}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function CustomerDetailsScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { colors } = useTheme();
   const { customerId } = route.params;
 
-  // RTK Query
-  const { data: custResponse, isLoading: loadingCustomerApi, refetch: refetchCustomer } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
-  const { data: jobsResponse, isLoading: loadingJobsApi, refetch: refetchJobs } = useGetJobsByCustomerQuery(customerId, { skip: !customerId });
-  const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
+  const {
+    data: custResponse,
+    isLoading: loadingCustomerApi,
+    refetch: refetchCustomer,
+  } = useGetCustomerByIdQuery(customerId, { skip: !customerId });
+  const {
+    data: jobsData,
+    isLoading: loadingJobsApi,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch: refetchJobs,
+  } = useGetJobsByCustomerPagedInfiniteQuery(customerId, {
+    skip: !customerId,
+  });
 
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [selectedAppliance, setSelectedAppliance] = React.useState(null);
+  const hasScrolledRef = React.useRef(false);
 
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await Promise.all([refetchCustomer(), refetchJobs()]);
-    setRefreshing(false);
+  // Flatten all fetched pages into a single array
+  const jobs = React.useMemo(
+    () => jobsData?.pages.flatMap((p) => p.data) ?? [],
+    [jobsData],
+  );
+
+  // Total job count comes from the server (accurate even before all pages load)
+  const totalJobCount =
+    jobsData?.pages[0]?.pagination?.total ?? jobs.length;
+
+  const filteredJobs = React.useMemo(() => {
+    if (!selectedAppliance) return jobs;
+    return jobs.filter(
+      (j) => (j.applianceType || "General") === selectedAppliance,
+    );
+  }, [jobs, selectedAppliance]);
+
+  const onRefresh = React.useCallback(() => {
+    hasScrolledRef.current = false;
+    Promise.all([refetchCustomer(), refetchJobs()]);
   }, [refetchCustomer, refetchJobs]);
 
   const rawCustomer = custResponse?.data;
-  const customer = rawCustomer?.data ? rawCustomer.data : (rawCustomer || {});
+  const customer = rawCustomer?.data ? rawCustomer.data : rawCustomer || {};
 
-  async function handleDelete() {
-    Alert.alert(
-      "Delete Customer",
-      "Are you sure you want to delete this customer? This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteCustomer(customerId).unwrap();
-              Alert.alert("Success", "Customer deleted successfully.");
-              navigation.navigate("Tabs", { screen: "Customers" });
-            } catch (err) {
-              Alert.alert("Error", err?.data?.message || "Failed to delete customer.");
-            }
-          }
-        }
-      ]
-    );
-  }
+  const isLoading = loadingCustomerApi || loadingJobsApi;
 
-  const rawJobs = jobsResponse?.data;
-  let jobs = [];
-  if (Array.isArray(rawJobs)) {
-    jobs = rawJobs;
-  } else if (rawJobs && Array.isArray(rawJobs.data)) {
-    jobs = rawJobs.data;
-  }
+  // Appliance stats
+  const applianceStats = React.useMemo(() => {
+    const stats = {};
+    jobs.forEach((job) => {
+      const type = job.applianceType || "General";
+      if (!stats[type]) {
+        stats[type] = { count: 0, lastDate: null, totalSpent: 0 };
+      }
+      stats[type].count += 1;
+      const date = new Date(job.serviceDate);
+      if (!stats[type].lastDate || date > new Date(stats[type].lastDate)) {
+        stats[type].lastDate = job.serviceDate;
+      }
+      stats[type].totalSpent +=
+        (parseFloat(job.amount) || 0) +
+        (parseFloat(job.diagnosticFee) || 0) +
+        (job.partsUsed || []).reduce(
+          (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+          0,
+        );
+    });
+    return Object.entries(stats).map(([type, data]) => ({ type, ...data }));
+  }, [jobs]);
 
-  const isLoading = loadingCustomerApi || loadingJobsApi || isDeleting;
+  // Summary stats
+  const totalSpent = React.useMemo(
+    () =>
+      jobs.reduce(
+        (sum, j) =>
+          sum +
+          (parseFloat(j.amount) || 0) +
+          (parseFloat(j.diagnosticFee) || 0) +
+          (j.partsUsed || []).reduce(
+            (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+            0,
+          ),
+        0,
+      ),
+    [jobs],
+  );
+  const lastServiceDate = React.useMemo(() => {
+    if (!jobs.length) return null;
+    return jobs.map((j) => new Date(j.serviceDate)).sort((a, b) => b - a)[0];
+  }, [jobs]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    const d = new Date(dateString);
-    if (isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  };
-
-  if (isLoading && !customer.name) {
+  // ── Loading ──
+  if (isLoading && !customer?.name) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bgPrimary, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bgPrimary,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
-      {/* TopAppBar */}
-      <View
-        style={{
-          width: "100%",
-          zIndex: 50,
-          backgroundColor: colors.bgSecondary,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          height: 56,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }} activeOpacity={0.7}>
-            <ArrowLeft color={colors.primary} size={24} />
+  const primaryLocation =
+    Array.isArray(customer.locations) && customer.locations.length > 0
+      ? customer.locations[0]
+      : null;
+
+  function renderHeader() {
+    return (
+      <View>
+        {/* ── Top bar ── */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            height: 52,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.bgCard,
+              borderWidth: 1,
+              borderColor: colors.border,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft color={colors.textPrimary} size={18} />
           </TouchableOpacity>
-          <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", fontSize: 14, color: colors.textPrimary, textTransform: "uppercase" }}>
+
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontWeight: "700",
+              fontSize: 14,
+              color: colors.textPrimary,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+            }}
+          >
             Customer Profile
           </Text>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
+            }
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.primaryBg,
+              borderWidth: 1,
+              borderColor: colors.primaryBorder,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <Edit3 color={colors.primary} size={16} />
+          </TouchableOpacity>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("CreateCustomer", { customer })}
-            style={{ padding: 8 }}
-            activeOpacity={0.7}
+
+        {/* ── Hero Section ── */}
+        <LinearGradient
+          colors={[colors.primaryBgStrong, colors.bgPrimary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{
+            paddingTop: 28,
+            paddingBottom: 24,
+            paddingHorizontal: 20,
+            alignItems: "center",
+          }}
+        >
+          {/* Avatar */}
+          <View style={{ position: "relative", marginBottom: 14 }}>
+            <Avatar
+              name={customer?.name}
+              uri={customer?.avatar || customer?.imageUrl}
+              size={84}
+              style={{
+                borderWidth: 3,
+                borderColor: colors.primaryBorderStrong,
+                shadowColor: colors.primary,
+                shadowOpacity: 0.25,
+                shadowRadius: 16,
+                shadowOffset: { width: 0, height: 4 },
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 2,
+                right: 2,
+                backgroundColor: colors.success,
+                padding: 4,
+                borderRadius: 999,
+                borderWidth: 2,
+                borderColor: colors.bgPrimary,
+              }}
+            >
+              <CheckCircle2 color="#fff" size={10} />
+            </View>
+          </View>
+
+          {/* Name */}
+          <Text
+            style={{
+              fontFamily: "Space Grotesk",
+              fontSize: 22,
+              fontWeight: "800",
+              color: colors.textPrimary,
+              textAlign: "center",
+              marginBottom: 6,
+            }}
           >
-            <Edit color={colors.primary} size={22} />
-          </TouchableOpacity>
+            {customer.name || "Unknown Customer"}
+          </Text>
+
+          {/* Phone */}
           <TouchableOpacity
-            onPress={handleDelete}
-            style={{ padding: 8 }}
+            onPress={() =>
+              customer.phone && Linking.openURL(`tel:${customer.phone}`)
+            }
             activeOpacity={0.7}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: colors.bgCard,
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
           >
-            <Trash2 color={colors.danger} size={22} />
+            <Phone color={colors.primary} size={13} />
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 13,
+                color: colors.textMuted,
+              }}
+            >
+              {customer.phone || "No phone"}
+            </Text>
           </TouchableOpacity>
+        </LinearGradient>
+
+        <View style={{ paddingHorizontal: 16 }}>
+          {/* ── Quick Actions ── */}
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: colors.bgCard,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingVertical: 16,
+              paddingHorizontal: 8,
+              marginBottom: 20,
+            }}
+          >
+            <ActionButton
+              icon={Phone}
+              label="Call"
+              colors={colors}
+              onPress={() =>
+                customer.phone && Linking.openURL(`tel:${customer.phone}`)
+              }
+            />
+            <ActionButton
+              icon={NavIcon}
+              label="Navigate"
+              colors={colors}
+              onPress={() =>
+                primaryLocation &&
+                openDirections(
+                  primaryLocation.latitude,
+                  primaryLocation.longitude,
+                  primaryLocation.address,
+                )
+              }
+            />
+            <ActionButton
+              icon={CalendarPlus}
+              label="Add Job"
+              colors={colors}
+              primary
+              onPress={() =>
+                navigation.navigate(RouteNames.ADD_JOB, { customer })
+              }
+            />
+            <ActionButton
+              icon={Edit3}
+              label="Edit"
+              colors={colors}
+              onPress={() =>
+                navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
+              }
+            />
+          </View>
+
+          {/* ── Stats Row ── */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 24 }}>
+            <StatCard
+              icon={Briefcase}
+              label="Total Jobs"
+              value={totalJobCount}
+              colors={colors}
+              accentColor={colors.primary}
+            />
+            <StatCard
+              icon={IndianRupee}
+              label="Total Spent"
+              value={formatCurrency(totalSpent)}
+              colors={colors}
+              accentColor={colors.success}
+            />
+            <StatCard
+              icon={Clock}
+              label="Last Service"
+              value={lastServiceDate ? formatDateShort(lastServiceDate) : "—"}
+              colors={colors}
+              accentColor={colors.secondary}
+            />
+          </View>
+
+          {/* ── Service Locations ── */}
+          {(Array.isArray(customer.locations) &&
+            customer.locations.length > 0) ||
+          customer.address ? (
+            <View style={{ marginBottom: 24 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 12,
+                }}
+              >
+                <MapPin size={14} color={colors.primary} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Service Locations
+                </Text>
+                {Array.isArray(customer.locations) &&
+                  customer.locations.length > 1 && (
+                    <View
+                      style={{
+                        backgroundColor: colors.primaryBg,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 10,
+                        marginLeft: "auto",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 10,
+                          color: colors.primary,
+                        }}
+                      >
+                        {customer.locations.length} locations
+                      </Text>
+                    </View>
+                  )}
+              </View>
+
+              {Array.isArray(customer.locations) &&
+              customer.locations.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
+                  decelerationRate="fast"
+                  snapToInterval={240}
+                  snapToAlignment="start"
+                >
+                  {customer.locations.map((loc) => (
+                    <View
+                      key={loc._id || Math.random().toString()}
+                      style={{
+                        width: 230,
+                        backgroundColor: colors.bgCard,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {/* Card header */}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderBottomWidth: 1,
+                          borderBottomColor: colors.border,
+                          backgroundColor: colors.primaryBg,
+                        }}
+                      >
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <MapPin color={colors.primary} size={12} />
+                          <Text
+                            style={{
+                              fontFamily: "Inter",
+                              fontSize: 10,
+                              fontWeight: "700",
+                              textTransform: "uppercase",
+                              letterSpacing: 1.5,
+                              color: colors.primary,
+                            }}
+                          >
+                            {loc.label || "Primary"}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() =>
+                            openDirections(
+                              loc.latitude,
+                              loc.longitude,
+                              loc.address,
+                            )
+                          }
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                            backgroundColor: colors.primary,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <NavIcon color="#fff" size={11} />
+                          <Text
+                            style={{
+                              fontFamily: "Inter",
+                              fontSize: 10,
+                              fontWeight: "600",
+                              color: "#fff",
+                            }}
+                          >
+                            Go
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      {/* Address body */}
+                      <View style={{ padding: 14, gap: 6 }}>
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            color: colors.textPrimary,
+                            fontSize: 12,
+                            lineHeight: 18,
+                          }}
+                          numberOfLines={3}
+                        >
+                          {loc.address || "—"}
+                        </Text>
+                        {loc.latitude && loc.longitude ? (
+                          <Text
+                            style={{
+                              fontFamily: "Inter",
+                              color: colors.textDisabled,
+                              fontSize: 10,
+                            }}
+                          >
+                            📍 {loc.latitude.toFixed(4)}°,{" "}
+                            {loc.longitude.toFixed(4)}°
+                          </Text>
+                        ) : (
+                          <Text
+                            style={{
+                              fontFamily: "Inter",
+                              color: colors.textDisabled,
+                              fontSize: 10,
+                            }}
+                          >
+                            No GPS pin
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : customer.address ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    backgroundColor: colors.bgCard,
+                    borderRadius: 14,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      backgroundColor: colors.primaryBg,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MapPin color={colors.primary} size={14} />
+                  </View>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      color: colors.textMuted,
+                      fontSize: 13,
+                      flex: 1,
+                      lineHeight: 19,
+                      marginTop: 6,
+                    }}
+                  >
+                    {customer.address}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {/* ── Appliance Portfolio ── */}
+          {applianceStats.length > 0 && (
+            <View style={{ marginBottom: 24 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 12,
+                }}
+              >
+                <Wrench size={14} color={colors.primary} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Appliance History
+                </Text>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+              >
+                {/* "All" chip */}
+                <TouchableOpacity
+                  onPress={() => setSelectedAppliance(null)}
+                  activeOpacity={0.75}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: !selectedAppliance
+                      ? colors.primary
+                      : colors.border,
+                    backgroundColor: !selectedAppliance
+                      ? colors.primaryBg
+                      : colors.bgCard,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: !selectedAppliance
+                        ? colors.primary
+                        : colors.textMuted,
+                    }}
+                  >
+                    All
+                  </Text>
+                </TouchableOpacity>
+                {applianceStats.map((item) => {
+                  const active = selectedAppliance === item.type;
+                  return (
+                    <TouchableOpacity
+                      key={item.type}
+                      onPress={() =>
+                        setSelectedAppliance(active ? null : item.type)
+                      }
+                      activeOpacity={0.75}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        borderWidth: 1.5,
+                        borderColor: active ? colors.primary : colors.border,
+                        backgroundColor: active
+                          ? colors.primaryBg
+                          : colors.bgCard,
+                      }}
+                    >
+                      <Wrench
+                        color={active ? colors.primary : colors.textMuted}
+                        size={11}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: active ? colors.primary : colors.textMuted,
+                        }}
+                      >
+                        {item.type}
+                      </Text>
+                      <View
+                        style={{
+                          backgroundColor: active
+                            ? colors.primary
+                            : colors.bgSurface,
+                          borderRadius: 8,
+                          paddingHorizontal: 5,
+                          paddingVertical: 1,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 10,
+                            fontWeight: "700",
+                            color: active ? "#fff" : colors.textDisabled,
+                          }}
+                        >
+                          {item.count}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* ── Job History header ── */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 14,
+            }}
+          >
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <Briefcase size={14} color={colors.primary} />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                {selectedAppliance
+                  ? `${selectedAppliance} Jobs`
+                  : "Job History"}
+              </Text>
+              {filteredJobs.length > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.primaryBg,
+                    borderRadius: 8,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    {filteredJobs.length}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate(RouteNames.TABS, {
+                  screen: RouteNames.JOB_HISTORY,
+                  params: { customerId },
+                })
+              }
+              activeOpacity={0.7}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.primary,
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                View All
+              </Text>
+              <ChevronRight color={colors.primary} size={13} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Empty states (only shown when jobs list itself is empty) */}
+          {isLoading && jobs.length === 0 ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              style={{ marginTop: 16, marginBottom: 16 }}
+            />
+          ) : jobs.length === 0 ? (
+            <View
+              style={{
+                backgroundColor: colors.bgCard,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderStyle: "dashed",
+                borderColor: colors.primaryBorder,
+                padding: 32,
+                alignItems: "center",
+                marginBottom: 40,
+              }}
+            >
+              <View
+                style={{
+                  width: 60,
+                  height: 60,
+                  backgroundColor: colors.primaryBg,
+                  borderRadius: 30,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 14,
+                }}
+              >
+                <CalendarPlus color={colors.primary} size={26} />
+              </View>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: colors.textPrimary,
+                  fontWeight: "700",
+                  fontSize: 16,
+                  marginBottom: 6,
+                  textAlign: "center",
+                }}
+              >
+                No Jobs Yet
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  color: colors.textMuted,
+                  fontSize: 13,
+                  textAlign: "center",
+                  lineHeight: 19,
+                  marginBottom: 20,
+                  paddingHorizontal: 10,
+                }}
+              >
+                {"This customer doesn't have any jobs yet. Create the first one!"}
+              </Text>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate(RouteNames.ADD_JOB, { customer })
+                }
+                activeOpacity={0.75}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  shadowColor: colors.primary,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
+                }}
+              >
+                <CalendarPlus color="#fff" size={15} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    color: "#fff",
+                    fontWeight: "700",
+                    fontSize: 13,
+                  }}
+                >
+                  Create First Job
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredJobs.length === 0 ? (
+            <View
+              style={{
+                backgroundColor: colors.bgCard,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              <AlertCircle color={colors.textDisabled} size={20} />
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 13,
+                  color: colors.textMuted,
+                }}
+              >
+                No jobs for {selectedAppliance}. Tap the chip above to reset.
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
+    );
+  }
 
-      <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16 }}
+  return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
+      <FlatList
+        data={filteredJobs}
+        keyExtractor={(item) => item._id || Math.random().toString()}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 150 }}
+        ListHeaderComponent={renderHeader}
+        onScrollBeginDrag={() => {
+          hasScrolledRef.current = true;
+        }}
+        onEndReached={() => {
+          if (hasScrolledRef.current && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+          }
+        }}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={loadingJobsApi && !isFetchingNextPage && !!jobsData}
             onRefresh={onRefresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />
         }
-      >
-        {/* Profile Section */}
-        <View style={{ position: "relative", marginBottom: 32, width: "100%" }}>
-          <View
-            style={{
-              backgroundColor: colors.bgCard,
-              padding: 20,
-              borderRadius: 24,
-              overflow: "hidden",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 20,
-              shadowColor: colors.primaryMuted,
-              shadowOpacity: 0.08,
-              shadowRadius: 40,
-              shadowOffset: { width: 0, height: 20 },
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            {/* Background Accents */}
-            <View
-              style={{
-                position: "absolute",
-                top: -80,
-                right: -80,
-                width: 192,
-                height: 192,
-                backgroundColor: colors.primaryBg,
-                borderRadius: 96,
-              }}
+        renderItem={({ item: job }) => (
+          <View style={{ paddingHorizontal: 16 }}>
+            <JobRow
+              job={job}
+              colors={colors}
+              onPress={() =>
+                navigation.navigate(RouteNames.JOB_DETAILS, { job })
+              }
             />
-            <View
-              style={{
-                position: "absolute",
-                bottom: -80,
-                left: -80,
-                width: 192,
-                height: 192,
-                backgroundColor: colors.primaryMuted,
-                opacity: 0.2,
-                borderRadius: 96,
-              }}
-            />
-
-            <View style={{ flexDirection: "column", alignItems: "center", gap: 16, zIndex: 10, width: "100%" }}>
-              {/* Profile Orb */}
-              <View style={{ position: "relative" }}>
-                <View
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 40,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: colors.primaryBorder,
-                    padding: 2,
-                    backgroundColor: colors.bgInput,
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {customer.imageUrl ? (
-                    <Image source={{ uri: customer.imageUrl }} style={{ width: "100%", height: "100%", borderRadius: 40 }} />
-                  ) : (
-                    <View style={{ width: "100%", height: "100%", backgroundColor: colors.bgCard, borderRadius: 40, alignItems: "center", justifyContent: "center" }}>
-                      <User color={colors.primary} size={32} />
-                    </View>
-                  )}
-                </View>
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    right: 0,
-                    backgroundColor: colors.secondary,
-                    padding: 6,
-                    borderRadius: 999,
-                    shadowColor: colors.secondary,
-                    shadowOpacity: 0.4,
-                    shadowRadius: 10,
-                    shadowOffset: { width: 0, height: 2 },
-                  }}
-                >
-                  <CheckCircle2 color={colors.bgPrimary} size={12} />
-                </View>
-              </View>
-
-              {/* Customer Info */}
-              <View style={{ flex: 1, alignItems: "center", width: "100%" }}>
-                <Text style={{ fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "700", color: colors.textPrimary, marginBottom: 4, textAlign: "center" }}>
-                  {customer.name || "Unknown Customer"}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() => customer.phone && Linking.openURL(`tel:${customer.phone}`)}
-                  activeOpacity={0.7}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8, width: "100%" }}
-                >
-                  <Phone color={colors.secondary} size={14} />
-                  <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 14 }}>
-                    {customer.phone || "No phone provided"}
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Jobs Badge — stays inside profile card, below phone */}
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 4 }}>
-                  <View style={{ backgroundColor: colors.primaryBg, paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.primary, fontSize: 14 }}>
-                      {jobs.length}
-                    </Text>
-                    <Text style={{ fontFamily: "Inter", fontSize: 9, textTransform: "uppercase", fontWeight: "700", letterSpacing: 4, color: colors.primary, opacity: 0.7 }}>
-                      Jobs
-                    </Text>
-                  </View>
-                </View>
-
-              </View>
-            </View>
           </View>
-        </View>
-        <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 4 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <MapPin size={13} color={colors.textDisabled} />
-              <Text style={{
-                fontFamily: "Inter",
-                fontSize: 9,
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: 4,
-                color: colors.textDisabled,
-              }}>
-                Service Locations
-              </Text>
+        )}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={{ paddingVertical: 16, alignItems: "center" }}>
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
-            {Array.isArray(customer.locations) && customer.locations.length > 1 && (
-              <Text style={{ fontFamily: "Inter", fontSize: 9, color: colors.textDisabled }}>
-                {customer.locations.length} locations  •  swipe →
-              </Text>
-            )}
-          </View>
+          ) : (
+            <View style={{ height: 40 }} />
+          )
+        }
+      />
 
-          {Array.isArray(customer.locations) && customer.locations.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
-              decelerationRate="fast"
-              snapToInterval={230}
-              snapToAlignment="start"
-            >
-              {customer.locations.map((loc) => (
-                <View
-                  key={loc._id || Math.random().toString()}
-                  style={{
-                    width: 220,
-                    backgroundColor: colors.bgCard,
-                    borderRadius: 18,
-                    padding: 14,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    gap: 10,
-                  }}
-                >
-                  {/* Top row: pin icon + label + navigate button */}
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: colors.primaryBg, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <MapPin color={colors.primary} size={16} />
-                    </View>
-                    <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, color: colors.secondary, flex: 1 }}>
-                      {loc.label || "Primary"}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => openDirections(loc.latitude, loc.longitude, loc.address)}
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: 17,
-                        backgroundColor: colors.primary,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        shadowColor: colors.primary,
-                        shadowOpacity: 0.4,
-                        shadowRadius: 8,
-                        shadowOffset: { width: 0, height: 2 },
-                        elevation: 5,
-                      }}
-                    >
-                      <NavIcon color="#fff" size={15} />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Address */}
-                  <Text style={{ fontFamily: "Inter", color: colors.textPrimary, fontSize: 12, lineHeight: 18 }} numberOfLines={3}>
-                    {loc.address || "—"}
-                  </Text>
-
-                  {/* Coordinates */}
-                  {loc.latitude && loc.longitude ? (
-                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>
-                      {loc.latitude.toFixed(4)}° N · {loc.longitude.toFixed(4)}° E
-                    </Text>
-                  ) : (
-                    <Text style={{ fontFamily: "Inter", color: colors.textDisabled, fontSize: 9, marginTop: -4 }}>No GPS pin</Text>
-                  )}
-                </View>
-              ))}
-            </ScrollView>
-          ) : customer.address ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.bgCard, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: colors.border }}>
-              <MapPin color={colors.textMuted} size={16} />
-              <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 13, flex: 1, lineHeight: 19 }}>
-                {customer.address}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={{ marginBottom: 24 }}>
+      {/* ── Floating Add Job button ── */}
+      {jobs.length > 0 && (
+        <View
+          style={{
+            position: "absolute",
+            bottom: 28,
+            left: 16,
+            right: 16,
+          }}
+        >
           <TouchableOpacity
-            onPress={() => navigation.navigate("AddJob", { customer })}
-            activeOpacity={0.8}
+            onPress={() =>
+              navigation.navigate(RouteNames.ADD_JOB, { customer })
+            }
+            activeOpacity={0.85}
             style={{
-              borderRadius: 18,
+              borderRadius: 16,
               overflow: "hidden",
               shadowColor: colors.primary,
-              shadowOpacity: 0.25,
+              shadowOpacity: 0.3,
               shadowRadius: 16,
               shadowOffset: { width: 0, height: 4 },
               elevation: 8,
@@ -386,144 +1238,30 @@ export default function CustomerDetailsScreen() {
               colors={colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16 }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                paddingVertical: 15,
+              }}
             >
               <CalendarPlus color="#fff" size={18} />
-              <Text style={{ fontFamily: "Space Grotesk", color: "#fff", fontWeight: "700", textTransform: "uppercase", letterSpacing: 3, fontSize: 13 }}>
-                Add Job
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  color: "#fff",
+                  fontWeight: "700",
+                  fontSize: 14,
+                  letterSpacing: 0.5,
+                }}
+              >
+                Schedule New Job
               </Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
-
-        <View style={{ marginBottom: 40, width: "100%" }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24, paddingHorizontal: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, fontWeight: "700", color: colors.textPrimary, textTransform: "uppercase", letterSpacing: 2 }}>
-                Job History
-              </Text>
-              <View
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: colors.secondary,
-                  shadowColor: colors.secondary,
-                  shadowOpacity: 0.8,
-                  shadowRadius: 12,
-                  shadowOffset: { width: 0, height: 0 },
-                }}
-              />
-            </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Tabs", { screen: "JobHistory", params: { customerId } })}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontFamily: "Inter", color: colors.primary, letterSpacing: 2, fontWeight: "700", textTransform: "uppercase", fontSize: 10 }}>
-                View All
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {isLoading && jobs.length === 0 ? (
-            <ActivityIndicator size="small" color={colors.secondary} style={{ marginTop: 16 }} />
-          ) : jobs.length === 0 ? (
-            <View
-              style={{
-                backgroundColor: colors.bgInput,
-                padding: 32,
-                borderRadius: 24,
-                borderWidth: 1,
-                borderStyle: "dashed",
-                borderColor: colors.primaryBorder,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <View style={{ width: 64, height: 64, backgroundColor: colors.primaryBg, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-                <CalendarPlus color={colors.primary} size={32} />
-              </View>
-              <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontWeight: "700", fontSize: 18, marginBottom: 8, textAlign: "center" }}>
-                No Jobs Found
-              </Text>
-              <Text style={{ fontFamily: "Inter", color: colors.textMuted, fontSize: 14, textAlign: "center", marginBottom: 24, paddingHorizontal: 16 }}>
-                This customer does not have any jobs yet.
-              </Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("AddJob", { customer })}
-                activeOpacity={0.7}
-                style={{
-                  backgroundColor: colors.primaryBg,
-                  paddingHorizontal: 24,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.primaryBorder,
-                }}
-              >
-                <Text style={{ fontFamily: "Space Grotesk", color: colors.primary, fontWeight: "700", fontSize: 12, textTransform: "uppercase", letterSpacing: 2 }}>
-                  Create First Job
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ flexDirection: "column", width: "100%" }}>
-              {jobs.map((job) => {
-                const isCompleted = job.status === "completed";
-                const accentColor = isCompleted ? colors.primary : colors.secondary;
-                const accentBg = isCompleted ? colors.primaryBg : colors.secondaryBg;
-
-                return (
-                  <TouchableOpacity
-                    key={job._id || Math.random().toString()}
-                    onPress={() => navigation.navigate("JobDetails", { job })}
-                    activeOpacity={0.7}
-                    style={{
-                      padding: 16,
-                      borderRadius: 20,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      backgroundColor: colors.bgInput,
-                      marginBottom: 12,
-                      borderWidth: 1,
-                      borderColor: colors.border,
-                      opacity: isCompleted ? 0.8 : 1,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flex: 1 }}>
-                      <View style={{ width: 48, height: 48, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: accentBg }}>
-                        <Wrench color={accentColor} size={20} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontFamily: "Space Grotesk", fontWeight: "700", color: colors.textPrimary, fontSize: 16 }} numberOfLines={1}>
-                          {job?.applianceType || "General Service"}
-                        </Text>
-                        <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted, marginTop: 4 }} numberOfLines={1}>
-                          {formatDate(job?.serviceDate)} • #{job?._id ? job._id.substring(0, 6).toUpperCase() : "..."}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={{ alignItems: "flex-end", gap: 6, marginLeft: 8 }}>
-                      <Text style={{ fontFamily: "Space Grotesk", color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
-                        ₹{job.amount || "0.00"}
-                      </Text>
-                      <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: colors.border, backgroundColor: accentBg }}>
-                        <Text style={{ fontFamily: "Inter", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 2, color: accentColor }}>
-                          {job.status}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        <View style={{ height: 96 }} />
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

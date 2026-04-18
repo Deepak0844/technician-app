@@ -1,6 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import customBaseQuery from "./customBaseQuery";
-import { TagTypes } from "../constants/apiTags";
+import customBaseQuery from "@services/customBaseQuery";
+import { TagTypes } from "@constants/apiTags";
 
 const api = createApi({
   reducerPath: "api",

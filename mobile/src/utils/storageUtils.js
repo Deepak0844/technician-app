@@ -4,7 +4,7 @@ const TOKEN_KEY = "auth_token";
 const THEME_KEY = "app_theme_mode";
 
 /**
- * Save JWT token to hardware-backed encrypted storage.
+ * Save JWT token to hardware-backed encrypted storage (Keychain / Keystore).
  */
 async function saveToken(token) {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
@@ -29,7 +29,7 @@ async function clearToken() {
 }
 
 /**
- * Theme persistence
+ * Theme preference stored in SecureStore.
  */
 async function saveTheme(mode) {
   await SecureStore.setItemAsync(THEME_KEY, mode);

@@ -23,6 +23,7 @@ export const ApiUrls = {
   // Jobs
   JOBS: "/jobs",
   JOB_BY_ID: (id) => `/jobs/${id}`,
+  JOB_REOPEN: (id) => `/jobs/${id}/reopen`,
   JOBS_BY_CUSTOMER: (customerId) => `/jobs/customer/${customerId}`,
   JOB_REPEAT: (jobId) => `/jobs/repeat/${jobId}`,
 
@@ -45,6 +46,20 @@ export const ApplianceTypes = [
 ];
 
 /**
+ * Appliance options with emoji — shared across filter modal and add/edit job
+ */
+export const ApplianceOptions = [
+  { value: "AC", emoji: "❄️", label: "AC" },
+  { value: "Refrigerator", emoji: "🧊", label: "Refrigerator" },
+  { value: "Washing Machine", emoji: "👕", label: "Washing Machine" },
+  { value: "Microwave", emoji: "♨️", label: "Microwave" },
+  { value: "Dishwasher", emoji: "🫙", label: "Dishwasher" },
+  { value: "Geyser", emoji: "🔥", label: "Geyser" },
+  { value: "TV", emoji: "📺", label: "TV" },
+  { value: "Other", emoji: "🔧", label: "Other" },
+];
+
+/**
  * Job status options
  */
 export const JobStatuses = {
@@ -52,6 +67,24 @@ export const JobStatuses = {
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+};
+
+/**
+ * Priority Levels
+ */
+export const PriorityLevels = {
+  NORMAL: "normal",
+  URGENT: "urgent",
+};
+
+/**
+ * Payment Methods
+ */
+export const PaymentMethods = {
+  CASH: "cash",
+  UPI: "upi",
+  ONLINE: "online",
+  CHEQUE: "cheque",
 };
 
 /**

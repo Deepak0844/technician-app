@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import StorageUtils from "../../utils/storageUtils";
+import StorageUtils from "@utils/storageUtils";
 import { Appearance } from "react-native";
 
 export const initializeTheme = createAsyncThunk(
@@ -8,7 +8,7 @@ export const initializeTheme = createAsyncThunk(
     const savedTheme = await StorageUtils.getTheme();
     if (savedTheme) return savedTheme;
     return Appearance.getColorScheme() || "dark";
-  }
+  },
 );
 
 export const updateThemeSelection = createAsyncThunk(
@@ -17,14 +17,14 @@ export const updateThemeSelection = createAsyncThunk(
     await StorageUtils.saveTheme(mode);
     dispatch(setTheme(mode));
     return mode;
-  }
+  },
 );
 
 const themeSlice = createSlice({
   name: "theme",
   initialState: {
     mode: Appearance.getColorScheme() || "dark",
-    isInitialized: false
+    isInitialized: false,
   },
   reducers: {
     setTheme(state, action) {
@@ -36,7 +36,7 @@ const themeSlice = createSlice({
       state.mode = action.payload;
       state.isInitialized = true;
     });
-  }
+  },
 });
 
 export const { setTheme } = themeSlice.actions;

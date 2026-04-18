@@ -6,5 +6,12 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ["dist/*", "brighten_more.js", "fix_contrast.js", "scale_down_screens.js"],
-  }
+  },
+  {
+    settings: {
+      "import/resolver": {
+        "babel-module": {},
+      },
+    },
+  },
 ]);

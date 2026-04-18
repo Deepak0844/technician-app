@@ -1,13 +1,35 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import React, { useState } from "react";
-import { FlatList, View, TouchableOpacity, RefreshControl, Image } from "react-native";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  FlatList,
+  View,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  Dimensions,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ArrowLeft, Search } from "lucide-react-native";
-import { useGetJobsQuery } from "@services/api/jobApi";
-import OfflineBanner from "@components/OfflineBanner";
+import { useSelector } from "react-redux";
+import {
+  ArrowLeft,
+  Search,
+  Filter,
+  X,
+  Check,
+  CheckCircle2,
+  XCircle,
+  LayoutList,
+} from "lucide-react-native";
+import { useGetJobsPagedInfiniteQuery } from "@services/api/jobApi";
+import Avatar from "@components/Avatar";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
+import { JobCardSkeleton } from "@components/SkeletonLoaders";
+import useDebounce from "@hooks/useDebounce";
+import { ApplianceOptions as APPLIANCE_OPTIONS } from "@constants/appConstants";
 
 // Gluestack Primitives
 import { Box } from "@components/ui/box";
@@ -15,26 +37,56 @@ import { HStack } from "@components/ui/hstack";
 import { Text } from "@components/ui/text";
 import { Input, InputField } from "@components/ui/input";
 
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+
+const PAYMENT_OPTIONS = [
+  { id: undefined, label: "All", Icon: LayoutList },
+  { id: true, label: "Paid", Icon: CheckCircle2 },
+  { id: false, label: "Unpaid", Icon: XCircle },
+];
+
 export default function JobHistoryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { colors } = useTheme();
+  const user = useSelector((state) => state.auth.user);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search);
+  const [isPaidFilter, setIsPaidFilter] = useState(undefined); // undefined, true, false
+  const [applianceFilter, setApplianceFilter] = useState(undefined);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const hasScrolledRef = useRef(false);
 
   const {
-    data: jobsResponse,
+    data: jobsData,
     isLoading: loadingJobs,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
     refetch,
-  } = useGetJobsQuery({
-    search,
+  } = useGetJobsPagedInfiniteQuery({
+    search: debouncedSearch,
     customerId: route.params?.customerId,
+    isPaid: isPaidFilter,
+    applianceType: applianceFilter,
   });
 
-  const onRefresh = React.useCallback(async () => {
+  // Reset scroll guard when filters or search change so a fresh
+  // page-1 result never auto-loads page 2 before the user scrolls.
+  useEffect(() => {
+    hasScrolledRef.current = false;
+  }, [debouncedSearch, isPaidFilter, applianceFilter]);
+
+  const onRefresh = React.useCallback(() => {
+    hasScrolledRef.current = false;
     refetch();
   }, [refetch]);
 
-  const allJobs = jobsResponse?.data || [];
+  const jobs = useMemo(
+    () => jobsData?.pages.flatMap((p) => p.data) ?? [],
+    [jobsData],
+  );
 
   function getStatusColor(status) {
     if (status === "completed") return colors.secondary;
@@ -46,14 +98,17 @@ export default function JobHistoryScreen() {
   function getStatusBorderColor(status) {
     if (status === "completed") return colors.secondary;
     if (status === "cancelled") return colors.danger;
+    if (status === "pending") return colors.warning;
+    if (status === "in_progress") return colors.primary;
     return colors.border;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgPrimary }} edges={["top"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+      edges={["top"]}
+    >
       <Box style={{ flex: 1, backgroundColor: colors.bgPrimary }}>
-        <OfflineBanner />
-
         {/* TopAppBar */}
         <LinearGradient
           colors={colors.gradientHeader}
@@ -77,7 +132,14 @@ export default function JobHistoryScreen() {
             >
               <ArrowLeft color={colors.indigo} size={20} />
             </TouchableOpacity>
-            <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.indigo }}>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 14,
+                fontWeight: "700",
+                color: colors.indigo,
+              }}
+            >
               {route.params?.customerId ? "Customer History" : "Job History"}
             </Text>
           </View>
@@ -85,70 +147,207 @@ export default function JobHistoryScreen() {
             onPress={() => navigation.navigate("Profile")}
             activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.borderLight,
-                overflow: "hidden",
-                backgroundColor: colors.bgCard,
-              }}
-            >
-              <Image
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAA9k07pUQ5I8oDft0RhiEuNAOnETFQkZQOF1b4yIswjopEikbSN_q05-g8AZiCuzkefDJEjZLCnu7U1kJnkroXT2Ga-b9zR2MC_bNQz52LkNjRGVdUbFcRQJJNWU8jimcNpH8Dz349aAQ11mymu0xVJZiGA2VZMrsI0O1h1Ckf6rxoeF0nmy6L0-kRt0JucvnoGbsmeCZSVDe2l353SISMovSkNjUUmhOMiCemKzCgccbAq9junYSEYduFz-u5se8_ULqheeUEM-vn" }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            </View>
+            <Avatar name={user?.name} uri={user?.avatar} size={32} />
           </TouchableOpacity>
         </LinearGradient>
 
         <Box style={{ flex: 1, padding: 16, paddingBottom: 0 }}>
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700", color: colors.textPrimary }}>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 24,
+                fontWeight: "700",
+                color: colors.textPrimary,
+              }}
+            >
               {route.params?.customerId ? "Service History" : "History"}
             </Text>
           </View>
 
-          {/* Search Input */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: 16,
-              height: 56,
-              borderRadius: 12,
-              borderWidth: 2,
-              borderColor: colors.borderInput,
-              backgroundColor: colors.bgInput,
-              marginBottom: 24,
+              gap: 8,
+              marginBottom: 16,
             }}
           >
-            <Search color={colors.textSecondary} size={20} style={{ marginRight: 12 }} />
-            <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
-              <InputField
-                placeholder="Search specific jobs..."
-                placeholderTextColor={colors.placeholderText}
-                value={search}
-                onChangeText={setSearch}
-                style={{ fontFamily: "Inter", fontSize: 14, color: colors.textPrimary, flex: 1, height: "100%", backgroundColor: "transparent" }}
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                height: 48,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: colors.border,
+                backgroundColor: colors.bgInput,
+              }}
+            >
+              <Search
+                color={colors.textSecondary}
+                size={18}
+                style={{ marginRight: 10 }}
               />
-            </Input>
+              <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
+                <InputField
+                  placeholder="Search jobs..."
+                  placeholderTextColor={colors.placeholderText}
+                  value={search}
+                  onChangeText={setSearch}
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 13,
+                    color: colors.textPrimary,
+                    flex: 1,
+                    height: "100%",
+                    backgroundColor: "transparent",
+                  }}
+                />
+              </Input>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsFilterOpen(true)}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                backgroundColor:
+                  isFilterOpen || applianceFilter || isPaidFilter !== undefined
+                    ? colors.primaryBg
+                    : colors.bgInput,
+                borderWidth: 1.5,
+                borderColor:
+                  applianceFilter || isPaidFilter !== undefined
+                    ? colors.primaryBorder
+                    : colors.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Filter
+                color={
+                  applianceFilter || isPaidFilter !== undefined
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+                size={20}
+              />
+            </TouchableOpacity>
           </View>
 
+          {/* Active Filter Chips */}
+          {(applianceFilter || isPaidFilter !== undefined) && (
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              {isPaidFilter !== undefined && (
+                <TouchableOpacity
+                  onPress={() => setIsPaidFilter(undefined)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.successBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.successBorder,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.success,
+                      marginRight: 4,
+                    }}
+                  >
+                    {isPaidFilter ? "PAID" : "UNPAID"}
+                  </Text>
+                  <X size={12} color={colors.success} />
+                </TouchableOpacity>
+              )}
+              {applianceFilter && (
+                <TouchableOpacity
+                  onPress={() => setApplianceFilter(undefined)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.primaryBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                      marginRight: 4,
+                    }}
+                  >
+                    {applianceFilter}
+                  </Text>
+                  <X size={12} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <FlatList
-            data={allJobs}
+            data={jobs}
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 150 }}
+            onScrollBeginDrag={() => {
+              hasScrolledRef.current = true;
+            }}
+            onEndReached={() => {
+              if (
+                hasScrolledRef.current &&
+                hasNextPage &&
+                !isFetchingNextPage
+              ) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
             refreshControl={
               <RefreshControl
-                refreshing={loadingJobs}
+                refreshing={isFetching && !isFetchingNextPage && !!jobsData}
                 onRefresh={onRefresh}
                 tintColor={colors.indigo}
                 colors={[colors.indigo]}
               />
+            }
+            ListHeaderComponent={
+              loadingJobs && (
+                <View style={{ marginBottom: 16 }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <JobCardSkeleton key={i} />
+                  ))}
+                </View>
+              )
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <ActivityIndicator color={colors.indigo} />
+                </View>
+              ) : null
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -168,10 +367,51 @@ export default function JobHistoryScreen() {
                     borderLeftColor: getStatusBorderColor(item.status),
                   }}
                 >
-                  <HStack style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <Text style={{ fontFamily: "Inter", fontSize: 14, fontWeight: "700", color: colors.textPrimary }} numberOfLines={1}>
-                      {item.customerId?.name || item.customerName || "Customer"}
-                    </Text>
+                  <HStack
+                    style={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <HStack style={{ alignItems: "center", gap: 8 }}>
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.customerId?.name ||
+                          item.customerName ||
+                          "Customer"}
+                      </Text>
+                      {item.priority === "urgent" && (
+                        <View
+                          style={{
+                            backgroundColor: "#fee2e2",
+                            paddingHorizontal: 6,
+                            paddingVertical: 1,
+                            borderRadius: 4,
+                            borderWidth: 0.5,
+                            borderColor: "#ef4444",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 7,
+                              fontWeight: "800",
+                              color: "#b91c1c",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Urgent
+                          </Text>
+                        </View>
+                      )}
+                    </HStack>
                     <HStack space="sm" style={{ alignItems: "center" }}>
                       <Text
                         style={{
@@ -188,20 +428,65 @@ export default function JobHistoryScreen() {
                     </HStack>
                   </HStack>
 
-                  <Text style={{ fontFamily: "Space Grotesk", fontSize: 14, color: colors.primary, fontWeight: "700", letterSpacing: 1, marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 14,
+                      color: colors.primary,
+                      fontWeight: "700",
+                      letterSpacing: 1,
+                      marginBottom: 16,
+                    }}
+                  >
                     {item.applianceType}
                     {item.issue ? (
-                      <Text style={{ fontFamily: "Inter", fontSize: 12, color: colors.textMuted, fontWeight: "500" }}>
-                        {" "}• {item.issue}
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          color: colors.textMuted,
+                          fontWeight: "500",
+                        }}
+                      >
+                        {" "}
+                        • {item.issue}
                       </Text>
                     ) : null}
                   </Text>
 
-                  <HStack style={{ justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={{ fontFamily: "Space Grotesk", fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>
-                      {formatCurrency(item.amount)}
+                  <HStack
+                    style={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 16,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      {formatCurrency(
+                        (item.amount || 0) +
+                          (item.diagnosticFee || 0) +
+                          (item.partsUsed || []).reduce(
+                            (acc, p) =>
+                              acc + (p.price || 0) * (p.quantity || 0),
+                            0,
+                          ),
+                      )}
                     </Text>
-                    <Text style={{ fontFamily: "Inter", fontSize: 10, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: 2 }}>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        color: colors.textSecondary,
+                        textTransform: "uppercase",
+                        letterSpacing: 2,
+                      }}
+                    >
                       #{item._id.substring(0, 6).toUpperCase()}
                     </Text>
                   </HStack>
@@ -209,23 +494,292 @@ export default function JobHistoryScreen() {
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  color: colors.textMuted,
-                  textAlign: "center",
-                  fontWeight: "700",
-                  marginTop: 40,
-                  letterSpacing: 2,
-                  textTransform: "uppercase",
-                  fontSize: 12,
-                }}
-              >
-                No jobs found
-              </Text>
+              !loadingJobs && (
+                <View style={{ alignItems: "center", marginTop: 60 }}>
+                  <Search
+                    size={48}
+                    color={colors.border}
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      color: colors.textMuted,
+                      textAlign: "center",
+                      fontWeight: "700",
+                      letterSpacing: 2,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    No jobs found matching your filters
+                  </Text>
+                </View>
+              )
             }
           />
         </Box>
+
+        {/* Filter Modal — plain Modal gives a real measured height so flex:1 works */}
+        <Modal
+          visible={isFilterOpen}
+          transparent
+          animationType="slide"
+          statusBarTranslucent
+          onRequestClose={() => setIsFilterOpen(false)}
+        >
+          {/* Dim backdrop — tap to dismiss */}
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)" }}
+            activeOpacity={1}
+            onPress={() => setIsFilterOpen(false)}
+          />
+
+          {/* Panel with explicit height — the key to making layout reliable */}
+          <View
+            style={{
+              height: SCREEN_HEIGHT * 0.78,
+              backgroundColor: colors.bgCard,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              overflow: "hidden",
+            }}
+          >
+            {/* Drag indicator */}
+            <View
+              style={{ alignItems: "center", paddingTop: 10, paddingBottom: 2 }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: colors.border,
+                }}
+              />
+            </View>
+
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingHorizontal: 24,
+                paddingTop: 14,
+                paddingBottom: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                Filters
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsPaidFilter(undefined);
+                  setApplianceFilter(undefined);
+                  setIsFilterOpen(false);
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: colors.danger,
+                  }}
+                >
+                  RESET ALL
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable content — flex:1 fills all space between header and button */}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ padding: 24, paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Payment Status — segmented control */}
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  fontWeight: "800",
+                  color: colors.textSecondary,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  marginBottom: 12,
+                }}
+              >
+                Payment Status
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  borderColor: colors.border,
+                  overflow: "hidden",
+                  marginBottom: 28,
+                }}
+              >
+                {PAYMENT_OPTIONS.map((item, idx) => {
+                  const isActive = isPaidFilter === item.id;
+                  const activeColor =
+                    item.id === false
+                      ? colors.danger
+                      : item.id === true
+                        ? colors.success
+                        : colors.primary;
+                  const activeBg =
+                    item.id === false
+                      ? colors.dangerBg
+                      : item.id === true
+                        ? colors.successBg
+                        : colors.primaryBg;
+                  const { Icon } = item;
+                  return (
+                    <TouchableOpacity
+                      key={String(item.id)}
+                      onPress={() => setIsPaidFilter(item.id)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 14,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        backgroundColor: isActive ? activeBg : "transparent",
+                        borderRightWidth:
+                          idx < PAYMENT_OPTIONS.length - 1 ? 1 : 0,
+                        borderRightColor: colors.border,
+                      }}
+                    >
+                      <Icon
+                        size={18}
+                        color={isActive ? activeColor : colors.textMuted}
+                      />
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 11,
+                          fontWeight: "700",
+                          color: isActive ? activeColor : colors.textMuted,
+                        }}
+                      >
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Appliance Type — 2-column emoji grid */}
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  fontWeight: "800",
+                  color: colors.textSecondary,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  marginBottom: 12,
+                }}
+              >
+                Appliance Type
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+                {APPLIANCE_OPTIONS.map((item) => {
+                  const isActive = applianceFilter === item.value;
+                  return (
+                    <TouchableOpacity
+                      key={item.value}
+                      onPress={() =>
+                        setApplianceFilter(isActive ? undefined : item.value)
+                      }
+                      style={{
+                        width: "47.5%",
+                        paddingVertical: 14,
+                        paddingHorizontal: 12,
+                        borderRadius: 14,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        backgroundColor: isActive
+                          ? colors.primaryBg
+                          : colors.bgSurface,
+                        borderWidth: 1.5,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: isActive
+                            ? colors.primary
+                            : colors.textSecondary,
+                          flex: 1,
+                        }}
+                        numberOfLines={1}
+                      >
+                        {item.label}
+                      </Text>
+                      {isActive && <Check size={14} color={colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Apply button — always visible, sits outside the ScrollView */}
+            <View
+              style={{
+                paddingHorizontal: 24,
+                paddingTop: 12,
+                paddingBottom: 28,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setIsFilterOpen(false)}
+                style={{
+                  width: "100%",
+                  height: 52,
+                  borderRadius: 14,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.bgPrimary,
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                  }}
+                >
+                  Apply Filters
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </Box>
     </SafeAreaView>
   );
