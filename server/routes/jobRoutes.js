@@ -43,5 +43,10 @@ router.put(
   jobController.updateJob,
 );
 router.delete("/:jobId", validateObjectId("jobId"), jobController.deleteJob);
+router.post(
+  "/:jobId/reopen",
+  validateObjectId("jobId"),
+  jobController.reopenJob,
+);
 
 export default router;

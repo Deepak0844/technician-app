@@ -45,6 +45,15 @@ async function createJob(userId, jobData) {
     nextReminderDate: jobData.nextReminderDate
       ? new Date(jobData.nextReminderDate)
       : null,
+    events: [
+      {
+        action: "created",
+        to: jobData.status || JobStatus.PENDING,
+        isPaid: jobData.isPaid || false,
+        note: "Job created.",
+        at: new Date(),
+      },
+    ],
   });
 
   return await Job.findById(job._id)
@@ -225,16 +234,54 @@ async function updateJob(userId, jobId, updateData) {
     updateData.isPaid = false;
   }
 
+  // Build audit events for this update
+  const newEvents = [];
+  if (updateData.status && updateData.status !== job.status) {
+    newEvents.push({
+      action: "status_changed",
+      from: job.status,
+      to: updateData.status,
+      isPaid: updateData.isPaid !== undefined ? updateData.isPaid : job.isPaid,
+      note: `Status changed from ${job.status} to ${updateData.status}.`,
+      at: new Date(),
+    });
+  }
+  if (updateData.isPaid === true && !job.isPaid) {
+    newEvents.push({
+      action: "marked_paid",
+      from: null,
+      to: null,
+      isPaid: true,
+      note: `Marked as paid via ${updateData.paymentMethod || job.paymentMethod}.`,
+      at: new Date(),
+    });
+  }
+  if (updateData.isPaid === false && job.isPaid) {
+    newEvents.push({
+      action: "marked_unpaid",
+      from: null,
+      to: null,
+      isPaid: false,
+      note: "Payment reset to unpaid.",
+      at: new Date(),
+    });
+  }
+
   const updated = await Job.findByIdAndUpdate(
     jobId,
     {
-      ...updateData,
-      serviceDate: updateData.serviceDate
-        ? new Date(updateData.serviceDate)
-        : job.serviceDate,
-      nextReminderDate: updateData.nextReminderDate
-        ? new Date(updateData.nextReminderDate)
-        : job.nextReminderDate,
+      $set: {
+        ...updateData,
+        serviceDate: updateData.serviceDate
+          ? new Date(updateData.serviceDate)
+          : job.serviceDate,
+        nextReminderDate: updateData.nextReminderDate
+          ? new Date(updateData.nextReminderDate)
+          : job.nextReminderDate,
+      },
+      ...(newEvents.length > 0
+        ? { $push: { events: { $each: newEvents } } }
+        : {}),
     },
     { new: true, runValidators: true },
   )
@@ -263,6 +310,44 @@ async function deleteJob(userId, jobId) {
   await job.deleteOne();
 }
 
+/**
+ * Reopen a completed & paid job — resets status to in_progress and isPaid to false
+ */
+async function reopenJob(userId, jobId) {
+  const job = await Job.findOne({ _id: jobId, userId });
+  if (!job)
+    throw new AppError(ErrorMessages.JOB_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+  if (job.status !== JobStatus.COMPLETED || !job.isPaid) {
+    throw new AppError(
+      ErrorMessages.JOB_REOPEN_FORBIDDEN,
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  const updated = await Job.findByIdAndUpdate(
+    jobId,
+    {
+      $set: { status: JobStatus.IN_PROGRESS, isPaid: false },
+      $push: {
+        events: {
+          action: "reopened",
+          from: JobStatus.COMPLETED,
+          to: JobStatus.IN_PROGRESS,
+          isPaid: false,
+          note: "Job reopened. Payment reset to unpaid.",
+          at: new Date(),
+        },
+      },
+    },
+    { new: true, runValidators: true },
+  )
+    .populate("customerId", "name phone address")
+    .lean();
+
+  return updated;
+}
+
 const JobService = {
   createJob,
   getJobs,
@@ -271,6 +356,7 @@ const JobService = {
   repeatJob,
   updateJob,
   deleteJob,
+  reopenJob,
 };
 
 export default JobService;

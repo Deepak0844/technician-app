@@ -92,17 +92,11 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       0,
     );
 
-    // User is intentionally reopening a paid job (changing status away from COMPLETED)
-    const isReopening = editingJob?.isPaid && status !== JobStatuses.COMPLETED;
-
-    // Only force COMPLETED when user marks a new/unpaid job as paid — not when reopening
+    // Force COMPLETED status when user marks a job as paid
     const resolvedStatus =
-      !isReopening && isPaid && status !== JobStatuses.COMPLETED
+      isPaid && status !== JobStatuses.COMPLETED
         ? JobStatuses.COMPLETED
         : status;
-
-    // If reopening a paid job, reset isPaid to false
-    const resolvedIsPaid = isReopening ? false : isPaid;
 
     const payload = {
       customerId: selectedCustomer._id || selectedCustomer.serverId,
@@ -121,7 +115,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       partsUsed: partsUsed,
       priority: priority,
       internalNotes: internalNotes,
-      isPaid: resolvedIsPaid,
+      isPaid: isPaid,
       paymentMethod: paymentMethod,
     };
 
@@ -141,11 +135,9 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
         }
         Alert.alert(
           "Success",
-          isReopening
-            ? "Job reopened and payment reset to Unpaid."
-            : resolvedStatus !== status
-              ? "Job marked as Completed and Paid."
-              : "Job updated successfully.",
+          resolvedStatus !== status
+            ? "Job marked as Completed and Paid."
+            : "Job updated successfully.",
         );
       } else {
         const result = await createJob(payload).unwrap();

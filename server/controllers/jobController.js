@@ -145,3 +145,18 @@ export const deleteJob = asyncHandler(async (req, res) => {
     SuccessMessages.JOB_DELETED,
   );
 });
+
+/**
+ * @desc    Reopen a completed & paid job — resets to in_progress + unpaid
+ * @route   POST /api/v1/jobs/:jobId/reopen
+ * @access  Private
+ */
+export const reopenJob = asyncHandler(async (req, res) => {
+  const job = await JobService.reopenJob(req.user._id, req.params.jobId);
+  return ResponseUtils.success(
+    res,
+    job,
+    HttpStatus.OK,
+    SuccessMessages.JOB_REOPENED,
+  );
+});

@@ -3,14 +3,11 @@ import { View, TouchableOpacity, Modal, Pressable } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { Text } from "@components/ui/text";
 import CustomClockPicker from "@components/CreateJob/CustomClockPicker";
-import StatusSelectionModal from "./StatusSelectionModal";
 import AddLocationModal from "@components/CreateJob/AddLocationModal";
 import MapLinkModal from "@components/MapLinkModal";
-import { JobStatuses } from "@constants/appConstants";
 
 export default function AddJobModals({
   colors,
-  isNewJob,
   showCalendar,
   setShowCalendar,
   serviceDate,
@@ -19,12 +16,6 @@ export default function AddJobModals({
   setShowTimePicker,
   selectedTime,
   setSelectedTime,
-  showStatusSheet,
-  setShowStatusSheet,
-  status,
-  setStatus,
-  isPaid,
-  setIsPaid,
   showReminderCalendar,
   setShowReminderCalendar,
   nextReminderDate,
@@ -209,20 +200,6 @@ export default function AddJobModals({
         onClose={() => setShowTimePicker(false)}
         selectedTime={selectedTime}
         onSelectTime={setSelectedTime}
-      />
-
-      <StatusSelectionModal
-        visible={showStatusSheet}
-        status={status}
-        isNewJob={isNewJob}
-        onClose={() => setShowStatusSheet(false)}
-        onSelectStatus={(val) => {
-          setStatus(val);
-          setShowStatusSheet(false);
-          if (isPaid && val !== JobStatuses.COMPLETED) {
-            setIsPaid(false);
-          }
-        }}
       />
 
       <AddLocationModal

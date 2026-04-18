@@ -14,6 +14,8 @@ export const ErrorMessages = {
   CUSTOMER_NOT_FOUND: "Customer not found",
   JOB_NOT_FOUND: "Job not found",
   SERVICE_DATE_IN_PAST: "Service date cannot be in the past for new jobs.",
+  JOB_REOPEN_FORBIDDEN:
+    "Only jobs that are completed and paid can be reopened.",
   VALIDATION_FAILED: "Validation failed",
   RATE_LIMIT_EXCEEDED:
     "Too many requests from this IP, please try again after 15 minutes",
@@ -43,6 +45,7 @@ export const SuccessMessages = {
   JOBS_LOADED: "Jobs loaded successfully",
   JOB_REPEATED: "Job repeated successfully",
   JOB_UPDATED: "Job updated successfully",
+  JOB_REOPENED: "Job reopened successfully.",
   JOB_DELETED: "Job deleted successfully",
   DASHBOARD_LOADED: "Dashboard summary loaded successfully",
   SERVER_HEALTHY: "Server is healthy",

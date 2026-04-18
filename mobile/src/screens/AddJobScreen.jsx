@@ -17,8 +17,8 @@ import {
 } from "@services/api/customerApi";
 import {
   ApplianceTypes,
-  JobStatuses,
   PriorityLevels,
+  JobStatuses,
   PaymentMethods,
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
@@ -33,6 +33,7 @@ import WarrantySection from "@components/CreateJob/WarrantySection";
 import TimelineSection from "@components/CreateJob/TimelineSection";
 import PartsSection from "@components/CreateJob/PartsSection";
 import AddJobModals from "@components/CreateJob/AddJobModals";
+import StatusSelectionModal from "@components/CreateJob/StatusSelectionModal";
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
 
@@ -87,6 +88,8 @@ export default function AddJobScreen() {
       setServiceDone(editingJob.serviceDone || "");
       setDiagnosticFee(editingJob.diagnosticFee?.toString() || "");
       setStatus(editingJob.status || JobStatuses.PENDING);
+      setIsPaid(editingJob.isPaid ?? false);
+      setPaymentMethod(editingJob.paymentMethod ?? PaymentMethods.CASH);
       if (editingJob.serviceDate)
         setServiceDate(new Date(editingJob.serviceDate));
       setWarranty(editingJob.warranty || "No Warranty");
@@ -96,8 +99,6 @@ export default function AddJobScreen() {
       setSelectedLocation(editingJob.location || null);
       setPriority(editingJob.priority || PriorityLevels.NORMAL);
       setInternalNotes(editingJob.internalNotes || "");
-      setIsPaid(editingJob.isPaid ?? false);
-      setPaymentMethod(editingJob.paymentMethod || PaymentMethods.CASH);
 
       if (editingJob.serviceDate) {
         const d = new Date(editingJob.serviceDate);
@@ -143,9 +144,6 @@ export default function AddJobScreen() {
   const [diagnosticFee, setDiagnosticFee] = useState(
     editingJob?.diagnosticFee?.toString() ?? "",
   );
-  const [status, setStatus] = useState(
-    editingJob?.status ?? JobStatuses.PENDING,
-  );
   const [serviceDate, setServiceDate] = useState(() => {
     if (editingJob?.serviceDate) return new Date(editingJob.serviceDate);
     if (initialDate) {
@@ -187,11 +185,14 @@ export default function AddJobScreen() {
   const [internalNotes, setInternalNotes] = useState(
     editingJob?.internalNotes ?? "",
   );
+  const [status, setStatus] = useState(
+    editingJob?.status ?? JobStatuses.PENDING,
+  );
   const [isPaid, setIsPaid] = useState(editingJob?.isPaid ?? false);
   const [paymentMethod, setPaymentMethod] = useState(
     editingJob?.paymentMethod ?? PaymentMethods.CASH,
   );
-
+  const [showStatusModal, setShowStatusModal] = useState(false);
   // Time Sync
   let initialTime = "10:00 AM";
   if (editingJob?.serviceDate) {
@@ -209,7 +210,6 @@ export default function AddJobScreen() {
   // Modal Visibility
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showStatusSheet, setShowStatusSheet] = useState(false);
   const [showReminderCalendar, setShowReminderCalendar] = useState(false);
   const [showAddLocationModal, setShowAddLocationModal] = useState(false);
 
@@ -406,20 +406,15 @@ export default function AddJobScreen() {
         <TimelineSection
           serviceDate={serviceDate}
           selectedTime={selectedTime}
-          status={status}
           nextReminderDate={nextReminderDate}
           onDatePress={() => setShowCalendar(true)}
           onTimePress={() => setShowTimePicker(true)}
-          onStatusPress={() => setShowStatusSheet(true)}
           onReminderPress={() => setShowReminderCalendar(true)}
           onClearReminder={() => setNextReminderDate(null)}
+          status={status}
+          onStatusPress={() => setShowStatusModal(true)}
           isPaid={isPaid}
-          setIsPaid={(val) => {
-            setIsPaid(val);
-            if (val && status !== JobStatuses.COMPLETED) {
-              setStatus(JobStatuses.COMPLETED);
-            }
-          }}
+          setIsPaid={setIsPaid}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
         />
@@ -687,12 +682,6 @@ export default function AddJobScreen() {
         setShowTimePicker={setShowTimePicker}
         selectedTime={selectedTime}
         setSelectedTime={setSelectedTime}
-        showStatusSheet={showStatusSheet}
-        setShowStatusSheet={setShowStatusSheet}
-        status={status}
-        setStatus={setStatus}
-        isPaid={isPaid}
-        setIsPaid={setIsPaid}
         showReminderCalendar={showReminderCalendar}
         setShowReminderCalendar={setShowReminderCalendar}
         nextReminderDate={nextReminderDate}
@@ -715,6 +704,17 @@ export default function AddJobScreen() {
         handleAddLocationGPS={handleAddLocationGPS}
         handleAddLocationLinkExtract={handleAddLocationLinkExtract}
         editingJob={editingJob}
+      />
+
+      <StatusSelectionModal
+        visible={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        status={status}
+        onSelectStatus={(s) => {
+          setStatus(s);
+          setShowStatusModal(false);
+        }}
+        isNewJob={!editingJob}
       />
     </SafeAreaView>
   );

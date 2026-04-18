@@ -110,6 +110,27 @@ const jobSchema = new mongoose.Schema(
       latitude: Number,
       longitude: Number,
     },
+    events: [
+      {
+        action: {
+          type: String,
+          enum: [
+            "created",
+            "status_changed",
+            "marked_paid",
+            "marked_unpaid",
+            "reopened",
+            "edited",
+          ],
+          required: true,
+        },
+        from: { type: String, default: null },
+        to: { type: String, default: null },
+        isPaid: { type: Boolean, default: null },
+        note: { type: String, default: "" },
+        at: { type: Date, default: () => new Date() },
+      },
+    ],
   },
   { timestamps: true },
 );

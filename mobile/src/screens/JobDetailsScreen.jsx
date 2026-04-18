@@ -25,12 +25,14 @@ import {
   Edit2,
   ShieldCheck,
   Info,
+  RotateCcw,
 } from "lucide-react-native";
 import {
   useGetJobByIdQuery,
   useDeleteJobMutation,
   useRepeatJobMutation,
   useUpdateJobMutation,
+  useReopenJobMutation,
 } from "@services/api/jobApi";
 import {
   JobStatuses,
@@ -59,8 +61,9 @@ export default function JobDetailsScreen() {
   const [deleteJob, { isLoading: isDeleting }] = useDeleteJobMutation();
   const [repeatJob, { isLoading: isRepeating }] = useRepeatJobMutation();
   const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
+  const [reopenJob, { isLoading: isReopening }] = useReopenJobMutation();
 
-  const isSyncing = isDeleting || isRepeating || isUpdating;
+  const isSyncing = isDeleting || isRepeating || isUpdating || isReopening;
 
   const job = jobResponse?.data || initialJob;
 
@@ -96,75 +99,83 @@ export default function JobDetailsScreen() {
 
   const isCompleted = job.status === JobStatuses.COMPLETED;
 
-  const handleJobActions = () => {
-    const isJobPaid = !!job.isPaid;
+  // A completed+paid job is a terminal state — requires explicit Reopen to change
+  const isLockedFinal =
+    job.status === JobStatuses.COMPLETED && job.isPaid === true;
 
-    const doMarkPaid = (paymentMethod) => {
-      const isNonCompleted = job.status !== JobStatuses.COMPLETED;
-      const message = isNonCompleted
-        ? `This job is still ${job.status.replace("_", " ").toUpperCase()}. Marking it as paid will also mark it as Completed. Continue?`
-        : "Confirm marking this job as paid?";
-      Alert.alert("Mark as Paid?", message, [
+  // Job is scheduled for a future date
+  const isFutureJob = new Date(job.serviceDate) > new Date();
+
+  const handleReopen = () => {
+    Alert.alert(
+      "Reopen Job?",
+      "This job will be set back to In Progress and marked as Unpaid. It will be removed from your earnings until completed and paid again.",
+      [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Yes, Mark as Paid",
+          text: "Yes, Reopen",
+          style: "destructive",
           onPress: async () => {
             try {
-              await updateJob({
-                id: job._id,
-                isPaid: true,
-                paymentMethod,
-                status: JobStatuses.COMPLETED,
-              }).unwrap();
+              await reopenJob(job._id).unwrap();
               Alert.alert(
-                "Success",
-                isNonCompleted
-                  ? "Job marked as Completed and Paid."
-                  : "Job marked as Paid.",
+                "Reopened",
+                "Job is now In Progress and marked as Unpaid.",
               );
-            } catch (_err) {
-              Alert.alert("Error", "Failed to update payment status.");
+            } catch (err) {
+              Alert.alert(
+                "Error",
+                err?.data?.message || "Failed to reopen job.",
+              );
             }
           },
         },
-      ]);
-    };
-
-    Alert.alert("Job Actions", "Manage this job record and lifecycle.", [
+      ],
+    );
+  };
+  const doMarkPaid = (paymentMethod) => {
+    const isNonCompleted = job.status !== JobStatuses.COMPLETED;
+    const message = isNonCompleted
+      ? `This job is still ${job.status.replace("_", " ").toUpperCase()}. Marking it as paid will also mark it as Completed. Continue?`
+      : "Confirm marking this job as paid?";
+    Alert.alert("Mark as Paid?", message, [
       { text: "Cancel", style: "cancel" },
       {
-        text: isJobPaid ? "Mark as UNPAID" : "Mark as PAID",
-        onPress: () => {
-          if (isJobPaid) {
-            (async () => {
-              try {
-                await updateJob({
-                  id: job._id,
-                  isPaid: false,
-                  paymentMethod: null,
-                }).unwrap();
-                Alert.alert("Success", "Job marked as UNPAID.");
-              } catch (_err) {
-                Alert.alert("Error", "Failed to update payment status.");
-              }
-            })();
-          } else {
-            Alert.alert("Payment Method", "How was the payment received?", [
-              { text: "Cancel", style: "cancel" },
-              { text: "Cash", onPress: () => doMarkPaid(PaymentMethods.CASH) },
-              { text: "UPI", onPress: () => doMarkPaid(PaymentMethods.UPI) },
-              {
-                text: "Online",
-                onPress: () => doMarkPaid(PaymentMethods.ONLINE),
-              },
-              {
-                text: "Cheque",
-                onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
-              },
-            ]);
+        text: "Yes, Mark as Paid",
+        onPress: async () => {
+          try {
+            await updateJob({
+              id: job._id,
+              isPaid: true,
+              paymentMethod,
+              status: JobStatuses.COMPLETED,
+            }).unwrap();
+            Alert.alert(
+              "Success",
+              isNonCompleted
+                ? "Job marked as Completed and Paid."
+                : "Job marked as Paid.",
+            );
+          } catch (_err) {
+            Alert.alert("Error", "Failed to update payment status.");
           }
         },
       },
+    ]);
+  };
+
+  const handleJobActions = () => {
+    Alert.alert("Job Actions", "Manage this job record and lifecycle.", [
+      { text: "Cancel", style: "cancel" },
+      ...(!isLockedFinal
+        ? [
+            {
+              text: "Edit Job",
+              onPress: () =>
+                navigation.navigate(RouteNames.ADD_JOB, { editingJob: job }),
+            },
+          ]
+        : []),
       {
         text: "Repeat Job",
         onPress: async () => {
@@ -210,31 +221,27 @@ export default function JobDetailsScreen() {
   };
 
   const handleUpdateStatus = (newStatus) => {
-    const isPaidAndReopening =
-      job.isPaid && newStatus !== JobStatuses.COMPLETED;
-
     const doUpdate = async () => {
       try {
-        await updateJob({
-          id: job._id,
-          status: newStatus,
-          ...(isPaidAndReopening ? { isPaid: false } : {}),
-        }).unwrap();
+        await updateJob({ id: job._id, status: newStatus }).unwrap();
         Alert.alert(
           "Success",
-          isPaidAndReopening
-            ? `Status changed to ${newStatus.replace("_", " ")} and payment reset to Unpaid.`
-            : `Status updated to ${newStatus.replace("_", " ")}.`,
+          `Status updated to ${newStatus.replace("_", " ")}.`,
         );
       } catch (_err) {
         Alert.alert("Error", "Failed to update status.");
       }
     };
 
-    if (isPaidAndReopening) {
+    if (isFutureJob && newStatus !== JobStatuses.CANCELLED) {
+      const dateStr = new Date(job.serviceDate).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
       Alert.alert(
-        "Reset Payment?",
-        "This job is marked as Paid. Changing the status will also reset the payment to Unpaid. Continue?",
+        "Job Scheduled for Future",
+        `This job is scheduled for ${dateStr}. Mark it as ${newStatus.replace("_", " ")} today?`,
         [
           { text: "Cancel", style: "cancel" },
           { text: "Yes, Continue", onPress: doUpdate },
@@ -1237,75 +1244,168 @@ export default function JobDetailsScreen() {
         </View>
 
         {/* Quick Status Change Actions */}
-        {(job.status === JobStatuses.PENDING ||
-          job.status === JobStatuses.IN_PROGRESS) && (
-          <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
-            {job.status === JobStatuses.PENDING && (
+        {isLockedFinal ? (
+          <TouchableOpacity
+            onPress={handleReopen}
+            disabled={isSyncing}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginTop: 16,
+              height: 56,
+              borderRadius: 12,
+              borderWidth: 1.5,
+              borderColor: colors.warningBorder,
+              backgroundColor: colors.warningBg,
+            }}
+          >
+            <RotateCcw color={colors.warningIcon} size={18} />
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                color: colors.warningIcon,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                fontSize: 11,
+              }}
+            >
+              Reopen Job
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            {job.status === JobStatuses.COMPLETED && !job.isPaid && (
               <TouchableOpacity
-                onPress={() => handleUpdateStatus(JobStatuses.IN_PROGRESS)}
+                onPress={() =>
+                  Alert.alert(
+                    "Payment Method",
+                    "How was the payment received?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Cash",
+                        onPress: () => doMarkPaid(PaymentMethods.CASH),
+                      },
+                      {
+                        text: "UPI",
+                        onPress: () => doMarkPaid(PaymentMethods.UPI),
+                      },
+                      {
+                        text: "Online",
+                        onPress: () => doMarkPaid(PaymentMethods.ONLINE),
+                      },
+                      {
+                        text: "Cheque",
+                        onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
+                      },
+                    ],
+                  )
+                }
                 disabled={isSyncing}
                 activeOpacity={0.7}
                 style={{
-                  flex: 1,
-                  backgroundColor: colors.warningBg,
-                  borderWidth: 1,
-                  borderColor: colors.warningBorder,
-                  height: 56,
-                  borderRadius: 12,
+                  flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexDirection: "row",
                   gap: 8,
+                  marginTop: 16,
+                  height: 56,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.successBorder,
+                  backgroundColor: colors.successBg,
                 }}
               >
-                <Clock color={colors.warningIcon} size={20} />
+                <CheckCircle2 color={colors.success} size={18} />
                 <Text
                   style={{
                     fontFamily: "Space Grotesk",
-                    color: colors.warningIcon,
+                    color: colors.success,
                     fontWeight: "700",
                     textTransform: "uppercase",
                     letterSpacing: 2,
                     fontSize: 11,
                   }}
                 >
-                  Start Job
+                  Mark as Paid
                 </Text>
               </TouchableOpacity>
             )}
+            {(job.status === JobStatuses.PENDING ||
+              job.status === JobStatuses.IN_PROGRESS) && (
+              <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+                {job.status === JobStatuses.PENDING && (
+                  <TouchableOpacity
+                    onPress={() => handleUpdateStatus(JobStatuses.IN_PROGRESS)}
+                    disabled={isSyncing}
+                    activeOpacity={0.7}
+                    style={{
+                      flex: 1,
+                      backgroundColor: colors.warningBg,
+                      borderWidth: 1,
+                      borderColor: colors.warningBorder,
+                      height: 56,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "row",
+                      gap: 8,
+                    }}
+                  >
+                    <Clock color={colors.warningIcon} size={20} />
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        color: colors.warningIcon,
+                        fontWeight: "700",
+                        textTransform: "uppercase",
+                        letterSpacing: 2,
+                        fontSize: 11,
+                      }}
+                    >
+                      Start Job
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
-            <TouchableOpacity
-              onPress={() => handleUpdateStatus(JobStatuses.COMPLETED)}
-              disabled={isSyncing}
-              activeOpacity={0.7}
-              style={{
-                flex: job.status === JobStatuses.PENDING ? 1 : 1,
-                backgroundColor: colors.successBg,
-                borderWidth: 1,
-                borderColor: colors.successBorder,
-                height: 56,
-                borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "row",
-                gap: 8,
-              }}
-            >
-              <CheckCircle2 color={colors.success} size={20} />
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  color: colors.success,
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  letterSpacing: 2,
-                  fontSize: 11,
-                }}
-              >
-                Complete
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity
+                  onPress={() => handleUpdateStatus(JobStatuses.COMPLETED)}
+                  disabled={isSyncing}
+                  activeOpacity={0.7}
+                  style={{
+                    flex: job.status === JobStatuses.PENDING ? 1 : 1,
+                    backgroundColor: colors.successBg,
+                    borderWidth: 1,
+                    borderColor: colors.successBorder,
+                    height: 56,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "row",
+                    gap: 8,
+                  }}
+                >
+                  <CheckCircle2 color={colors.success} size={20} />
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      color: colors.success,
+                      fontWeight: "700",
+                      textTransform: "uppercase",
+                      letterSpacing: 2,
+                      fontSize: 11,
+                    }}
+                  >
+                    Complete
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

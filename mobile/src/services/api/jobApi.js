@@ -68,6 +68,14 @@ export const jobApi = api.injectEndpoints({
         ...ApiUtils.listTags(TagTypes.DASHBOARD),
       ],
     }),
+    reopenJob: builder.mutation({
+      query: (id) => ({ url: ApiUrls.JOB_REOPEN(id), method: "post" }),
+      invalidatesTags: (result, error, arg) => [
+        { type: TagTypes.JOBS, id: arg },
+        ...ApiUtils.listTags(TagTypes.JOBS),
+        ...ApiUtils.listTags(TagTypes.DASHBOARD),
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -82,4 +90,5 @@ export const {
   useGetJobsByCustomerQuery,
   useRepeatJobMutation,
   useDeleteJobMutation,
+  useReopenJobMutation,
 } = jobApi;
