@@ -316,7 +316,7 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
     </div>
     <div class="totals-section">
       <div class="totals-box">
-        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Service Subtotal</span><span class="val">₹${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
+        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Services & Fees</span><span class="val">₹${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
         ${partsTotal > 0 ? `<div class="total-row"><span class="lbl">Parts &amp; Components</span><span class="val">₹${partsTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
         ${lineItems.length > 0 || partsTotal > 0 ? `<div class="total-divider"></div>` : ""}
         <div class="grand-row"><span class="lbl">Grand Total</span><span class="val">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
@@ -585,35 +585,28 @@ export default function InvoicePreviewScreen() {
   function buildInitialLineItems() {
     if (!job) return [];
     if (job.lineItems && job.lineItems.length > 0) return job.lineItems;
-    const base = Number(job.amount) || 0;
-    const pt = (job.partsUsed || []).reduce(
-      (acc, p) => acc + p.price * p.quantity,
-      0,
-    );
-    const laborAmt = Math.max(0, base - pt);
+    const laborAmt = Number(job.amount) || 0;
+    const diagFee = Number(job.diagnosticFee) || 0;
+    const items = [];
     if (laborAmt > 0) {
-      return [
-        {
-          id: "1",
-          description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`,
-          qty: "1",
-          rate: String(laborAmt),
-          note: job?.serviceDone || "",
-        },
-      ];
+      items.push({
+        id: "1",
+        description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`,
+        qty: "1",
+        rate: String(laborAmt),
+        note: job?.serviceDone || "",
+      });
     }
-    if (job.diagnosticFee > 0 && base === 0) {
-      return [
-        {
-          id: "1",
-          description: "Diagnostic / Visiting Fee",
-          qty: "1",
-          rate: String(job.diagnosticFee),
-          note: "",
-        },
-      ];
+    if (diagFee > 0) {
+      items.push({
+        id: "2",
+        description: "Diagnostic / Visiting Fee",
+        qty: "1",
+        rate: String(diagFee),
+        note: "",
+      });
     }
-    return [];
+    return items;
   }
 
   const [lineItems, setLineItems] = useState(buildInitialLineItems);
@@ -723,11 +716,16 @@ export default function InvoicePreviewScreen() {
 
   async function handleSaveInvoice() {
     try {
+      // Recompute service-only subtotal (exclude any diagnostic fee line that
+      // was auto-generated, since diagnosticFee is stored separately on the job)
+      const serviceSubtotal = lineItems
+        .filter((i) => !i.description?.startsWith("Diagnostic"))
+        .reduce((s, i) => s + computeLineTotal(i), 0);
       await updateJob({
         id: job._id,
         lineItems,
         partsUsed,
-        amount: subtotal, // Service line items subtotal; parts live in partsUsed[], diagnostic fee is separate
+        amount: serviceSubtotal,
         isPaid,
         paymentMethod,
         status: isPaid ? JobStatuses.COMPLETED : job.status,
@@ -1767,7 +1765,7 @@ export default function InvoicePreviewScreen() {
                   color: colors.textMuted,
                 }}
               >
-                Service Subtotal
+                Services & Fees
               </Text>
               <Text
                 style={{

@@ -206,10 +206,10 @@ const CustomerSection = ({
                     <Text
                       style={{
                         color: colors.secondary,
-                        fontSize: 7,
+                        fontSize: 9,
                         fontWeight: "700",
                         textTransform: "uppercase",
-                        letterSpacing: 2,
+                        letterSpacing: 0.5,
                       }}
                     >
                       Verified

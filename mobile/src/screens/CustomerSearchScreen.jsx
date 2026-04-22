@@ -43,8 +43,14 @@ export default function CustomerSearchScreen() {
   const localCustomers = customersResponse?.data || [];
 
   function handleSelect(customer) {
-    if (onSelectCustomer) onSelectCustomer(customer);
-    navigation.goBack();
+    if (route.params?.fromScreen) {
+      navigation.navigate(route.params.fromScreen, {
+        selectedCustomer: customer,
+      });
+    } else {
+      if (onSelectCustomer) onSelectCustomer(customer);
+      navigation.goBack();
+    }
   }
 
   async function selectDeviceContact(contact) {
@@ -72,8 +78,15 @@ export default function CustomerSearchScreen() {
         phone,
       }).unwrap();
       const serverCustomer = res?.data;
-      if (onSelectCustomer && serverCustomer) onSelectCustomer(serverCustomer);
-      navigation.goBack();
+      if (route.params?.fromScreen) {
+        navigation.navigate(route.params.fromScreen, {
+          selectedCustomer: serverCustomer,
+        });
+      } else {
+        if (onSelectCustomer && serverCustomer)
+          onSelectCustomer(serverCustomer);
+        navigation.goBack();
+      }
     } catch (err) {
       setIsSyncing(false);
       const message =
@@ -207,7 +220,7 @@ export default function CustomerSearchScreen() {
             flexDirection: "row",
             alignItems: "center",
             paddingHorizontal: 16,
-            height: 56,
+            height: 64,
             borderBottomWidth: 1,
             borderBottomColor: colors.border,
             backgroundColor: colors.bgPrimary,

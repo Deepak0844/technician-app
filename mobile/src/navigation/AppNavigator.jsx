@@ -10,6 +10,7 @@ import AuthStack from "@navigation/AuthStack";
 import MainTabs from "@navigation/MainTabs";
 import { DarkColors, LightColors } from "@constants/colors";
 import { StackNames } from "@constants/routeNames";
+import { navigationRef } from "@navigation/navigationRef";
 
 const RootStack = createNativeStackNavigator();
 
@@ -32,7 +33,7 @@ export default function AppNavigator() {
   };
 
   return (
-    <NavigationContainer theme={AppTheme}>
+    <NavigationContainer ref={navigationRef} theme={AppTheme}>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <RootStack.Screen name={StackNames.MAIN} component={MainTabs} />

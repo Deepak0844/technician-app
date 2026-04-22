@@ -410,7 +410,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    height: 56,
+    height: 64,
     borderBottomWidth: 1,
   },
   headerBtn: { padding: 10, width: 44 },

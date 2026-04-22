@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import {
   ScrollView,
   Alert,
@@ -9,7 +13,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import {
   useGetCustomerByIdQuery,
@@ -49,35 +52,46 @@ export default function AddJobScreen() {
     customer: initialCustomer,
     initialDate,
     origin,
+    selectedCustomer: customerFromSearch,
   } = route.params ?? {};
   const { colors } = useTheme();
   const userId = useSelector((state) => state.auth.user?._id);
 
+  // Ref flag: set true just before navigating to search so useFocusEffect
+  // knows not to resetForm when the screen regains focus.
+  const returningFromSearchRef = React.useRef(false);
+  // Mirror customerFromSearch in a ref so useFocusEffect can read the latest
+  // value without needing it as a useCallback dep (which would cause re-fires).
+  const customerFromSearchRef = React.useRef(customerFromSearch);
+  customerFromSearchRef.current = customerFromSearch;
+
   // -- State --
   const [selectedCustomer, setSelectedCustomer] = useState(
-    editingJob
-      ? {
-          _id: editingJob.customerId?._id || editingJob.customerId,
-          name: editingJob.customerId?.name || editingJob.customerName,
-          phone: editingJob.customerId?.phone || editingJob.customerPhone,
-        }
-      : initialCustomer || null,
+    customerFromSearch
+      ? customerFromSearch
+      : editingJob
+        ? {
+            _id: editingJob.customerId?._id || editingJob.customerId,
+            name: editingJob.customerId?.name || editingJob.customerName,
+            phone: editingJob.customerId?.phone || editingJob.customerPhone,
+          }
+        : initialCustomer || null,
   );
+
+  // Sync customer when returning from CustomerSearchScreen
+  React.useEffect(() => {
+    if (customerFromSearch) {
+      setSelectedCustomer(customerFromSearch);
+      navigation.setParams({ selectedCustomer: undefined });
+    }
+  }, [customerFromSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   React.useEffect(() => {
     if (editingJob) {
       setAppliance(editingJob.applianceType || ApplianceTypes[0]);
       setIssue(editingJob.issue || "");
 
-      const ptsTotal = (editingJob.partsUsed || []).reduce(
-        (sum, p) => sum + p.price * p.quantity,
-        0,
-      );
-      const diagFee = parseFloat(editingJob.diagnosticFee) || 0;
-      const baseAmount = Math.max(
-        0,
-        (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee,
-      );
+      const baseAmount = parseFloat(editingJob.amount) || 0;
       setAmount(baseAmount > 0 ? baseAmount.toString() : "");
 
       setSelectedCustomer({
@@ -160,15 +174,7 @@ export default function AddJobScreen() {
   const [showCustomWarranty, setShowCustomWarranty] = useState(false);
   const [amount, setAmount] = useState(() => {
     if (editingJob) {
-      const ptsTotal = (editingJob.partsUsed || []).reduce(
-        (sum, p) => sum + p.price * p.quantity,
-        0,
-      );
-      const diagFee = parseFloat(editingJob.diagnosticFee) || 0;
-      const baseAmount = Math.max(
-        0,
-        (parseFloat(editingJob.amount) || 0) - ptsTotal - diagFee,
-      );
+      const baseAmount = parseFloat(editingJob.amount) || 0;
       return baseAmount > 0 ? baseAmount.toString() : "";
     }
     return "";
@@ -195,7 +201,11 @@ export default function AddJobScreen() {
   );
   const [showStatusModal, setShowStatusModal] = useState(false);
   // Time Sync
-  let initialTime = "10:00 AM";
+  let initialTime = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
   if (editingJob?.serviceDate) {
     const d = new Date(editingJob.serviceDate);
     if (!isNaN(d.getTime())) {
@@ -251,7 +261,13 @@ export default function AddJobScreen() {
     setStatus(JobStatuses.PENDING);
     setIsPaid(false);
     setPaymentMethod(PaymentMethods.CASH);
-    setSelectedTime("10:00 AM");
+    setSelectedTime(
+      new Date().toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    );
     setNewLocationAddress("");
     setNewLocationLabel("");
     setNewLocationLat(null);
@@ -259,12 +275,19 @@ export default function AddJobScreen() {
     setSaveToProfile(true);
   }
 
-  // Reset form every time this screen comes into focus (only for new jobs)
+  // Reset form every time this screen comes into focus (only for new jobs).
+  // Skip reset if: returning from CustomerSearchScreen (ref flag)
+  //             OR screen (re)mounted with a pending customerFromSearch param.
   useFocusEffect(
     useCallback(() => {
-      if (!editingJob) {
+      if (
+        !editingJob &&
+        !returningFromSearchRef.current &&
+        !customerFromSearchRef.current
+      ) {
         resetForm();
       }
+      returningFromSearchRef.current = false;
     }, [editingJob]),
   );
 
@@ -283,8 +306,8 @@ export default function AddJobScreen() {
   });
 
   // External Data
-  const { data: customersResponse } = useGetCustomersQuery({ limit: 10 });
-  const topRecent = (customersResponse?.data || []).slice(0, 3);
+  const { data: customersResponse } = useGetCustomersQuery({ pageSize: 50 });
+  const topRecent = customersResponse?.data || [];
 
   // -- Logic Handlers --
   React.useEffect(() => {
@@ -398,7 +421,7 @@ export default function AddJobScreen() {
           alignItems: "center",
           justifyContent: "space-between",
           paddingHorizontal: 24,
-          height: 56,
+          height: 64,
           borderBottomWidth: 1,
           borderBottomColor: colors.borderMuted,
         }}
@@ -437,11 +460,12 @@ export default function AddJobScreen() {
           selectedCustomer={selectedCustomer}
           setSelectedCustomer={setSelectedCustomer}
           topRecent={topRecent}
-          onSearchPress={() =>
+          onSearchPress={() => {
+            returningFromSearchRef.current = true;
             navigation.navigate(RouteNames.CUSTOMER_SEARCH, {
-              onSelectCustomer: setSelectedCustomer,
-            })
-          }
+              fromScreen: RouteNames.ADD_JOB,
+            });
+          }}
           selectedLocation={selectedLocation}
           onSelectLocation={setSelectedLocation}
           onAddLocationPress={() => setShowAddLocationModal(true)}

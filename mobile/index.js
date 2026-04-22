@@ -14,13 +14,17 @@ import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
 // Store
 import store from "./src/store/index";
-import { clearCredentials } from "./src/store/slices/authSlice";
+import {
+  clearCredentials,
+  setBootstrapToken,
+} from "./src/store/slices/authSlice";
 import StorageUtils from "./src/utils/storageUtils";
 import { initializeTheme } from "./src/store/slices/themeSlice";
 
 // Navigation
 import AppNavigator from "./src/navigation/AppNavigator";
 import NotificationUtils from "./src/utils/notificationUtils";
+import { navigateToJobDetails } from "./src/navigation/navigationRef";
 
 // Components
 import ErrorBoundary from "./src/components/ErrorBoundary";
@@ -43,7 +47,8 @@ SplashScreen.preventAutoHideAsync();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -68,7 +73,9 @@ function AppBootstrap() {
           dispatch(clearCredentials()); // no token → tokenLoaded = true immediately
           return;
         }
-        // Token exists → validate with server; authSlice.extraReducers handles the result
+        // Stash raw token in Redux so offline fallback in getMe.matchRejected can use it
+        dispatch(setBootstrapToken(token));
+        // Validate with server; authSlice.extraReducers handles the result
         dispatch(
           authApi.endpoints.getMe.initiate(undefined, { forceRefetch: true }),
         );
@@ -99,6 +106,38 @@ function AppBootstrap() {
       }
     })();
   }, []);
+
+  // Handle notification taps (foreground / background) — navigate to Job Details
+  useEffect(function handleNotificationTap() {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const jobId = response.notification.request.content.data?.jobId;
+        if (jobId) navigateToJobDetails(jobId);
+      },
+    );
+    return () => subscription.remove();
+  }, []);
+
+  // Cold launch: app was fully quit when the user tapped the notification.
+  // useLastNotificationResponse is the non-deprecated replacement for getLastNotificationResponseAsync.
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+  useEffect(
+    function handleColdLaunchNotificationTap() {
+      if (!lastNotificationResponse) return;
+      if (
+        lastNotificationResponse.actionIdentifier !==
+        Notifications.DEFAULT_ACTION_IDENTIFIER
+      )
+        return;
+      const jobId =
+        lastNotificationResponse.notification.request.content.data?.jobId;
+      if (jobId) {
+        navigateToJobDetails(jobId);
+        Notifications.clearLastNotificationResponse();
+      }
+    },
+    [lastNotificationResponse],
+  );
 
   const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
   const isReady = tokenLoaded && isThemeInitialized;

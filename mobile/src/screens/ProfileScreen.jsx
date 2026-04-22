@@ -418,119 +418,113 @@ export default function ProfileScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "padding"}
         >
           <View style={{ flex: 1 }} />
-            <View
-              style={[
-                s.modalSheet,
-                { backgroundColor: colors.bgCard, borderColor: colors.border },
-              ]}
-            >
-              {/* Modal Header */}
-              <View
-                style={[s.modalHeader, { borderBottomColor: colors.border }]}
+          <View
+            style={[
+              s.modalSheet,
+              { backgroundColor: colors.bgCard, borderColor: colors.border },
+            ]}
+          >
+            {/* Modal Header */}
+            <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={handleCancel}
+                style={s.modalCloseBtn}
+                activeOpacity={0.7}
               >
-                <TouchableOpacity
-                  onPress={handleCancel}
-                  style={s.modalCloseBtn}
-                  activeOpacity={0.7}
-                >
-                  <X size={20} color={colors.danger} />
-                </TouchableOpacity>
-                <Text style={[s.modalTitle, { color: colors.textPrimary }]}>
-                  Edit Profile
-                </Text>
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={isUpdating}
-                  style={[s.modalSaveBtn, { backgroundColor: colors.primary }]}
-                  activeOpacity={0.8}
-                >
-                  {isUpdating ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Check size={16} color="#fff" />
-                  )}
-                </TouchableOpacity>
+                <X size={20} color={colors.danger} />
+              </TouchableOpacity>
+              <Text style={[s.modalTitle, { color: colors.textPrimary }]}>
+                Edit Profile
+              </Text>
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={isUpdating}
+                style={[s.modalSaveBtn, { backgroundColor: colors.primary }]}
+                activeOpacity={0.8}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Check size={16} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+            >
+              {/* Avatar preview */}
+              <View style={{ alignItems: "center", marginBottom: 24 }}>
+                <Avatar
+                  name={editedName || user.phone}
+                  uri={user.avatar}
+                  size={72}
+                  style={{
+                    borderWidth: 3,
+                    borderColor: colors.primary + "44",
+                  }}
+                />
               </View>
 
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+              <EditField
+                label="Full Name"
+                value={editedName}
+                onChange={setEditedName}
+                placeholder="Your name"
+                icon={<User size={15} color={colors.textMuted} />}
+                colors={colors}
+              />
+              <EditField
+                label="Company Name"
+                value={editedCompanyName}
+                onChange={setEditedCompanyName}
+                placeholder="e.g. Acme Repairs"
+                icon={<Building2 size={15} color={colors.textMuted} />}
+                colors={colors}
+              />
+              <EditField
+                label="Email"
+                value={editedEmail}
+                onChange={setEditedEmail}
+                placeholder="you@example.com"
+                icon={<Mail size={15} color={colors.textMuted} />}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                colors={colors}
+              />
+              <EditField
+                label="Address"
+                value={editedAddress}
+                onChange={setEditedAddress}
+                placeholder="Shop / business address"
+                icon={<MapPin size={15} color={colors.textMuted} />}
+                multiline
+                colors={colors}
+              />
+
+              {/* Save button inside scroll */}
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={isUpdating}
+                activeOpacity={0.85}
+                style={[
+                  s.modalFullSaveBtn,
+                  { backgroundColor: colors.primary },
+                ]}
               >
-                {/* Avatar preview */}
-                <View style={{ alignItems: "center", marginBottom: 24 }}>
-                  <Avatar
-                    name={editedName || user.phone}
-                    uri={user.avatar}
-                    size={72}
-                    style={{
-                      borderWidth: 3,
-                      borderColor: colors.primary + "44",
-                    }}
-                  />
-                </View>
-
-                <EditField
-                  label="Full Name"
-                  value={editedName}
-                  onChange={setEditedName}
-                  placeholder="Your name"
-                  icon={<User size={15} color={colors.textMuted} />}
-                  colors={colors}
-                />
-                <EditField
-                  label="Company Name"
-                  value={editedCompanyName}
-                  onChange={setEditedCompanyName}
-                  placeholder="e.g. Acme Repairs"
-                  icon={<Building2 size={15} color={colors.textMuted} />}
-                  colors={colors}
-                />
-                <EditField
-                  label="Email"
-                  value={editedEmail}
-                  onChange={setEditedEmail}
-                  placeholder="you@example.com"
-                  icon={<Mail size={15} color={colors.textMuted} />}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  colors={colors}
-                />
-                <EditField
-                  label="Address"
-                  value={editedAddress}
-                  onChange={setEditedAddress}
-                  placeholder="Shop / business address"
-                  icon={<MapPin size={15} color={colors.textMuted} />}
-                  multiline
-                  colors={colors}
-                />
-
-                {/* Save button inside scroll */}
-                <TouchableOpacity
-                  onPress={handleSave}
-                  disabled={isUpdating}
-                  activeOpacity={0.85}
-                  style={[
-                    s.modalFullSaveBtn,
-                    { backgroundColor: colors.primary },
-                  ]}
-                >
-                  {isUpdating ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Check
-                        size={16}
-                        color="#fff"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text style={s.modalFullSaveText}>Save Changes</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
+                {isUpdating ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Check size={16} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={s.modalFullSaveText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
@@ -652,7 +646,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    height: 56,
+    height: 64,
     borderBottomWidth: 1,
   },
   headerBtn: { padding: 10 },

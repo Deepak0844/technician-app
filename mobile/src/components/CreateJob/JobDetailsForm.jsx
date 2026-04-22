@@ -469,10 +469,11 @@ const JobDetailsForm = ({
           >
             <Text
               style={{
-                fontSize: 7,
+                fontSize: 9,
                 fontWeight: "800",
                 color: colors.secondary,
                 textTransform: "uppercase",
+                letterSpacing: 0.3,
               }}
             >
               Private

@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Contacts from "expo-contacts";
@@ -266,7 +268,7 @@ export default function CreateCustomerScreen({ route }) {
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 24,
-          height: 56,
+          height: 64,
           backgroundColor: colors.bgPrimary,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -293,184 +295,194 @@ export default function CreateCustomerScreen({ route }) {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
-        {renderInput(
-          "Customer Name",
-          name,
-          setName,
-          <User size={18} color={colors.secondary} />,
-          "Full Name",
-          "name",
-        )}
-        {renderInput(
-          "Phone Number",
-          phone,
-          setPhone,
-          <Phone size={18} color={colors.secondary} />,
-          "+91 00000 00000",
-          "phone",
-          "phone-pad",
-        )}
-        {renderInput(
-          "Email Address",
-          email,
-          setEmail,
-          <Mail size={18} color={colors.secondary} />,
-          "customer@example.com",
-          "email",
-          "email-address",
-        )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderInput(
+            "Customer Name",
+            name,
+            setName,
+            <User size={18} color={colors.secondary} />,
+            "Full Name",
+            "name",
+          )}
+          {renderInput(
+            "Phone Number",
+            phone,
+            setPhone,
+            <Phone size={18} color={colors.secondary} />,
+            "+91 00000 00000",
+            "phone",
+            "phone-pad",
+          )}
+          {renderInput(
+            "Email Address",
+            email,
+            setEmail,
+            <Mail size={18} color={colors.secondary} />,
+            "customer@example.com",
+            "email",
+            "email-address",
+          )}
 
-        {/* Locations Section */}
-        <View style={{ marginBottom: 24 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 16,
-            }}
-          >
-            <Text
+          {/* Locations Section */}
+          <View style={{ marginBottom: 24 }}>
+            <View
               style={{
-                fontFamily: "Space Grotesk",
-                color: colors.textDisabled,
-                fontSize: 10,
-                fontWeight: "700",
-                textTransform: "uppercase",
-                letterSpacing: 4,
-                marginLeft: 4,
-              }}
-            >
-              Service Locations
-            </Text>
-            <TouchableOpacity
-              onPress={addLocation}
-              style={{
-                backgroundColor: colors.primaryBg,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 8,
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 4,
+                justifyContent: "space-between",
+                marginBottom: 16,
               }}
             >
-              <Plus size={14} color={colors.primary} />
               <Text
                 style={{
-                  fontFamily: "Inter",
-                  color: colors.primary,
-                  fontSize: 10,
-                  fontWeight: "700",
-                }}
-              >
-                ADD NEW
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {locations.map((loc) => (
-            <LocationFormSection
-              key={loc.id}
-              location={loc}
-              onUpdate={(updates) => updateLocation(loc.id, updates)}
-              onRemove={() => removeLocation(loc.id)}
-              showRemove={locations.length > 1}
-            />
-          ))}
-        </View>
-
-        {/* Save to Contacts toggle — create mode only */}
-        {!isEditing && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              backgroundColor: colors.bgCard,
-              padding: 20,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: colors.border,
-              marginBottom: 32,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  color: colors.textPrimary,
-                  fontWeight: "700",
-                  fontSize: 13,
-                  marginBottom: 4,
-                }}
-              >
-                Save to Contacts
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Inter",
+                  fontFamily: "Space Grotesk",
                   color: colors.textDisabled,
                   fontSize: 10,
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: 4,
+                  marginLeft: 4,
                 }}
               >
-                Add this customer to your phone&apos;s address book
+                Service Locations
               </Text>
-            </View>
-            <Switch
-              value={saveToPhone}
-              onValueChange={setSaveToPhone}
-              trackColor={{ false: colors.bgSurface, true: colors.primary }}
-              thumbColor={saveToPhone ? "#fff" : colors.textMuted}
-            />
-          </View>
-        )}
-
-        {/* Action Button */}
-        <TouchableOpacity
-          onPress={handleAction}
-          disabled={isLoading}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              height: 60,
-              borderRadius: 20,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: colors.primary,
-              shadowOpacity: 0.3,
-              shadowRadius: 20,
-              elevation: 8,
-            }}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
+              <TouchableOpacity
+                onPress={addLocation}
+                style={{
+                  backgroundColor: colors.primaryBg,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <Plus size={14} color={colors.primary} />
                 <Text
                   style={{
-                    fontFamily: "Space Grotesk",
-                    color: "#fff",
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    letterSpacing: 4,
-                    fontSize: 12,
+                    fontFamily: "Inter",
+                    color: colors.primary,
+                    fontSize: 10,
+                    fontWeight: "700",
                   }}
                 >
-                  {isEditing ? "Save Changes" : "Create Customer"}
+                  ADD NEW
                 </Text>
-                <Zap size={16} color="#fff" style={{ marginLeft: 12 }} />
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-      </ScrollView>
+              </TouchableOpacity>
+            </View>
+
+            {locations.map((loc) => (
+              <LocationFormSection
+                key={loc.id}
+                location={loc}
+                onUpdate={(updates) => updateLocation(loc.id, updates)}
+                onRemove={() => removeLocation(loc.id)}
+                showRemove={locations.length > 1}
+              />
+            ))}
+          </View>
+
+          {/* Save to Contacts toggle — create mode only */}
+          {!isEditing && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: colors.bgCard,
+                padding: 20,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border,
+                marginBottom: 32,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textPrimary,
+                    fontWeight: "700",
+                    fontSize: 13,
+                    marginBottom: 4,
+                  }}
+                >
+                  Save to Contacts
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textDisabled,
+                    fontSize: 10,
+                  }}
+                >
+                  Add this customer to your phone&apos;s address book
+                </Text>
+              </View>
+              <Switch
+                value={saveToPhone}
+                onValueChange={setSaveToPhone}
+                trackColor={{ false: colors.bgSurface, true: colors.primary }}
+                thumbColor={saveToPhone ? "#fff" : colors.textMuted}
+              />
+            </View>
+          )}
+
+          {/* Action Button */}
+          <TouchableOpacity
+            onPress={handleAction}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                height: 60,
+                borderRadius: 20,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: colors.primary,
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+                elevation: 8,
+              }}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      color: "#fff",
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      letterSpacing: 4,
+                      fontSize: 12,
+                    }}
+                  >
+                    {isEditing ? "Save Changes" : "Create Customer"}
+                  </Text>
+                  <Zap size={16} color="#fff" style={{ marginLeft: 12 }} />
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

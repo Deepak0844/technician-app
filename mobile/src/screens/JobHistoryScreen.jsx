@@ -118,7 +118,7 @@ export default function JobHistoryScreen() {
             alignItems: "center",
             justifyContent: "space-between",
             paddingHorizontal: 16,
-            height: 56,
+            height: 64,
             zIndex: 50,
             borderBottomWidth: 1,
             borderBottomColor: colors.border,
@@ -425,6 +425,20 @@ export default function JobHistoryScreen() {
                       >
                         {item.status?.replace("_", " ")}
                       </Text>
+                      {item.status === "completed" && !item.isPaid && (
+                        <Text
+                          style={{
+                            fontFamily: "Space Grotesk",
+                            fontSize: 10,
+                            fontWeight: "700",
+                            textTransform: "uppercase",
+                            letterSpacing: 2,
+                            color: colors.danger,
+                          }}
+                        >
+                          · Unpaid
+                        </Text>
+                      )}
                     </HStack>
                   </HStack>
 
