@@ -462,8 +462,13 @@ export default function AddJobScreen() {
           topRecent={topRecent}
           onSearchPress={() => {
             returningFromSearchRef.current = true;
+            // Detect whether this AddJobScreen is rendered inside the Tab navigator
+            // or as a standalone Stack screen, so CustomerSearchScreen can navigate
+            // back correctly without pushing a duplicate Stack-level AddJobScreen.
+            const navState = navigation.getState();
             navigation.navigate(RouteNames.CUSTOMER_SEARCH, {
               fromScreen: RouteNames.ADD_JOB,
+              fromScreenIsTab: navState?.type === "tab",
             });
           }}
           selectedLocation={selectedLocation}

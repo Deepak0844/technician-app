@@ -11,14 +11,17 @@ export const navigationRef = createNavigationContainerRef();
 export function navigateToJobDetails(jobId) {
   if (!jobId) return;
 
+  // JobDetailsScreen expects { job: { _id } } — it fetches the full job via RTK Query
+  const params = { job: { _id: jobId } };
+
   if (navigationRef.isReady()) {
-    navigationRef.navigate(RouteNames.JOB_DETAILS, { jobId });
+    navigationRef.navigate(RouteNames.JOB_DETAILS, params);
   } else {
     // Navigator not ready yet (cold launch from notification) — retry after a short delay
     const interval = setInterval(() => {
       if (navigationRef.isReady()) {
         clearInterval(interval);
-        navigationRef.navigate(RouteNames.JOB_DETAILS, { jobId });
+        navigationRef.navigate(RouteNames.JOB_DETAILS, params);
       }
     }, 100);
 

@@ -22,10 +22,11 @@ import {
   CheckCircle2,
   XCircle,
   LayoutList,
+  CalendarDays,
 } from "lucide-react-native";
 import { useGetJobsPagedInfiniteQuery } from "@services/api/jobApi";
 import Avatar from "@components/Avatar";
-import { formatCurrency } from "@utils/formatUtils";
+import { formatCurrency, formatDate } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import { JobCardSkeleton } from "@components/SkeletonLoaders";
 import useDebounce from "@hooks/useDebounce";
@@ -54,8 +55,13 @@ export default function JobHistoryScreen() {
   const debouncedSearch = useDebounce(search);
   const [isPaidFilter, setIsPaidFilter] = useState(undefined); // undefined, true, false
   const [applianceFilter, setApplianceFilter] = useState(undefined);
+  const [todayOnly, setTodayOnly] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const hasScrolledRef = useRef(false);
+
+  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayStart = useMemo(() => todayStr + "T00:00:00.000Z", [todayStr]);
+  const todayEnd = useMemo(() => todayStr + "T23:59:59.999Z", [todayStr]);
 
   const {
     data: jobsData,
@@ -70,13 +76,15 @@ export default function JobHistoryScreen() {
     customerId: route.params?.customerId,
     isPaid: isPaidFilter,
     applianceType: applianceFilter,
+    startDate: todayOnly ? todayStart : undefined,
+    endDate: todayOnly ? todayEnd : undefined,
   });
 
   // Reset scroll guard when filters or search change so a fresh
   // page-1 result never auto-loads page 2 before the user scrolls.
   useEffect(() => {
     hasScrolledRef.current = false;
-  }, [debouncedSearch, isPaidFilter, applianceFilter]);
+  }, [debouncedSearch, isPaidFilter, applianceFilter, todayOnly]);
 
   const onRefresh = React.useCallback(() => {
     hasScrolledRef.current = false;
@@ -215,12 +223,15 @@ export default function JobHistoryScreen() {
                 height: 48,
                 borderRadius: 12,
                 backgroundColor:
-                  isFilterOpen || applianceFilter || isPaidFilter !== undefined
+                  isFilterOpen ||
+                  applianceFilter ||
+                  isPaidFilter !== undefined ||
+                  todayOnly
                     ? colors.primaryBg
                     : colors.bgInput,
                 borderWidth: 1.5,
                 borderColor:
-                  applianceFilter || isPaidFilter !== undefined
+                  applianceFilter || isPaidFilter !== undefined || todayOnly
                     ? colors.primaryBorder
                     : colors.border,
                 alignItems: "center",
@@ -229,7 +240,7 @@ export default function JobHistoryScreen() {
             >
               <Filter
                 color={
-                  applianceFilter || isPaidFilter !== undefined
+                  applianceFilter || isPaidFilter !== undefined || todayOnly
                     ? colors.primary
                     : colors.textSecondary
                 }
@@ -239,7 +250,7 @@ export default function JobHistoryScreen() {
           </View>
 
           {/* Active Filter Chips */}
-          {(applianceFilter || isPaidFilter !== undefined) && (
+          {(applianceFilter || isPaidFilter !== undefined || todayOnly) && (
             <View
               style={{
                 flexDirection: "row",
@@ -248,6 +259,35 @@ export default function JobHistoryScreen() {
                 marginBottom: 16,
               }}
             >
+              {todayOnly && (
+                <TouchableOpacity
+                  onPress={() => setTodayOnly(false)}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: colors.primaryBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
+                    gap: 4,
+                  }}
+                >
+                  <CalendarDays size={11} color={colors.primary} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    TODAY
+                  </Text>
+                  <X size={11} color={colors.primary} />
+                </TouchableOpacity>
+              )}
               {isPaidFilter !== undefined && (
                 <TouchableOpacity
                   onPress={() => setIsPaidFilter(undefined)}
@@ -468,6 +508,43 @@ export default function JobHistoryScreen() {
                     ) : null}
                   </Text>
 
+                  {/* Service date row */}
+                  {item.serviceDate && (
+                    <HStack
+                      style={{
+                        alignItems: "center",
+                        gap: 5,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <CalendarDays size={12} color={colors.textDisabled} />
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 11,
+                          color:
+                            new Date(item.serviceDate)
+                              .toISOString()
+                              .split("T")[0] === todayStr
+                              ? colors.primary
+                              : colors.textDisabled,
+                          fontWeight:
+                            new Date(item.serviceDate)
+                              .toISOString()
+                              .split("T")[0] === todayStr
+                              ? "700"
+                              : "400",
+                        }}
+                      >
+                        {new Date(item.serviceDate)
+                          .toISOString()
+                          .split("T")[0] === todayStr
+                          ? "Today"
+                          : formatDate(item.serviceDate)}
+                      </Text>
+                    </HStack>
+                  )}
+
                   <HStack
                     style={{
                       justifyContent: "space-between",
@@ -600,6 +677,7 @@ export default function JobHistoryScreen() {
                 onPress={() => {
                   setIsPaidFilter(undefined);
                   setApplianceFilter(undefined);
+                  setTodayOnly(false);
                   setIsFilterOpen(false);
                 }}
               >
@@ -622,6 +700,91 @@ export default function JobHistoryScreen() {
               contentContainerStyle={{ padding: 24, paddingBottom: 16 }}
               showsVerticalScrollIndicator={false}
             >
+              {/* Today Jobs toggle */}
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  fontWeight: "800",
+                  color: colors.textSecondary,
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                  marginBottom: 12,
+                }}
+              >
+                Date
+              </Text>
+              <TouchableOpacity
+                onPress={() => setTodayOnly((v) => !v)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  borderRadius: 14,
+                  borderWidth: 1.5,
+                  borderColor: todayOnly ? colors.primary : colors.border,
+                  backgroundColor: todayOnly
+                    ? colors.primaryBg
+                    : colors.bgSurface,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  marginBottom: 28,
+                  gap: 10,
+                }}
+              >
+                <HStack style={{ alignItems: "center", gap: 10 }}>
+                  <CalendarDays
+                    size={20}
+                    color={todayOnly ? colors.primary : colors.textMuted}
+                  />
+                  <View>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: todayOnly
+                          ? colors.primary
+                          : colors.textSecondary,
+                      }}
+                    >
+                      Today's Jobs
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        color: colors.textDisabled,
+                        marginTop: 1,
+                      }}
+                    >
+                      Show only jobs assigned for today
+                    </Text>
+                  </View>
+                </HStack>
+                <View
+                  style={{
+                    width: 44,
+                    height: 26,
+                    borderRadius: 13,
+                    backgroundColor: todayOnly ? colors.primary : colors.border,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 3,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 10,
+                      backgroundColor: "#fff",
+                      alignSelf: todayOnly ? "flex-end" : "flex-start",
+                    }}
+                  />
+                </View>
+              </TouchableOpacity>
+
               {/* Payment Status — segmented control */}
               <Text
                 style={{

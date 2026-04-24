@@ -72,11 +72,12 @@ async function getDashboardSummary(userId) {
     }),
 
     // Weekly jobs + Total Potential earnings (Amount + Diagnostic)
+    // Uses updatedAt so a job completed this week counts even if scheduled later
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: weekStart, $lt: weekEnd },
+          updatedAt: { $gte: weekStart, $lt: weekEnd },
           status: JobStatus.COMPLETED,
         },
       },
@@ -90,11 +91,12 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Monthly Paid vs Unpaid earnings
+    // Uses updatedAt so a job completed this month counts even if scheduled for a future date
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: monthStart, $lt: monthEnd },
+          updatedAt: { $gte: monthStart, $lt: monthEnd },
           status: JobStatus.COMPLETED,
         },
       },
@@ -118,11 +120,12 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Previous Monthly earnings (for growth calculation)
+    // Uses updatedAt to stay consistent with current-month calculation
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: prevMonthStart, $lt: prevMonthEnd },
+          updatedAt: { $gte: prevMonthStart, $lt: prevMonthEnd },
           status: JobStatus.COMPLETED,
         },
       },

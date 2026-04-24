@@ -44,9 +44,18 @@ export default function CustomerSearchScreen() {
 
   function handleSelect(customer) {
     if (route.params?.fromScreen) {
-      navigation.navigate(route.params.fromScreen, {
-        selectedCustomer: customer,
-      });
+      if (route.params?.fromScreenIsTab) {
+        // AddJobScreen was the active Tab screen — navigate to TABS so we don't
+        // push a duplicate Stack-level AddJobScreen on top of this screen.
+        navigation.navigate(RouteNames.TABS, {
+          screen: route.params.fromScreen,
+          params: { selectedCustomer: customer },
+        });
+      } else {
+        navigation.navigate(route.params.fromScreen, {
+          selectedCustomer: customer,
+        });
+      }
     } else {
       if (onSelectCustomer) onSelectCustomer(customer);
       navigation.goBack();
@@ -79,9 +88,16 @@ export default function CustomerSearchScreen() {
       }).unwrap();
       const serverCustomer = res?.data;
       if (route.params?.fromScreen) {
-        navigation.navigate(route.params.fromScreen, {
-          selectedCustomer: serverCustomer,
-        });
+        if (route.params?.fromScreenIsTab) {
+          navigation.navigate(RouteNames.TABS, {
+            screen: route.params.fromScreen,
+            params: { selectedCustomer: serverCustomer },
+          });
+        } else {
+          navigation.navigate(route.params.fromScreen, {
+            selectedCustomer: serverCustomer,
+          });
+        }
       } else {
         if (onSelectCustomer && serverCustomer)
           onSelectCustomer(serverCustomer);

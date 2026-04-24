@@ -6,7 +6,10 @@ import {
   Alert,
   TextInput,
   Linking,
+  Modal,
+  Pressable,
 } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Print from "expo-print";
@@ -29,7 +32,7 @@ import {
   MapPin,
   Wrench,
   CheckCircle2,
-  Calendar,
+  CalendarDays as CalendarIcon,
   Receipt,
   Building2,
   Plus,
@@ -48,6 +51,8 @@ import {
   IndianRupee,
   Printer,
   Save,
+  Edit3,
+  Lock,
 } from "lucide-react-native";
 
 // ─────────────────────────────────────────────
@@ -145,6 +150,14 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
     0,
   );
 
+  const warrantyStartDisplay = formatDate(
+    job.warrantyStartDate
+      ? job.warrantyStartDate
+      : job.status === "completed" && job.updatedAt
+        ? job.updatedAt
+        : job.serviceDate,
+  );
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -152,10 +165,26 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Invoice ${invoiceNumber}</title>
 <style>
+  /* ── Reset & Base ── */
   *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f0f8;color:#1a1a2e;font-size:13px;line-height:1.55;}
-  .page{max-width:794px;margin:32px auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.10);}
-  .header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#9333ea 100%);padding:32px 36px 28px;position:relative;overflow:hidden;}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#1a1a2e;font-size:13px;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+  /* ── Print page setup ── */
+  @page{size:A4;margin:0;}
+  @media print{
+    body{background:#fff;}
+    .page{margin:0;border-radius:0;box-shadow:none;max-width:100%;}
+    .header{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .no-break{page-break-inside:avoid;break-inside:avoid;}
+    .page-break{page-break-before:always;break-before:always;}
+    .footer{position:running(footer);}
+  }
+
+  /* ── Layout ── */
+  .page{max-width:794px;margin:0 auto;background:#fff;overflow:hidden;}
+
+  /* ── Header (page 1 only, never breaks) ── */
+  .header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#9333ea 100%);padding:32px 36px 28px;position:relative;overflow:hidden;page-break-inside:avoid;break-inside:avoid;}
   .orb1{position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.06);}
   .orb2{position:absolute;bottom:-40px;left:10px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.04);}
   .h-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;}
@@ -171,8 +200,12 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .meta-item .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.55);margin-bottom:4px;}
   .meta-item .val{font-size:13px;font-weight:700;color:#fff;}
   .status-pill{padding:6px 18px;border-radius:30px;font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;border:1.5px solid;}
-  .body{padding:28px 36px;}
-  .billing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+
+  /* ── Body ── */
+  .body{padding:24px 36px 0;}
+
+  /* ── Billing grid — keep together ── */
+  .billing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
   .billing-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:18px 20px;}
   .billing-tag{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
   .billing-tag.from{color:#4f46e5;}
@@ -181,9 +214,13 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .billing-name{font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;line-height:1.3;}
   .billing-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#6b7280;margin-bottom:5px;}
   .gst-tag{display:inline-block;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:6px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:8px;}
+
+  /* ── Section titles ── */
   .section-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
   .section-title::after{content:'';flex:1;height:1px;background:#f0f0f8;}
-  .service-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:20px;margin-bottom:20px;}
+
+  /* ── Service info card — keep together ── */
+  .service-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:20px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
   .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
   .info-item .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-bottom:4px;}
   .info-item .val{font-size:13px;font-weight:700;color:#1a1a2e;}
@@ -193,22 +230,26 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .text-field .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-bottom:6px;}
   .text-field .val{font-size:13px;color:#374151;line-height:1.6;}
   .text-field .val.green{color:#059669;font-weight:600;}
+
+  /* ── Items table — header repeats on new page; rows break naturally ── */
   .table-wrap{border:1.5px solid #e8e4f9;border-radius:14px;overflow:hidden;margin-bottom:20px;}
   table{width:100%;border-collapse:collapse;}
-  thead{background:linear-gradient(90deg,#f0eeff,#f5f3ff);}
+  thead{background:linear-gradient(90deg,#f0eeff,#f5f3ff);display:table-header-group;}
   th{padding:11px 14px;text-align:left;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#4f46e5;border-bottom:1.5px solid #e8e4f9;}
-  th.right,th.center{text-align:right;}
-  th.center{text-align:center;}
+  th.right{text-align:right;}th.center{text-align:center;}
   td{padding:12px 14px;font-size:12px;color:#374151;border-bottom:1px solid #f5f3ff;vertical-align:top;}
-  td.right,td.center{text-align:right;}
-  td.center{text-align:center;}
+  td.right{text-align:right;}td.center{text-align:center;}
   td.amount{font-weight:700;color:#1a1a2e;}
   td.stripe{background:#fafafe;}
   td.desc{max-width:260px;}
   .item-name{display:block;font-weight:600;color:#1a1a2e;}
   .item-note{display:block;font-size:10px;color:#9ca3af;margin-top:2px;font-style:italic;}
   .parts-header td{background:#fdf4ff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#7c3aed;padding:8px 14px;border-top:1.5px solid #e8e4f9;}
-  .totals-section{display:flex;justify-content:flex-end;margin-bottom:24px;}
+  /* keep each table row together and avoid orphaned rows */
+  tr{page-break-inside:avoid;break-inside:avoid;}
+
+  /* ── Totals — always keep together, prefer not to break from table ── */
+  .totals-section{display:flex;justify-content:flex-end;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
   .totals-box{width:320px;}
   .total-row{display:flex;justify-content:space-between;padding:7px 14px;font-size:12px;}
   .total-row .lbl{color:#6b7280;}
@@ -217,26 +258,36 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .grand-row{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
   .grand-row .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.8);}
   .grand-row .val{font-size:24px;font-weight:900;color:#fff;}
-  .warranty-card{border:2px dashed #c4b5fd;border-radius:14px;background:#faf5ff;padding:20px;margin-bottom:20px;display:flex;gap:14px;}
+
+  /* ── Warranty & Reminder — keep together ── */
+  .warranty-card{border:2px dashed #c4b5fd;border-radius:14px;background:#faf5ff;padding:20px;margin-bottom:20px;display:flex;gap:14px;page-break-inside:avoid;break-inside:avoid;}
   .warranty-icon{width:42px;height:42px;background:#7c3aed;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
   .warranty-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#4f46e5;margin-bottom:4px;}
-  .warranty-text{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:6px;}
+  .warranty-text{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:4px;}
+  .warranty-from{font-size:11px;color:#6d28d9;margin-bottom:6px;}
   .warranty-note{font-size:10px;color:#6d28d9;line-height:1.6;}
-  .reminder-card{border:1.5px solid #bbf7d0;border-radius:14px;background:#f0fdf4;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+  .reminder-card{border:1.5px solid #bbf7d0;border-radius:14px;background:#f0fdf4;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;page-break-inside:avoid;break-inside:avoid;}
   .reminder-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#065f46;margin-bottom:3px;}
   .reminder-date{font-size:16px;font-weight:800;color:#059669;}
   .reminder-sub{font-size:11px;color:#065f46;margin-top:2px;}
-  .sig-section{display:flex;justify-content:space-between;align-items:flex-end;padding:20px 0;border-top:1.5px solid #e8e4f9;margin-bottom:20px;}
-  .sig-block{text-align:center;}
-  .sig-space{height:50px;}
-  .sig-line{width:160px;height:1.5px;background:#374151;margin-bottom:6px;}
-  .sig-name{font-size:11px;font-weight:700;color:#374151;margin-bottom:2px;}
-  .sig-lbl{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;}
-  .terms-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:18px 20px;margin-bottom:24px;}
+
+  /* ── Digital stamp (replaces old dual-sig block) ── */
+  .stamp-row{display:flex;justify-content:flex-end;align-items:center;padding:16px 0;border-top:1.5px solid #e8e4f9;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
+  .stamp-box{display:flex;align-items:center;gap:14px;background:#f5f3ff;border:1.5px solid #e0e7ff;border-radius:14px;padding:14px 20px;}
+  .stamp-icon{width:44px;height:44px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .stamp-info{text-align:left;}
+  .stamp-name{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:2px;}
+  .stamp-lbl{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
+  .stamp-gen{font-size:9px;color:#9ca3af;}
+
+  /* ── Terms — keep together if short, break-before if needed ── */
+  .terms-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:18px 20px;margin-bottom:24px;page-break-inside:avoid;break-inside:avoid;}
   .terms-list{list-style:none;padding:0;margin-top:10px;}
   .terms-list li{font-size:10px;color:#9ca3af;margin-bottom:7px;padding-left:16px;position:relative;line-height:1.6;}
   .terms-list li::before{content:"•";position:absolute;left:0;color:#c4b5fd;font-size:13px;top:-2px;}
-  .footer{background:linear-gradient(135deg,#f5f3ff,#faf5ff);padding:24px 36px;text-align:center;border-top:1.5px solid #e8e4f9;}
+
+  /* ── Footer — sticks to bottom of last page ── */
+  .footer{background:linear-gradient(135deg,#f5f3ff,#faf5ff);padding:24px 36px;text-align:center;border-top:1.5px solid #e8e4f9;page-break-inside:avoid;break-inside:avoid;}
   .footer-brand{font-size:17px;font-weight:900;color:#4f46e5;margin-bottom:5px;}
   .footer-sub{font-size:11px;color:#9ca3af;margin-bottom:12px;}
   .footer-bar{width:48px;height:4px;background:linear-gradient(90deg,#4f46e5,#9333ea);border-radius:2px;margin:0 auto 14px;}
@@ -246,6 +297,8 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
 </head>
 <body>
 <div class="page">
+
+  <!-- ═══ HEADER (Page 1) ═══ -->
   <div class="header">
     <div class="orb1"></div><div class="orb2"></div>
     <div class="h-top">
@@ -269,8 +322,11 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
       <div class="status-pill" style="background:${sc.bg};color:${sc.text};border-color:${sc.border};">${sc.label}</div>
     </div>
   </div>
+
   <div class="body">
-    <div class="billing-grid">
+
+    <!-- ═══ BILLING (keep together) ═══ -->
+    <div class="billing-grid no-break">
       <div class="billing-card">
         <div class="billing-tag from">Service Provider</div>
         <div class="billing-name">${techName}</div>
@@ -287,7 +343,9 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
         ${customerAddress ? `<div class="billing-row">📍 ${customerAddress}</div>` : ""}
       </div>
     </div>
-    <div class="service-card">
+
+    <!-- ═══ SERVICE INFO (keep together) ═══ -->
+    <div class="service-card no-break">
       <div class="section-title">Service Information</div>
       <div class="info-grid">
         <div class="info-item"><div class="lbl">Appliance Type</div><div class="val purple">${job.applianceType || "—"}</div></div>
@@ -298,6 +356,8 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
       ${job.issue ? `<div class="text-field"><div class="lbl">Issue Reported</div><div class="val">${job.issue}</div></div>` : ""}
       ${job.serviceDone ? `<div class="text-field" style="margin-top:12px;"><div class="lbl">Work Done</div><div class="val green">${job.serviceDone}</div></div>` : ""}
     </div>
+
+    <!-- ═══ ITEMS TABLE (header repeats; rows break naturally across pages) ═══ -->
     <div class="table-wrap">
       <table>
         <thead>
@@ -310,35 +370,42 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
         </thead>
         <tbody>
           ${lineItemRows || '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No service items</td></tr>'}
-          ${partsRows ? `<tr class="parts-header"><td colspan="4">Parts &amp; Components</td></tr>${partsRows}` : ""}
+          ${partsRows ? `<tr class="parts-header no-break"><td colspan="4">Parts &amp; Components</td></tr>${partsRows}` : ""}
         </tbody>
       </table>
     </div>
-    <div class="totals-section">
+
+    <!-- ═══ TOTALS (keep together) ═══ -->
+    <div class="totals-section no-break">
       <div class="totals-box">
-        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Services & Fees</span><span class="val">₹${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
+        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Services &amp; Fees</span><span class="val">₹${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
         ${partsTotal > 0 ? `<div class="total-row"><span class="lbl">Parts &amp; Components</span><span class="val">₹${partsTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
         ${lineItems.length > 0 || partsTotal > 0 ? `<div class="total-divider"></div>` : ""}
         <div class="grand-row"><span class="lbl">Grand Total</span><span class="val">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
       </div>
     </div>
+
+    <!-- ═══ WARRANTY (keep together) ═══ -->
     ${
       job.warranty && job.warranty !== "No Warranty"
         ? `
-    <div class="warranty-card">
+    <div class="warranty-card no-break">
       <div class="warranty-icon">🛡️</div>
       <div>
         <div class="warranty-title">Service Warranty Certificate</div>
-        <div class="warranty-text">Covered by a <strong>${job.warranty}</strong> warranty from ${formatDate(job.serviceDate)}.</div>
+        <div class="warranty-text">Covered by a <strong>${job.warranty}</strong> warranty.</div>
+        <div class="warranty-from">Valid from: ${warrantyStartDisplay}</div>
         <div class="warranty-note">Covers labour and replaced parts listed above. Void if physically damaged, tampered with, or exposed to power surges after service.</div>
       </div>
     </div>`
         : ""
     }
+
+    <!-- ═══ NEXT SERVICE REMINDER (keep together) ═══ -->
     ${
       job.nextReminderDate
         ? `
-    <div class="reminder-card">
+    <div class="reminder-card no-break">
       <div style="font-size:22px;">🔔</div>
       <div>
         <div class="reminder-lbl">Next Service Reminder</div>
@@ -348,39 +415,41 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
     </div>`
         : ""
     }
-    <div class="sig-section">
-      <div class="sig-block">
-        <div class="sig-space"></div>
-        <div class="sig-line"></div>
-        <div class="sig-lbl">Customer Signature</div>
-      </div>
-      <div class="sig-block" style="text-align:right;">
-        <div class="sig-space"></div>
-        <div class="sig-line" style="margin-left:auto;"></div>
-        <div class="sig-name">${techName}</div>
-        <div class="sig-lbl">Authorised Signatory</div>
+
+    <!-- ═══ DIGITAL STAMP (no customer signature on digital invoice) ═══ -->
+    <div class="stamp-row no-break">
+      <div class="stamp-box">
+        <div class="stamp-icon">✅</div>
+        <div class="stamp-info">
+          <div class="stamp-lbl">Authorised &amp; Issued by</div>
+          <div class="stamp-name">${techName}</div>
+          <div class="stamp-gen">Generated on ${formatDate(new Date())}</div>
+        </div>
       </div>
     </div>
-    <div class="terms-card">
+
+    <!-- ═══ TERMS (keep together; will break before if too tight) ═══ -->
+    <div class="terms-card no-break">
       <div class="section-title">Terms &amp; Conditions</div>
       <ul class="terms-list">
-        <li>Payment is due on completion of service unless otherwise agreed in writing.</li>
         <li>Warranty is valid only for the specific fault repaired and parts replaced as listed above.</li>
-        <li>Warranty is void if the appliance is tampered with, subjected to power fluctuations, or physically damaged after service.</li>
         <li>Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.</li>
-        <li>This is a computer-generated invoice and constitutes a valid tax document where GST is applicable.</li>
-        <li>Disputes, if any, are subject to the jurisdiction of local courts only.</li>
+        <li>This is a computer-generated invoice.</li>
       </ul>
     </div>
-  </div>
-  <div class="footer">
+
+  </div><!-- /body -->
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="footer no-break">
     <div class="footer-brand">Thank you for choosing ${techName}! 🙏</div>
     <div class="footer-sub">We appreciate your trust and look forward to serving you again.</div>
     <div class="footer-bar"></div>
     ${techPhone || techEmail ? `<div class="footer-contact">${techPhone ? "📞 " + techPhone : ""}${techPhone && techEmail ? "  " : ""}${techEmail ? "✉️ " + techEmail : ""}</div>` : ""}
     <div class="footer-ref">Invoice ${invoiceNumber} · Generated ${formatDate(new Date())}</div>
   </div>
-</div>
+
+</div><!-- /page -->
 </body>
 </html>`;
 }
@@ -618,6 +687,19 @@ export default function InvoicePreviewScreen() {
   );
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
+  // Warranty start date — editable, defaults to completion date or service date
+  const defaultWarrantyStart = job?.warrantyStartDate
+    ? new Date(job.warrantyStartDate)
+    : job?.status === JobStatuses.COMPLETED && job?.updatedAt
+      ? new Date(job.updatedAt)
+      : new Date(job?.serviceDate);
+  const [warrantyStartDate, setWarrantyStartDate] =
+    useState(defaultWarrantyStart);
+  const [showWarrantyDatePicker, setShowWarrantyDatePicker] = useState(false);
+
+  // Lock all editing once job is both completed AND paid
+  const isLocked = job?.status === JobStatuses.COMPLETED && job?.isPaid;
+
   if (!job) {
     return (
       <SafeAreaView
@@ -728,6 +810,7 @@ export default function InvoicePreviewScreen() {
         amount: serviceSubtotal,
         isPaid,
         paymentMethod,
+        warrantyStartDate: warrantyStartDate.toISOString(),
         status: isPaid ? JobStatuses.COMPLETED : job.status,
       }).unwrap();
       Alert.alert("Saved", "Invoice details saved successfully.");
@@ -738,7 +821,11 @@ export default function InvoicePreviewScreen() {
 
   function buildPdfArgs() {
     return {
-      job: { ...job, partsUsed },
+      job: {
+        ...job,
+        partsUsed,
+        warrantyStartDate: warrantyStartDate.toISOString(),
+      },
       invoiceNumber,
       lineItems,
       techInfo: techUser,
@@ -879,6 +966,36 @@ export default function InvoicePreviewScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* ══ LOCKED BANNER ══ */}
+        {isLocked && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: colors.successBg,
+              borderWidth: 1,
+              borderColor: colors.successBorder,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <Lock size={14} color={colors.success} />
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 12,
+                fontWeight: "700",
+                color: colors.success,
+                flex: 1,
+              }}
+            >
+              This invoice is locked — job is completed and paid.
+            </Text>
+          </View>
+        )}
+
         {/* ══ INVOICE HERO CARD ══ */}
         <LinearGradient
           colors={colors.gradientPrimary}
@@ -886,31 +1003,43 @@ export default function InvoicePreviewScreen() {
           end={{ x: 1, y: 1 }}
           style={{
             borderRadius: 20,
-            padding: 22,
+            padding: 20,
             marginBottom: 12,
             overflow: "hidden",
             position: "relative",
           }}
         >
+          {/* Decorative circles */}
           <View
             style={{
               position: "absolute",
-              top: -50,
-              right: -50,
-              width: 160,
-              height: 160,
-              borderRadius: 80,
-              backgroundColor: "rgba(255,255,255,0.06)",
+              top: -40,
+              right: -40,
+              width: 140,
+              height: 140,
+              borderRadius: 70,
+              backgroundColor: "rgba(255,255,255,0.07)",
             }}
           />
           <View
             style={{
               position: "absolute",
-              bottom: -20,
-              left: -20,
-              width: 100,
-              height: 100,
-              borderRadius: 50,
+              bottom: -30,
+              left: -30,
+              width: 110,
+              height: 110,
+              borderRadius: 55,
+              backgroundColor: "rgba(255,255,255,0.05)",
+            }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              top: 60,
+              right: 30,
+              width: 60,
+              height: 60,
+              borderRadius: 30,
               backgroundColor: "rgba(255,255,255,0.04)",
             }}
           />
@@ -920,23 +1049,23 @@ export default function InvoicePreviewScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           >
             <View
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 13,
-                backgroundColor: "rgba(255,255,255,0.15)",
+                width: 44,
+                height: 44,
+                borderRadius: 14,
+                backgroundColor: "rgba(255,255,255,0.18)",
                 alignItems: "center",
                 justifyContent: "center",
                 marginRight: 12,
                 borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.2)",
+                borderColor: "rgba(255,255,255,0.25)",
               }}
             >
-              <Wrench color="#fff" size={18} />
+              <Wrench color="#fff" size={19} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -945,7 +1074,9 @@ export default function InvoicePreviewScreen() {
                   fontSize: 16,
                   fontWeight: "800",
                   color: "#fff",
+                  letterSpacing: -0.3,
                 }}
+                numberOfLines={1}
               >
                 {techName}
               </Text>
@@ -970,7 +1101,7 @@ export default function InvoicePreviewScreen() {
                 borderRadius: 20,
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 5,
+                gap: 4,
               }}
             >
               <View
@@ -999,27 +1130,31 @@ export default function InvoicePreviewScreen() {
             style={{
               height: 1,
               backgroundColor: "rgba(255,255,255,0.18)",
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           />
 
-          {/* Invoice number + dates */}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
-          >
-            <View>
+          {/* 2×2 Meta grid */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+            {/* Invoice Number */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
+            >
               <Text
                 style={{
                   fontFamily: "Inter",
-                  fontSize: 9,
+                  fontSize: 8,
                   color: "rgba(255,255,255,0.6)",
                   textTransform: "uppercase",
                   letterSpacing: 1.2,
-                  marginBottom: 4,
+                  marginBottom: 5,
                 }}
               >
                 Invoice Number
@@ -1027,72 +1162,133 @@ export default function InvoicePreviewScreen() {
               <Text
                 style={{
                   fontFamily: "Space Grotesk",
-                  fontSize: 22,
+                  fontSize: 16,
                   fontWeight: "900",
                   color: "#fff",
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.3,
                 }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {invoiceNumber}
               </Text>
             </View>
-            <View style={{ alignItems: "flex-end", gap: 6 }}>
-              <View style={{ alignItems: "flex-end" }}>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 9,
-                    color: "rgba(255,255,255,0.55)",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    marginBottom: 2,
-                  }}
-                >
-                  Issue Date
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#fff",
-                  }}
-                >
-                  {formatDate(job.serviceDate)}
-                </Text>
-              </View>
-              <View style={{ alignItems: "flex-end" }}>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 9,
-                    color: "rgba(255,255,255,0.55)",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    marginBottom: 2,
-                  }}
-                >
-                  Job Ref
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#fff",
-                  }}
-                >
-                  #{job._id?.slice(-6).toUpperCase()}
-                </Text>
-              </View>
+
+            {/* Issue Date */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 8,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1.2,
+                  marginBottom: 5,
+                }}
+              >
+                Issue Date
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#fff",
+                }}
+                numberOfLines={1}
+              >
+                {formatDate(job.serviceDate)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+            {/* Customer */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 8,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1.2,
+                  marginBottom: 5,
+                }}
+              >
+                Customer
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#fff",
+                }}
+                numberOfLines={1}
+              >
+                {customerName}
+              </Text>
+            </View>
+
+            {/* Job Ref */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                padding: 12,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 8,
+                  color: "rgba(255,255,255,0.6)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1.2,
+                  marginBottom: 5,
+                }}
+              >
+                Job Ref
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#fff",
+                }}
+                numberOfLines={1}
+              >
+                #{job._id?.slice(-6).toUpperCase()}
+              </Text>
             </View>
           </View>
 
           {/* Grand total preview */}
           <View
             style={{
-              marginTop: 18,
-              paddingTop: 16,
+              paddingTop: 14,
               borderTopWidth: 1,
               borderTopColor: "rgba(255,255,255,0.18)",
               flexDirection: "row",
@@ -1100,23 +1296,36 @@ export default function InvoicePreviewScreen() {
               alignItems: "center",
             }}
           >
-            <Text
-              style={{
-                fontFamily: "Inter",
-                fontSize: 10,
-                color: "rgba(255,255,255,0.65)",
-                textTransform: "uppercase",
-                letterSpacing: 1.2,
-              }}
-            >
-              Grand Total
-            </Text>
+            <View>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.65)",
+                  textTransform: "uppercase",
+                  letterSpacing: 1.2,
+                  marginBottom: 2,
+                }}
+              >
+                Grand Total
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 9,
+                  color: "rgba(255,255,255,0.45)",
+                }}
+              >
+                {job.applianceType || "Appliance Repair"}
+              </Text>
+            </View>
             <Text
               style={{
                 fontFamily: "Space Grotesk",
-                fontSize: 28,
+                fontSize: 30,
                 fontWeight: "900",
                 color: "#fff",
+                letterSpacing: -0.5,
               }}
             >
               {formatCurrency(grandTotal)}
@@ -1226,6 +1435,33 @@ export default function InvoicePreviewScreen() {
                   numberOfLines={1}
                 >
                   {techUser.email}
+                </Text>
+              </View>
+            ) : null}
+            {techUser?.address ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 5,
+                  marginBottom: 3,
+                }}
+              >
+                <MapPin
+                  size={10}
+                  color={colors.textMuted}
+                  style={{ marginTop: 1 }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textMuted,
+                    flex: 1,
+                  }}
+                  numberOfLines={2}
+                >
+                  {techUser.address}
                 </Text>
               </View>
             ) : null}
@@ -1368,7 +1604,7 @@ export default function InvoicePreviewScreen() {
               accent={colors.primary}
             />
             <InfoPill
-              icon={Calendar}
+              icon={CalendarIcon}
               label="Service Date"
               value={formatDate(job.serviceDate)}
               colors={colors}
@@ -1434,33 +1670,35 @@ export default function InvoicePreviewScreen() {
             title="Service Breakdown"
             colors={colors}
             action={
-              <TouchableOpacity
-                onPress={handleAddRow}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 5,
-                  backgroundColor: colors.primaryBg,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: colors.primaryBorder,
-                }}
-                activeOpacity={0.75}
-              >
-                <Plus size={12} color={colors.primary} />
-                <Text
+              isLocked ? null : (
+                <TouchableOpacity
+                  onPress={handleAddRow}
                   style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: colors.primary,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    backgroundColor: colors.primaryBg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
                   }}
+                  activeOpacity={0.75}
                 >
-                  Add Row
-                </Text>
-              </TouchableOpacity>
+                  <Plus size={12} color={colors.primary} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    Add Row
+                  </Text>
+                </TouchableOpacity>
+              )
             }
           />
 
@@ -1885,7 +2123,8 @@ export default function InvoicePreviewScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => setIsPaid(!isPaid)}
+                onPress={() => !isLocked && setIsPaid(!isPaid)}
+                disabled={isLocked}
                 style={{
                   backgroundColor: isPaid ? colors.successBg : colors.bgSurface,
                   borderWidth: 1.5,
@@ -2031,11 +2270,47 @@ export default function InvoicePreviewScreen() {
                   fontSize: 14,
                   fontWeight: "700",
                   color: colors.textPrimary,
-                  marginBottom: 5,
+                  marginBottom: 8,
                 }}
               >
                 {job.warranty} Coverage
               </Text>
+
+              {/* Warranty start date — tappable to edit */}
+              <TouchableOpacity
+                onPress={() => !isLocked && setShowWarrantyDatePicker(true)}
+                activeOpacity={isLocked ? 1 : 0.7}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  backgroundColor: isLocked ? colors.bgSurface : colors.bgCard,
+                  borderWidth: 1,
+                  borderColor: isLocked ? colors.border : colors.primaryBorder,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  alignSelf: "flex-start",
+                  marginBottom: 8,
+                }}
+              >
+                <CalendarIcon
+                  size={11}
+                  color={isLocked ? colors.textDisabled : colors.primary}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    fontWeight: "600",
+                    color: isLocked ? colors.textDisabled : colors.primary,
+                  }}
+                >
+                  Starts: {formatDate(warrantyStartDate)}
+                </Text>
+                {!isLocked && <Edit3 size={10} color={colors.primary} />}
+              </TouchableOpacity>
+
               <Text
                 style={{
                   fontFamily: "Inter",
@@ -2044,15 +2319,99 @@ export default function InvoicePreviewScreen() {
                   lineHeight: 17,
                 }}
               >
-                {"From "}
-                {formatDate(job.serviceDate)}
-                {
-                  " - Covers labour & parts as listed. Void if physically damaged, tampered with, or exposed to power surges after service."
-                }
+                Covers labour &amp; parts as listed. Void if physically damaged,
+                tampered with, or exposed to power surges after service.
               </Text>
             </View>
           </View>
         ) : null}
+
+        {/* Warranty Date Picker Modal */}
+        <Modal
+          visible={showWarrantyDatePicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowWarrantyDatePicker(false)}
+        >
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+            onPress={() => setShowWarrantyDatePicker(false)}
+          />
+          <View
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: colors.bgCard,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+              paddingBottom: 40,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 15,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                Warranty Start Date
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowWarrantyDatePicker(false)}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: colors.primary,
+                  }}
+                >
+                  Done
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Calendar
+              current={warrantyStartDate.toISOString().split("T")[0]}
+              markedDates={{
+                [warrantyStartDate.toISOString().split("T")[0]]: {
+                  selected: true,
+                  selectedColor: colors.primary,
+                },
+              }}
+              onDayPress={(day) => {
+                setWarrantyStartDate(new Date(day.dateString));
+                setShowWarrantyDatePicker(false);
+              }}
+              theme={{
+                calendarBackground: colors.bgCard,
+                textSectionTitleColor: colors.textMuted,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: "#fff",
+                todayTextColor: colors.primary,
+                dayTextColor: colors.textPrimary,
+                textDisabledColor: colors.textDisabled,
+                arrowColor: colors.primary,
+                monthTextColor: colors.textPrimary,
+                textMonthFontFamily: "Space Grotesk",
+                textDayFontFamily: "Inter",
+                textDayHeaderFontFamily: "Inter",
+              }}
+            />
+          </View>
+        </Modal>
 
         {/* ══ TERMS & CONDITIONS ══ */}
         <Card colors={colors}>
@@ -2183,35 +2542,64 @@ export default function InvoicePreviewScreen() {
         }}
       >
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <TouchableOpacity
-            onPress={handleSaveInvoice}
-            disabled={isSaving}
-            activeOpacity={0.8}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              paddingVertical: 12,
-              borderRadius: 12,
-              borderWidth: 1.5,
-              borderColor: colors.primaryBorder,
-              backgroundColor: colors.primaryBg,
-            }}
-          >
-            <Save size={15} color={colors.primary} />
-            <Text
+          {isLocked ? (
+            <View
               style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 12,
-                fontWeight: "800",
-                color: colors.primary,
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 12,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: colors.successBorder,
+                backgroundColor: colors.successBg,
               }}
             >
-              {isSaving ? "Saving..." : "Save"}
-            </Text>
-          </TouchableOpacity>
+              <Lock size={14} color={colors.success} />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 12,
+                  fontWeight: "800",
+                  color: colors.success,
+                }}
+              >
+                Completed &amp; Paid
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={handleSaveInvoice}
+              disabled={isSaving}
+              activeOpacity={0.8}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                paddingVertical: 12,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: colors.primaryBorder,
+                backgroundColor: colors.primaryBg,
+              }}
+            >
+              <Save size={15} color={colors.primary} />
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 12,
+                  fontWeight: "800",
+                  color: colors.primary,
+                }}
+              >
+                {isSaving ? "Saving..." : "Save"}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={handleWhatsAppShare}

@@ -451,7 +451,7 @@ export default function DashboardScreen() {
                   marginTop: 2,
                 }}
               >
-                From completed service jobs
+                Service, diagnostic & spare parts
               </Text>
             </View>
             <View
@@ -460,6 +460,8 @@ export default function DashboardScreen() {
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 8,
+                marginLeft: 12,
+                flexShrink: 0,
               }}
             >
               <Text
@@ -468,6 +470,7 @@ export default function DashboardScreen() {
                   fontSize: 10,
                   fontWeight: "800",
                 }}
+                numberOfLines={1}
               >
                 RECOVER
               </Text>
