@@ -120,7 +120,7 @@ async function getJobs(
   const [data, total] = await Promise.all([
     Job.find(query)
       .populate("customerId", "name phone address")
-      .sort({ serviceDate: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(pageSize))
       .lean(),
@@ -154,7 +154,7 @@ async function getJobsByCustomer(
   const skip = (Number(page) - 1) * Number(pageSize);
   const [data, total] = await Promise.all([
     Job.find({ userId, customerId })
-      .sort({ serviceDate: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(pageSize))
       .populate("customerId", "name phone address")
@@ -297,6 +297,15 @@ async function updateJob(userId, jobId, updateData) {
       note: "Payment reset to unpaid.",
       at: new Date(),
     });
+  }
+
+  // Record the exact timestamp when a job transitions to COMPLETED so the
+  // dashboard can group earnings by actual completion date (not updatedAt).
+  const completingNow =
+    updateData.status === JobStatus.COMPLETED &&
+    job.status !== JobStatus.COMPLETED;
+  if (completingNow && !updateData.completedAt) {
+    updateData.completedAt = new Date();
   }
 
   const updated = await Job.findByIdAndUpdate(

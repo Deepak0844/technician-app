@@ -72,12 +72,15 @@ async function getDashboardSummary(userId) {
     }),
 
     // Weekly jobs + Total Potential earnings (Amount + Diagnostic)
-    // Uses updatedAt so a job completed this week counts even if scheduled later
+    // Uses completedAt (falls back to updatedAt for legacy jobs without it)
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          updatedAt: { $gte: weekStart, $lt: weekEnd },
+          $or: [
+            { completedAt: { $gte: weekStart, $lt: weekEnd } },
+            { completedAt: null, updatedAt: { $gte: weekStart, $lt: weekEnd } },
+          ],
           status: JobStatus.COMPLETED,
         },
       },
@@ -91,12 +94,18 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Monthly Paid vs Unpaid earnings
-    // Uses updatedAt so a job completed this month counts even if scheduled for a future date
+    // Uses completedAt (falls back to updatedAt for legacy jobs without it)
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          updatedAt: { $gte: monthStart, $lt: monthEnd },
+          $or: [
+            { completedAt: { $gte: monthStart, $lt: monthEnd } },
+            {
+              completedAt: null,
+              updatedAt: { $gte: monthStart, $lt: monthEnd },
+            },
+          ],
           status: JobStatus.COMPLETED,
         },
       },
@@ -120,12 +129,18 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Previous Monthly earnings (for growth calculation)
-    // Uses updatedAt to stay consistent with current-month calculation
+    // Uses completedAt (falls back to updatedAt for legacy jobs without it)
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          updatedAt: { $gte: prevMonthStart, $lt: prevMonthEnd },
+          $or: [
+            { completedAt: { $gte: prevMonthStart, $lt: prevMonthEnd } },
+            {
+              completedAt: null,
+              updatedAt: { $gte: prevMonthStart, $lt: prevMonthEnd },
+            },
+          ],
           status: JobStatus.COMPLETED,
         },
       },
@@ -199,15 +214,14 @@ async function getDashboardSummary(userId) {
   const currentMonthlyPending = monthlyStats[0]?.pendingEarnings ?? 0;
   const prevMonthlyEarnings = prevMonthlyStatsActive[0]?.earnings ?? 0;
 
-  // Calculate earnings change percentage (based on total potential)
+  // Calculate earnings change percentage vs previous month.
+  // Returns null when there is no previous-month baseline (can't compute a meaningful %).
   const currentMonthlyTotal = monthlyStats[0]?.totalEarnings ?? 0;
-  let earningsChange = 0;
+  let earningsChange = null;
   if (prevMonthlyEarnings > 0) {
     earningsChange = Math.round(
       ((currentMonthlyTotal - prevMonthlyEarnings) / prevMonthlyEarnings) * 100,
     );
-  } else if (currentMonthlyTotal > 0) {
-    earningsChange = null;
   }
 
   return {

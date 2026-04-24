@@ -64,6 +64,8 @@ function AppBootstrap() {
   const dispatch = useDispatch();
   const tokenLoaded = useSelector((state) => state.auth.tokenLoaded);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
+  const isReady = tokenLoaded && isThemeInitialized;
 
   useEffect(
     function bootstrap() {
@@ -84,16 +86,7 @@ function AppBootstrap() {
     [dispatch],
   );
 
-  // Once authenticated, request OS notification permission (needed for local notifications on iOS)
-  useEffect(
-    function requestNotificationPermission() {
-      if (!isAuthenticated) return;
-      NotificationUtils.requestPermissions();
-    },
-    [isAuthenticated],
-  );
-
-  // Request Location Permissions on App Start
+  // Step 1 — Request location permission immediately on app start (before auth)
   useEffect(function requestLocationPermission() {
     (async () => {
       try {
@@ -106,6 +99,20 @@ function AppBootstrap() {
       }
     })();
   }, []);
+
+  // Step 2 — Request notification permission in the "middle of the app":
+  // wait until the app is fully visible (splash hidden, user authenticated),
+  // then add a short delay so the dialog appears naturally after first render.
+  useEffect(
+    function requestNotificationPermission() {
+      if (!isAuthenticated || !isReady) return;
+      const timer = setTimeout(() => {
+        NotificationUtils.requestPermissions();
+      }, 1500);
+      return () => clearTimeout(timer);
+    },
+    [isAuthenticated, isReady],
+  );
 
   // Handle notification taps (foreground / background) — navigate to Job Details
   useEffect(function handleNotificationTap() {
@@ -138,9 +145,6 @@ function AppBootstrap() {
     },
     [lastNotificationResponse],
   );
-
-  const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
-  const isReady = tokenLoaded && isThemeInitialized;
 
   useEffect(
     function hideSplashWhenReady() {

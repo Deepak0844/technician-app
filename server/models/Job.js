@@ -98,6 +98,11 @@ const jobSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    completedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     internalNotes: {
       type: String,
       trim: true,
