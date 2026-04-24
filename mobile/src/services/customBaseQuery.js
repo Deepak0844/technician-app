@@ -21,15 +21,18 @@ const customBaseQuery = () => async (rawArgs, api) => {
   } catch (error) {
     if (isCancel(error)) throw error;
 
+    const status = error.response?.status;
+
     // Token expired or revoked — clear credentials and redirect to login
-    if (error.response?.status === 401) {
+    // Only do this for explicit 401s, NOT for network errors (offline)
+    if (status === 401) {
       await StorageUtils.clearToken();
-      api.dispatch({ type: 'auth/clearCredentials' });
+      api.dispatch({ type: "auth/clearCredentials" });
     }
 
     return {
       error: {
-        status: error.response?.status,
+        status: status ?? "NETWORK_ERROR",
         data: error.response?.data || error.message,
       },
     };

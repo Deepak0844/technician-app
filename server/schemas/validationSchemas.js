@@ -205,6 +205,7 @@ const jobSharedFields = {
   serviceDate: z.string().min(1, "Service date is required"),
   nextReminderDate: z.string().optional().nullable(),
   warranty: z.string().max(MAX_SHORT_TEXT).optional().default(""),
+  warrantyStartDate: z.string().optional().nullable(),
   internalNotes: z.string().max(MAX_TEXT_LENGTH).optional().default(""),
   priority: z
     .nativeEnum(PriorityLevels)

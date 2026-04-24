@@ -94,6 +94,10 @@ const jobSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    warrantyStartDate: {
+      type: Date,
+      default: null,
+    },
     internalNotes: {
       type: String,
       trim: true,

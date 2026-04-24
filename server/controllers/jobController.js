@@ -43,13 +43,16 @@ export const getJobs = asyncHandler(async (req, res) => {
     page,
     pageSize,
   } = req.query;
+  const isPaidBool =
+    isPaid === "true" ? true : isPaid === "false" ? false : undefined;
+
   const result = await JobService.getJobs(req.user._id, {
     customerId,
     startDate,
     endDate,
     status,
     search,
-    isPaid,
+    isPaid: isPaidBool,
     applianceType,
     page,
     pageSize,

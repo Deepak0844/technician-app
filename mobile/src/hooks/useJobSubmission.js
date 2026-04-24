@@ -87,7 +87,6 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       }
     }
 
-
     // Force COMPLETED status when user marks a job as paid
     const resolvedStatus =
       isPaid && status !== JobStatuses.COMPLETED
@@ -127,6 +126,9 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
             _id: editingJob._id,
             applianceType: appliance,
             serviceDate: finalDate.toISOString(),
+            customerName: selectedCustomer?.name ?? null,
+            location: selectedLocation ?? null,
+            issue: issue?.trim() ?? null,
           });
         }
         Alert.alert(
@@ -134,15 +136,28 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
           resolvedStatus !== status
             ? "Job marked as Completed and Paid."
             : "Job updated successfully.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                if (onSuccess) onSuccess();
+              },
+            },
+          ],
         );
       } else {
         const result = await createJob(payload).unwrap();
         if (result?.data?._id)
           await NotificationUtils.scheduleJobReminders(result.data);
-        Alert.alert("Success", "Job created successfully.");
+        Alert.alert("Success", "Job created successfully.", [
+          {
+            text: "OK",
+            onPress: () => {
+              if (onSuccess) onSuccess();
+            },
+          },
+        ]);
       }
-
-      if (onSuccess) onSuccess();
     } catch (err) {
       Alert.alert("Error", err?.data?.message || "Operation failed.");
     }

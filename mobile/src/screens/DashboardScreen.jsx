@@ -53,7 +53,7 @@ export default function DashboardScreen() {
   };
 
   const allJobs = dashboardStats.recentJobs || [];
-  const totalEarnings = Number(dashboardStats?.totalEarnings ?? 0);
+  const monthlyTotalEarnings = Number(dashboardStats?.monthlyPaidEarnings ?? 0);
   const rawEarningsChange = dashboardStats?.earningsChange;
   const isNewMonth = rawEarningsChange === null;
   const earningsChange = isNewMonth ? 0 : Number(rawEarningsChange ?? 0);
@@ -116,7 +116,7 @@ export default function DashboardScreen() {
           alignItems: "center",
           justifyContent: "space-between",
           paddingHorizontal: 16,
-          height: 56,
+          height: 64,
           zIndex: 50,
         }}
       >
@@ -168,7 +168,19 @@ export default function DashboardScreen() {
               marginBottom: 2,
             }}
           >
-            Welcome back, {user?.name?.split(" ")[0] || "Technician"}! 👋
+            {(() => {
+              const hour = new Date().getHours();
+              const timeGreeting =
+                hour < 12
+                  ? "Good morning"
+                  : hour < 17
+                    ? "Good afternoon"
+                    : "Good evening";
+              const name = user?.name?.split(" ")[0] || "Technician";
+              return totalJobs > 0
+                ? `${timeGreeting}, ${name}! 👋`
+                : `Welcome, ${name}! 🎉`;
+            })()}
           </Text>
           <Text
             style={{
@@ -308,7 +320,7 @@ export default function DashboardScreen() {
               <Text
                 style={{
                   fontFamily: "Inter",
-                  fontSize: 9,
+                  fontSize: 10,
                   color: colors.textMuted,
                   textTransform: "uppercase",
                   marginBottom: 4,
@@ -351,7 +363,7 @@ export default function DashboardScreen() {
               <Text
                 style={{
                   fontFamily: "Inter",
-                  fontSize: 9,
+                  fontSize: 10,
                   color: colors.textDisabled,
                   textTransform: "uppercase",
                 }}
@@ -367,7 +379,7 @@ export default function DashboardScreen() {
                   marginTop: 2,
                 }}
               >
-                {formatCurrency(totalEarnings)}
+                {formatCurrency(monthlyTotalEarnings)}
               </Text>
             </View>
           </View>
@@ -415,7 +427,7 @@ export default function DashboardScreen() {
                     fontWeight: "700",
                     color: colors.warningIcon,
                     textTransform: "uppercase",
-                    letterSpacing: 1,
+                    letterSpacing: 0.3,
                   }}
                 >
                   Payments Pending
@@ -439,7 +451,7 @@ export default function DashboardScreen() {
                   marginTop: 2,
                 }}
               >
-                From completed service jobs
+                Service, diagnostic & spare parts
               </Text>
             </View>
             <View
@@ -448,6 +460,8 @@ export default function DashboardScreen() {
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 8,
+                marginLeft: 12,
+                flexShrink: 0,
               }}
             >
               <Text
@@ -456,6 +470,7 @@ export default function DashboardScreen() {
                   fontSize: 10,
                   fontWeight: "800",
                 }}
+                numberOfLines={1}
               >
                 RECOVER
               </Text>

@@ -35,6 +35,11 @@ const authSlice = createSlice({
     updateUser(state, action) {
       state.user = { ...state.user, ...action.payload };
     },
+    // Temporarily stores the raw token during app bootstrap so the offline
+    // fallback in getMe.matchRejected can verify a token exists.
+    setBootstrapToken(state, action) {
+      state.token = action.payload;
+    },
     clearCredentials(state) {
       state.token = null;
       state.user = null;
@@ -56,12 +61,21 @@ const authSlice = createSlice({
           state.tokenLoaded = true;
         }
       })
-      .addMatcher(authApi.endpoints.getMe.matchRejected, (state) => {
+      .addMatcher(authApi.endpoints.getMe.matchRejected, (state, action) => {
         // Only react during bootstrap (tokenLoaded still false).
         // Post-bootstrap 401s are already handled by customBaseQuery.
         if (!state.tokenLoaded) {
-          state.isAuthenticated = false;
-          state.tokenLoaded = true;
+          const errorStatus = action.payload?.status;
+          if (errorStatus === "NETWORK_ERROR" || errorStatus === undefined) {
+            // Offline or server unreachable — keep the stored token and treat as authenticated
+            // so the user can still use the app with cached data.
+            state.isAuthenticated = !!state.token;
+            state.tokenLoaded = true;
+          } else {
+            // Genuine 401 / bad token — force re-login
+            state.isAuthenticated = false;
+            state.tokenLoaded = true;
+          }
         }
       });
   },
@@ -72,5 +86,6 @@ export const {
   clearCredentials,
   completeFirstLoginSetup,
   updateUser,
+  setBootstrapToken,
 } = authSlice.actions;
 export default authSlice.reducer;

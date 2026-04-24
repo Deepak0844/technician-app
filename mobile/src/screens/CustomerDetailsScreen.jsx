@@ -15,7 +15,11 @@ import { useGetCustomerByIdQuery } from "@services/api/customerApi";
 import { useGetJobsByCustomerPagedInfiniteQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import { openDirections } from "@utils/locationUtils";
-import { formatDate, formatCurrency, formatDateShort } from "@utils/formatUtils";
+import {
+  formatDate,
+  formatCurrency,
+  formatDateShort,
+} from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
 
@@ -307,8 +311,7 @@ export default function CustomerDetailsScreen() {
   );
 
   // Total job count comes from the server (accurate even before all pages load)
-  const totalJobCount =
-    jobsData?.pages[0]?.pagination?.total ?? jobs.length;
+  const totalJobCount = jobsData?.pages[0]?.pagination?.total ?? jobs.length;
 
   const filteredJobs = React.useMemo(() => {
     if (!selectedAppliance) return jobs;
@@ -1015,9 +1018,8 @@ export default function CustomerDetailsScreen() {
             </View>
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate(RouteNames.TABS, {
-                  screen: RouteNames.JOB_HISTORY,
-                  params: { customerId },
+                navigation.push(RouteNames.CUSTOMER_JOB_HISTORY, {
+                  customerId,
                 })
               }
               activeOpacity={0.7}
@@ -1093,7 +1095,9 @@ export default function CustomerDetailsScreen() {
                   paddingHorizontal: 10,
                 }}
               >
-                {"This customer doesn't have any jobs yet. Create the first one!"}
+                {
+                  "This customer doesn't have any jobs yet. Create the first one!"
+                }
               </Text>
               <TouchableOpacity
                 onPress={() =>

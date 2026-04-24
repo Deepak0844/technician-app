@@ -47,11 +47,27 @@ async function requestPermissions() {
  * Schedule 60-min, 30-min, and 15-min local reminders for a job.
  * Silently skips any window whose trigger time is already in the past.
  *
- * @param {{ _id: string, applianceType: string, serviceDate: string }} job
+ * @param {{
+ *   _id: string,
+ *   applianceType: string,
+ *   serviceDate: string,
+ *   customerName?: string,
+ *   location?: { address?: string },
+ *   issue?: string
+ * }} job
  */
 async function scheduleJobReminders(job) {
   const serviceTime = new Date(job.serviceDate).getTime();
   const now = Date.now();
+
+  const customerName =
+    job.customerName || job.customerId?.name || job.customer?.name || null;
+
+  const address =
+    job.location?.address ||
+    job.customerId?.address ||
+    job.customer?.address ||
+    null;
 
   for (const mins of REMINDER_MINUTES) {
     const triggerTime = serviceTime - mins * 60 * 1000;
@@ -61,11 +77,20 @@ async function scheduleJobReminders(job) {
 
     const label = mins === 60 ? "1 hour" : `${mins} minutes`;
 
+    const titleParts = ["Job Reminder"];
+    if (customerName) titleParts.push(`– ${customerName}`);
+    const title = titleParts.join(" ");
+
+    const bodyParts = [`${job.applianceType} service in ${label}.`];
+    if (job.issue) bodyParts.push(`Issue: ${job.issue}`);
+    if (address) bodyParts.push(`📍 ${address}`);
+    const body = bodyParts.join(" ");
+
     await Notifications.scheduleNotificationAsync({
       identifier: reminderId(job._id, mins),
       content: {
-        title: "Upcoming Job Reminder",
-        body: `${job.applianceType} service is in ${label}.`,
+        title,
+        body,
         sound: true,
         data: { jobId: job._id, minsBefore: mins },
       },
@@ -86,7 +111,9 @@ async function scheduleJobReminders(job) {
  */
 async function cancelJobReminders(jobId) {
   for (const mins of REMINDER_MINUTES) {
-    await Notifications.cancelScheduledNotificationAsync(reminderId(jobId, mins));
+    await Notifications.cancelScheduledNotificationAsync(
+      reminderId(jobId, mins),
+    );
   }
 }
 
@@ -116,7 +143,10 @@ async function rescheduleAllReminders(jobs) {
       await cancelJobReminders(job._id);
       await scheduleJobReminders(job);
     } catch (err) {
-      console.warn(`[NotificationUtils] Failed to reschedule job ${job._id}:`, err);
+      console.warn(
+        `[NotificationUtils] Failed to reschedule job ${job._id}:`,
+        err,
+      );
     }
   }
 }

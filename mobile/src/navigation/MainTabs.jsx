@@ -138,6 +138,10 @@ export default function MainTabs() {
       />
       <Stack.Screen name={RouteNames.REMINDERS} component={RemindersScreen} />
       <Stack.Screen
+        name={RouteNames.CUSTOMER_JOB_HISTORY}
+        component={JobHistoryScreen}
+      />
+      <Stack.Screen
         name={RouteNames.CREATE_CUSTOMER}
         component={CreateCustomerScreen}
       />

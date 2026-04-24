@@ -29,6 +29,8 @@ import {
   XCircle,
   RotateCw,
   CreditCard,
+  History,
+  ChevronDown,
 } from "lucide-react-native";
 import {
   useGetJobByIdQuery,
@@ -45,6 +47,7 @@ import {
 import { RouteNames } from "@constants/routeNames";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
+import NotificationUtils from "@utils/notificationUtils";
 
 export default function JobDetailsScreen() {
   const navigation = useNavigation();
@@ -65,10 +68,11 @@ export default function JobDetailsScreen() {
   const [repeatJob, { isLoading: isRepeating }] = useRepeatJobMutation();
   const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
   const [reopenJob, { isLoading: isReopening }] = useReopenJobMutation();
+  const [activityOpen, setActivityOpen] = React.useState(false);
 
   const isSyncing = isDeleting || isRepeating || isUpdating || isReopening;
 
-  const job = jobResponse?.data || initialJob;
+  const job = jobResponse?.data ?? initialJob;
 
   if (!job) {
     return (
@@ -124,6 +128,16 @@ export default function JobDetailsScreen() {
           onPress: async () => {
             try {
               await reopenJob(job._id).unwrap();
+              if (new Date(job.serviceDate) > new Date()) {
+                await NotificationUtils.scheduleJobReminders({
+                  _id: job._id,
+                  applianceType: job.applianceType,
+                  serviceDate: job.serviceDate,
+                  customerName: job.customerId?.name ?? null,
+                  location: job.location ?? null,
+                  issue: job.issue ?? null,
+                });
+              }
               Alert.alert(
                 "Reopened",
                 "Job is now In Progress and marked as Unpaid.",
@@ -153,6 +167,16 @@ export default function JobDetailsScreen() {
                 id: job._id,
                 status: JobStatuses.PENDING,
               }).unwrap();
+              if (new Date(job.serviceDate) > new Date()) {
+                await NotificationUtils.scheduleJobReminders({
+                  _id: job._id,
+                  applianceType: job.applianceType,
+                  serviceDate: job.serviceDate,
+                  customerName: job.customerId?.name ?? null,
+                  location: job.location ?? null,
+                  issue: job.issue ?? null,
+                });
+              }
               Alert.alert("Reactivated", "Job is now Pending.");
             } catch (err) {
               Alert.alert(
@@ -183,6 +207,7 @@ export default function JobDetailsScreen() {
               paymentMethod,
               status: JobStatuses.COMPLETED,
             }).unwrap();
+            await NotificationUtils.cancelJobReminders(job._id);
             Alert.alert(
               "Success",
               isNonCompleted
@@ -260,6 +285,13 @@ export default function JobDetailsScreen() {
           status: newStatus,
           ...extraPayload,
         }).unwrap();
+        // Remove reminders for terminal states; no reschedule needed (no new date set here)
+        if (
+          newStatus === JobStatuses.COMPLETED ||
+          newStatus === JobStatuses.CANCELLED
+        ) {
+          await NotificationUtils.cancelJobReminders(job._id);
+        }
         Alert.alert(
           "Success",
           extraPayload.isPaid
@@ -360,7 +392,7 @@ export default function JobDetailsScreen() {
           alignItems: "center",
           justifyContent: "space-between",
           paddingHorizontal: 16,
-          height: 56,
+          height: 64,
           zIndex: 50,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
@@ -1194,6 +1226,235 @@ export default function JobDetailsScreen() {
             </View>
           </View>
         )}
+
+        {/* Job Activity Timeline — collapsible accordion */}
+        {job?.events?.length > 0 &&
+          (() => {
+            const ACTION_LABEL = {
+              created: "Job Created",
+              status_changed: "Status Changed",
+              marked_paid: "Marked as Paid",
+              marked_unpaid: "Marked as Unpaid",
+              reopened: "Job Reopened",
+              edited: "Job Edited",
+            };
+            const DOT_COLOR = {
+              created: colors.primary,
+              status_changed: colors.secondary,
+              marked_paid: colors.secondary,
+              marked_unpaid: colors.warning,
+              reopened: colors.warning,
+              edited: colors.textSecondary,
+            };
+            const events = [...job.events].reverse();
+
+            return (
+              <View
+                style={{
+                  marginTop: 16,
+                  backgroundColor: colors.bgSurface,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Accordion header — always visible */}
+                <TouchableOpacity
+                  onPress={() => setActivityOpen((v) => !v)}
+                  activeOpacity={0.7}
+                  style={{
+                    backgroundColor: colors.bgCard,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottomWidth: activityOpen ? 1 : 0,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <History size={12} color={colors.secondary} />
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: colors.secondary,
+                        letterSpacing: 1.5,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Activity Log
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor: colors.primaryBg,
+                        borderRadius: 99,
+                        paddingHorizontal: 7,
+                        paddingVertical: 2,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 9,
+                          fontWeight: "700",
+                          color: colors.primary,
+                        }}
+                      >
+                        {job.events.length}
+                      </Text>
+                    </View>
+                  </View>
+                  {/* Latest event pill when collapsed */}
+                  {!activityOpen && <View style={{ flex: 1 }} />}
+                  <ChevronDown
+                    size={14}
+                    color={colors.textSecondary}
+                    style={{
+                      marginLeft: 8,
+                      transform: [{ rotate: activityOpen ? "180deg" : "0deg" }],
+                    }}
+                  />
+                </TouchableOpacity>
+
+                {/* Expanded timeline */}
+                {activityOpen && (
+                  <View
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingTop: 12,
+                      paddingBottom: 4,
+                    }}
+                  >
+                    {events.map((event, idx) => {
+                      const isLast = idx === events.length - 1;
+                      const label = ACTION_LABEL[event.action] ?? event.action;
+                      const dotColor =
+                        DOT_COLOR[event.action] ?? colors.textSecondary;
+                      const eventDate = event.at ? new Date(event.at) : null;
+                      const dateStr = eventDate
+                        ? eventDate.toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                          }) +
+                          " · " +
+                          eventDate.toLocaleTimeString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          })
+                        : "";
+
+                      // Build a single human-readable subtitle
+                      let subtitle = "";
+                      if (event.from && event.to) {
+                        const fmt = (s) =>
+                          s
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+                        subtitle = `${fmt(event.from)} → ${fmt(event.to)}`;
+                      } else if (event.to) {
+                        const fmt = (s) =>
+                          s
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+                        subtitle = fmt(event.to);
+                      }
+
+                      return (
+                        <View
+                          key={idx}
+                          style={{ flexDirection: "row", gap: 10 }}
+                        >
+                          {/* Spine */}
+                          <View style={{ alignItems: "center", width: 14 }}>
+                            <View
+                              style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: dotColor,
+                                marginTop: 5,
+                              }}
+                            />
+                            {!isLast && (
+                              <View
+                                style={{
+                                  width: 1.5,
+                                  flex: 1,
+                                  backgroundColor: colors.border,
+                                  marginTop: 3,
+                                  minHeight: 16,
+                                }}
+                              />
+                            )}
+                          </View>
+                          {/* Content — single compact row */}
+                          <View
+                            style={{
+                              flex: 1,
+                              paddingBottom: isLast ? 12 : 14,
+                              flexDirection: "row",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              gap: 8,
+                            }}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={{
+                                  fontFamily: "Inter",
+                                  fontSize: 12,
+                                  fontWeight: "600",
+                                  color: colors.textPrimary,
+                                }}
+                              >
+                                {label}
+                              </Text>
+                              {!!subtitle && (
+                                <Text
+                                  style={{
+                                    fontFamily: "Inter",
+                                    fontSize: 11,
+                                    color: colors.textSecondary,
+                                    marginTop: 1,
+                                  }}
+                                >
+                                  {subtitle}
+                                </Text>
+                              )}
+                            </View>
+                            {!!dateStr && (
+                              <Text
+                                style={{
+                                  fontFamily: "Inter",
+                                  fontSize: 10,
+                                  color: colors.textDisabled,
+                                  marginTop: 2,
+                                  textAlign: "right",
+                                }}
+                              >
+                                {dateStr}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
 
         {/* Action Buttons */}
         <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>

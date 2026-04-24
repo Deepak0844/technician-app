@@ -6,6 +6,23 @@ import { DefaultPagination, JobStatus } from "#constants/generalConstants.js";
 // Models
 import Job from "#models/Job.js";
 
+// Helper: MongoDB expression to sum amount + diagnosticFee + all partsUsed costs
+const jobTotalExpr = {
+  $add: [
+    "$amount",
+    "$diagnosticFee",
+    {
+      $reduce: {
+        input: { $ifNull: ["$partsUsed", []] },
+        initialValue: 0,
+        in: {
+          $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }],
+        },
+      },
+    },
+  ],
+};
+
 /**
  * Aggregate dashboard summary for a technician
  */
@@ -55,11 +72,12 @@ async function getDashboardSummary(userId) {
     }),
 
     // Weekly jobs + Total Potential earnings (Amount + Diagnostic)
+    // Uses updatedAt so a job completed this week counts even if scheduled later
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: weekStart, $lt: weekEnd },
+          updatedAt: { $gte: weekStart, $lt: weekEnd },
           status: JobStatus.COMPLETED,
         },
       },
@@ -67,17 +85,18 @@ async function getDashboardSummary(userId) {
         $group: {
           _id: null,
           count: { $sum: 1 },
-          earnings: { $sum: { $add: ["$amount", "$diagnosticFee"] } },
+          earnings: { $sum: jobTotalExpr },
         },
       },
     ]),
 
     // Monthly Paid vs Unpaid earnings
+    // Uses updatedAt so a job completed this month counts even if scheduled for a future date
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: monthStart, $lt: monthEnd },
+          updatedAt: { $gte: monthStart, $lt: monthEnd },
           status: JobStatus.COMPLETED,
         },
       },
@@ -85,23 +104,15 @@ async function getDashboardSummary(userId) {
         $group: {
           _id: null,
           count: { $sum: 1 },
-          totalEarnings: { $sum: { $add: ["$amount", "$diagnosticFee"] } },
+          totalEarnings: { $sum: jobTotalExpr },
           paidEarnings: {
             $sum: {
-              $cond: [
-                { $eq: ["$isPaid", true] },
-                { $add: ["$amount", "$diagnosticFee"] },
-                0,
-              ],
+              $cond: [{ $eq: ["$isPaid", true] }, jobTotalExpr, 0],
             },
           },
           pendingEarnings: {
             $sum: {
-              $cond: [
-                { $eq: ["$isPaid", false] },
-                { $add: ["$amount", "$diagnosticFee"] },
-                0,
-              ],
+              $cond: [{ $eq: ["$isPaid", false] }, jobTotalExpr, 0],
             },
           },
         },
@@ -109,18 +120,19 @@ async function getDashboardSummary(userId) {
     ]),
 
     // Previous Monthly earnings (for growth calculation)
+    // Uses updatedAt to stay consistent with current-month calculation
     Job.aggregate([
       {
         $match: {
           userId: userObjectId,
-          serviceDate: { $gte: prevMonthStart, $lt: prevMonthEnd },
+          updatedAt: { $gte: prevMonthStart, $lt: prevMonthEnd },
           status: JobStatus.COMPLETED,
         },
       },
       {
         $group: {
           _id: null,
-          earnings: { $sum: { $add: ["$amount", "$diagnosticFee"] } },
+          earnings: { $sum: jobTotalExpr },
         },
       },
     ]),
@@ -151,7 +163,7 @@ async function getDashboardSummary(userId) {
       {
         $group: {
           _id: null,
-          total: { $sum: { $add: ["$amount", "$diagnosticFee"] } },
+          total: { $sum: jobTotalExpr },
         },
       },
     ]),
@@ -171,7 +183,7 @@ async function getDashboardSummary(userId) {
       {
         $group: {
           _id: null,
-          earnings: { $sum: { $add: ["$amount", "$diagnosticFee"] } },
+          earnings: { $sum: jobTotalExpr },
         },
       },
     ]),

@@ -21,6 +21,7 @@ export const RouteNames = {
   CREATE_CUSTOMER: "CreateCustomer",
   INVOICE_PREVIEW: "InvoicePreview",
   REMINDERS: "Reminders",
+  CUSTOMER_JOB_HISTORY: "CustomerJobHistory",
 
   // Navigator wrappers
   TABS: "Tabs",
