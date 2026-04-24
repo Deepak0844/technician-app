@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
 import { useGetCustomersPagedInfiniteQuery } from "@services/api/customerApi";
 import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
@@ -144,6 +145,7 @@ function CustomerCard({ item, colors, onPress }) {
 export default function CustomerListScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const techUser = useSelector((state) => state.auth.user);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query);
   const hasScrolledRef = useRef(false);
@@ -260,7 +262,11 @@ export default function CustomerListScreen() {
               onPress={() => navigation.navigate(RouteNames.PROFILE)}
               activeOpacity={0.7}
             >
-              <Avatar size={36} />
+              <Avatar
+                size={36}
+                name={techUser?.name}
+                uri={techUser?.avatar || techUser?.imageUrl}
+              />
             </TouchableOpacity>
           </View>
         </View>

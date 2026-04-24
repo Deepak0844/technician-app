@@ -2,6 +2,7 @@ import api from "../api";
 import { ApiUrls } from "@constants/appConstants";
 import { TagTypes } from "@constants/apiTags";
 import ApiUtils from "@services/api/apiUtils";
+import NotificationUtils from "@utils/notificationUtils";
 
 export const jobApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -38,6 +39,21 @@ export const jobApi = api.injectEndpoints({
         method: "put",
         data: body,
       }),
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          const updatedJob = data?.data;
+          if (updatedJob?._id) {
+            // Cancel ALL existing reminders for this job then reschedule
+            // based on the latest serviceDate / status so stale triggers
+            // are never left in the OS alarm queue.
+            await NotificationUtils.cancelJobReminders(updatedJob._id);
+            await NotificationUtils.scheduleJobReminders(updatedJob);
+          }
+        } catch {
+          // Notification errors must not bubble up and break the update flow
+        }
+      },
       invalidatesTags: (result, error, arg) => [
         ...ApiUtils.entityTags(TagTypes.JOBS)(result, error, arg),
         ...ApiUtils.listTags(TagTypes.JOBS),

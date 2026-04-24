@@ -697,8 +697,10 @@ export default function InvoicePreviewScreen() {
     useState(defaultWarrantyStart);
   const [showWarrantyDatePicker, setShowWarrantyDatePicker] = useState(false);
 
-  // Lock all editing once job is both completed AND paid
-  const isLocked = job?.status === JobStatuses.COMPLETED && job?.isPaid;
+  // Lock all editing once job is both completed AND paid.
+  // Use local `isPaid` state (not the static route-param job.isPaid) so the lock
+  // engages immediately when the user toggles paid, and persists after saving.
+  const isLocked = job?.status === JobStatuses.COMPLETED && isPaid;
 
   if (!job) {
     return (
@@ -2449,12 +2451,9 @@ export default function InvoicePreviewScreen() {
           {showTerms && (
             <View style={{ marginTop: 14, gap: 8 }}>
               {[
-                "Payment is due on completion of service unless otherwise agreed in writing.",
                 "Warranty is valid only for the specific fault repaired and parts replaced as listed in this invoice.",
-                "Warranty is void if the appliance is tampered with, subjected to power fluctuations, or physically damaged after service.",
                 "Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.",
-                "This is a computer-generated invoice and constitutes a valid tax document where GST is applicable.",
-                "Disputes, if any, are subject to the jurisdiction of local courts only.",
+                "This is a computer-generated invoice.",
               ].map((term, i) => (
                 <View key={i} style={{ flexDirection: "row", gap: 8 }}>
                   <View

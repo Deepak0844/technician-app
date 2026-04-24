@@ -46,7 +46,7 @@ export default function DashboardScreen() {
     totalJobs: 0,
     monthlyEarnings: 0,
     totalEarnings: 0,
-    earningsChange: 0,
+    earningsChange: null,
     efficiency: 0,
     outstandingPayments: 0,
     recentJobs: [],
@@ -54,6 +54,7 @@ export default function DashboardScreen() {
 
   const allJobs = dashboardStats.recentJobs || [];
   const monthlyTotalEarnings = Number(dashboardStats?.monthlyPaidEarnings ?? 0);
+  const monthlyJobs = Number(dashboardStats?.monthlyJobs ?? 0);
   const rawEarningsChange = dashboardStats?.earningsChange;
   const isNewMonth = rawEarningsChange === null;
   const earningsChange = isNewMonth ? 0 : Number(rawEarningsChange ?? 0);
@@ -231,45 +232,48 @@ export default function DashboardScreen() {
                 This Month
               </Text>
             </View>
-            <View
-              style={{
-                backgroundColor: isNewMonth
-                  ? colors.secondary + "15"
-                  : (earningsChange >= 0 ? colors.secondary : colors.danger) +
-                    "15",
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderRadius: 6,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              {!isNewMonth &&
-                (earningsChange >= 0 ? (
-                  <TrendingUp color={colors.secondary} size={10} />
-                ) : (
-                  <TrendingDown color={colors.danger} size={10} />
-                ))}
-              <Text
+            {/* Only render badge when there is something meaningful to show */}
+            {(!isNewMonth || monthlyJobs > 0) && (
+              <View
                 style={{
-                  fontFamily: "Inter",
-                  fontSize: 10,
-                  fontWeight: "800",
-                  color: isNewMonth
-                    ? colors.secondary
-                    : earningsChange >= 0
-                      ? colors.secondary
-                      : colors.danger,
+                  backgroundColor: isNewMonth
+                    ? colors.secondary + "15"
+                    : (earningsChange >= 0 ? colors.secondary : colors.danger) +
+                      "15",
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 3,
                 }}
               >
-                {isNewMonth
-                  ? "New ✦"
-                  : earningsChange >= 0
-                    ? `+${earningsChange}%`
-                    : `${earningsChange}%`}
-              </Text>
-            </View>
+                {!isNewMonth &&
+                  (earningsChange >= 0 ? (
+                    <TrendingUp color={colors.secondary} size={10} />
+                  ) : (
+                    <TrendingDown color={colors.danger} size={10} />
+                  ))}
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    fontWeight: "800",
+                    color: isNewMonth
+                      ? colors.secondary
+                      : earningsChange >= 0
+                        ? colors.secondary
+                        : colors.danger,
+                  }}
+                >
+                  {isNewMonth
+                    ? "New ✦"
+                    : earningsChange >= 0
+                      ? `+${earningsChange}%`
+                      : `${earningsChange}%`}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={{ flexDirection: "row", gap: 12 }}>
