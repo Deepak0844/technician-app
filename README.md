@@ -22,6 +22,8 @@ A full-stack mobile application for field technicians to manage service jobs, cu
 | Contacts      | expo-contacts                                   |
 | Invoices      | expo-print + expo-sharing                       |
 | Icons         | lucide-react-native                             |
+| Calendar      | react-native-calendars                          |
+| HTTP Client   | axios                                           |
 
 ### Server (`/server`)
 
@@ -133,7 +135,7 @@ cd mobile
 npm install
 ```
 
-The dev API URL is resolved automatically: before every `npm start / android / ios`, the `scripts/set-dev-host.js` pre-hook writes your machine's current LAN IP to `mobile/.env` as `EXPO_PUBLIC_DEV_HOST`, so the app always connects to the right server without hardcoding an IP. The default API port is 9000; override it with `EXPO_PUBLIC_DEV_PORT` if your server runs on a different port. If the script cannot detect the correct IP (e.g. on a physical device on a different subnet), set `EXPO_PUBLIC_DEV_HOST` manually.
+The dev API URL is resolved automatically: before `npm run android-prebuild`, the `scripts/set-dev-host.js` pre-hook writes your machine's current LAN IP to `mobile/.env` as `EXPO_PUBLIC_DEV_HOST`, so the app always connects to the right server without hardcoding an IP. The default API port is 9000; override it with `EXPO_PUBLIC_DEV_PORT` if your server runs on a different port. If the script cannot detect the correct IP (e.g. on a physical device on a different subnet), set `EXPO_PUBLIC_DEV_HOST` manually.
 
 For production, create `mobile/.env` with your deployed server URL:
 
