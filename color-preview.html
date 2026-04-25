@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Color Palette Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f0f0f;
+        color: #fff;
+        padding: 32px 24px;
+      }
+      h1 {
+        text-align: center;
+        font-size: 22px;
+        margin-bottom: 8px;
+        color: #e5e5e5;
+      }
+      .subtitle {
+        text-align: center;
+        color: #6b7280;
+        font-size: 13px;
+        margin-bottom: 40px;
+      }
+
+      .palette-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 28px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .palette {
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .palette-header {
+        padding: 20px 24px 16px;
+      }
+      .palette-name {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .palette-desc {
+        font-size: 12px;
+        color: #9ca3af;
+      }
+
+      .mode-tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .mode-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .mode-tab.active {
+        font-weight: 600;
+      }
+
+      .mock-app {
+        padding: 20px;
+        min-height: 360px;
+      }
+
+      /* Mock phone UI elements */
+      .mock-header {
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .mock-header .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .mock-header .title {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .mock-header .subtitle-text {
+        font-size: 11px;
+        margin-top: 2px;
+      }
+
+      .mock-card {
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+        border: 1px solid transparent;
+      }
+      .mock-card .card-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .mock-card .card-sub {
+        font-size: 11px;
+      }
+      .mock-card .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .mock-btn {
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        cursor: pointer;
+      }
+
+      .mock-tabs {
+        display: flex;
+        border-radius: 14px;
+        overflow: hidden;
+        border: 1px solid transparent;
+      }
+      .mock-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 4px;
+        font-size: 10px;
+      }
+      .mock-tab .icon {
+        font-size: 16px;
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .swatch-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      .swatch {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+      .swatch-label {
+        font-size: 9px;
+        text-align: center;
+        margin-top: 3px;
+        color: #9ca3af;
+      }
+      .swatch-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .current-tag {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.1);
+        color: #9ca3af;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 20px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>App Color Palette Preview</h1>
+    <p class="subtitle">
+      Comparing current theme vs 3 new options · Dark & Light modes
+    </p>
+
+    <div class="palette-grid" id="palettes"></div>
+
+    <script>
+      const palettes = [
+        {
+          name: "Current — Purple & Cyan",
+          desc: "Your existing theme",
+          isCurrent: true,
+          dark: {
+            bg: "#000000",
+            bgCard: "#1a1919",
+            bgSecondary: "#0e0e0e",
+            primary: "#c899ff",
+            primaryDeep: "#9c3dff",
+            secondary: "#81ecff",
+            textPrimary: "#ffffff",
+            textMuted: "#a3a3a3",
+            tabActive: "#81ecff",
+            tabInactive: "#a3a3a3",
+            gradStart: "#c899ff",
+            gradEnd: "#9c3dff",
+            success: "#10b981",
+            danger: "#ff6e84",
+            warning: "#ffca28",
+            border: "rgba(255,255,255,0.08)",
+          },
+          light: {
+            bg: "#ffffff",
+            bgCard: "#ffffff",
+            bgSecondary: "#f3f4f6",
+            primary: "#7c3aed",
+            primaryDeep: "#5b21b6",
+            secondary: "#0891b2",
+            textPrimary: "#111827",
+            textMuted: "#6b7280",
+            tabActive: "#0891b2",
+            tabInactive: "#6b7280",
+            gradStart: "#7c3aed",
+            gradEnd: "#5b21b6",
+            success: "#059669",
+            danger: "#dc2626",
+            warning: "#d97706",
+            border: "rgba(0,0,0,0.10)",
+          },
+        },
+        {
+          name: "Option 1 — Ocean Blue",
+          desc: "Professional & clean · sky blue + emerald",
+          dark: {
+            bg: "#000000",
+            bgCard: "#111827",
+            bgSecondary: "#0d1117",
+            primary: "#60a5fa",
+            primaryDeep: "#3b82f6",
+            secondary: "#34d399",
+            textPrimary: "#ffffff",
+            textMuted: "#9ca3af",
+            tabActive: "#34d399",
+            tabInactive: "#6b7280",
+            gradStart: "#60a5fa",
+            gradEnd: "#3b82f6",
+            success: "#10b981",
+            danger: "#f87171",
+            warning: "#fbbf24",
+            border: "rgba(255,255,255,0.08)",
+          },
+          light: {
+            bg: "#f8fafc",
+            bgCard: "#ffffff",
+            bgSecondary: "#f1f5f9",
+            primary: "#2563eb",
+            primaryDeep: "#1d4ed8",
+            secondary: "#059669",
+            textPrimary: "#0f172a",
+            textMuted: "#64748b",
+            tabActive: "#2563eb",
+            tabInactive: "#94a3b8",
+            gradStart: "#2563eb",
+            gradEnd: "#1d4ed8",
+            success: "#059669",
+            danger: "#dc2626",
+            warning: "#d97706",
+            border: "rgba(0,0,0,0.10)",
+          },
+        },
+        {
+          name: "Option 2 — Amber & Slate",
+          desc: "Bold & modern · warm amber + sky",
+          dark: {
+            bg: "#0c0a09",
+            bgCard: "#1c1917",
+            bgSecondary: "#110f0e",
+            primary: "#fbbf24",
+            primaryDeep: "#f59e0b",
+            secondary: "#38bdf8",
+            textPrimary: "#fafaf9",
+            textMuted: "#a8a29e",
+            tabActive: "#38bdf8",
+            tabInactive: "#78716c",
+            gradStart: "#fbbf24",
+            gradEnd: "#f59e0b",
+            success: "#4ade80",
+            danger: "#f87171",
+            warning: "#fbbf24",
+            border: "rgba(255,255,255,0.08)",
+          },
+          light: {
+            bg: "#fffbeb",
+            bgCard: "#ffffff",
+            bgSecondary: "#fef3c7",
+            primary: "#d97706",
+            primaryDeep: "#b45309",
+            secondary: "#0284c7",
+            textPrimary: "#1c1917",
+            textMuted: "#78716c",
+            tabActive: "#d97706",
+            tabInactive: "#a8a29e",
+            gradStart: "#d97706",
+            gradEnd: "#b45309",
+            success: "#059669",
+            danger: "#dc2626",
+            warning: "#d97706",
+            border: "rgba(0,0,0,0.10)",
+          },
+        },
+        {
+          name: "Option 3 — Teal & Rose",
+          desc: "Fresh & energetic · teal + rose",
+          dark: {
+            bg: "#020c0b",
+            bgCard: "#0f2420",
+            bgSecondary: "#071a17",
+            primary: "#2dd4bf",
+            primaryDeep: "#14b8a6",
+            secondary: "#fb7185",
+            textPrimary: "#f0fdfa",
+            textMuted: "#99f6e4",
+            tabActive: "#fb7185",
+            tabInactive: "#6b7280",
+            gradStart: "#2dd4bf",
+            gradEnd: "#14b8a6",
+            success: "#4ade80",
+            danger: "#fb7185",
+            warning: "#fbbf24",
+            border: "rgba(45,212,191,0.15)",
+          },
+          light: {
+            bg: "#f0fdfa",
+            bgCard: "#ffffff",
+            bgSecondary: "#ccfbf1",
+            primary: "#0d9488",
+            primaryDeep: "#0f766e",
+            secondary: "#e11d48",
+            textPrimary: "#134e4a",
+            textMuted: "#5eead4",
+            tabActive: "#0d9488",
+            tabInactive: "#94a3b8",
+            gradStart: "#0d9488",
+            gradEnd: "#0f766e",
+            success: "#059669",
+            danger: "#e11d48",
+            warning: "#d97706",
+            border: "rgba(0,0,0,0.10)",
+          },
+        },
+      ];
+
+      function buildPalette(p) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "palette";
+        wrapper.dataset.palette = JSON.stringify(p);
+
+        let activeMode = "dark";
+
+        function render() {
+          const c = activeMode === "dark" ? p.dark : p.light;
+          const isDark = activeMode === "dark";
+
+          wrapper.style.background = c.bgCard;
+          wrapper.style.borderColor = c.border;
+
+          wrapper.innerHTML = `
+      <div class="palette-header" style="background:${c.bgSecondary}">
+        <div class="palette-name" style="color:${c.textPrimary}">
+          ${p.name}
+          ${p.isCurrent ? '<span class="current-tag">Current</span>' : ""}
+        </div>
+        <div class="palette-desc">${p.desc}</div>
+      </div>
+
+      <div class="mode-tabs" style="background:${c.bg}">
+        <div class="mode-tab ${activeMode === "dark" ? "active" : ""}" 
+          style="color:${activeMode === "dark" ? c.primary : c.textMuted}; background:${activeMode === "dark" ? c.bgCard : "transparent"}"
+          data-mode="dark">🌙 Dark</div>
+        <div class="mode-tab ${activeMode === "light" ? "active" : ""}" 
+          style="color:${activeMode === "light" ? c.primary : c.textMuted}; background:${activeMode === "light" ? c.bgCard : "transparent"}"
+          data-mode="light">☀️ Light</div>
+      </div>
+
+      <div class="mock-app" style="background:${c.bg}">
+
+        <!-- Header -->
+        <div class="mock-header" style="background:${c.bgCard}; border:1px solid ${c.border}">
+          <div class="avatar" style="background:linear-gradient(135deg,${c.gradStart},${c.gradEnd}); color:#fff">T</div>
+          <div>
+            <div class="title" style="color:${c.textPrimary}">Dashboard</div>
+            <div class="subtitle-text" style="color:${c.textMuted}">3 jobs today</div>
+          </div>
+        </div>
+
+        <!-- Card 1 -->
+        <div class="mock-card" style="background:${c.bgCard}; border-color:${c.border}">
+          <div class="card-title" style="color:${c.textPrimary}">🔧 Fix AC Unit — Rajesh Kumar</div>
+          <div class="card-sub" style="color:${c.textMuted}">Today, 10:00 AM · Sector 15, Noida</div>
+          <span class="badge" style="background:rgba(16,185,129,0.15); color:${c.success}">Completed</span>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="mock-card" style="background:${c.bgCard}; border-color:${c.border}">
+          <div class="card-title" style="color:${c.textPrimary}">💡 Wiring Issue — Priya Sharma</div>
+          <div class="card-sub" style="color:${c.textMuted}">Today, 2:00 PM · DLF Phase 2</div>
+          <span class="badge" style="background:rgba(251,191,36,0.15); color:${c.warning}">In Progress</span>
+        </div>
+
+        <!-- Primary Button -->
+        <div class="mock-btn" style="background:linear-gradient(135deg,${c.gradStart},${c.gradEnd}); color:#fff">
+          + Add New Job
+        </div>
+
+        <!-- Tab Bar -->
+        <div class="mock-tabs" style="background:${c.bgCard}; border-color:${c.border}">
+          <div class="mock-tab" style="color:${c.tabActive}"><span class="icon">🏠</span>Home</div>
+          <div class="mock-tab" style="color:${c.tabInactive}"><span class="icon">📋</span>Jobs</div>
+          <div class="mock-tab" style="color:${c.tabInactive}"><span class="icon">👥</span>Clients</div>
+          <div class="mock-tab" style="color:${c.tabInactive}"><span class="icon">👤</span>Profile</div>
+        </div>
+
+        <!-- Swatches -->
+        <div class="swatch-row">
+          ${[
+            [c.primary, "Primary"],
+            [c.primaryDeep, "Deep"],
+            [c.secondary, "Secondary"],
+            [c.success, "Success"],
+            [c.danger, "Danger"],
+            [c.warning, "Warning"],
+            [c.bg, "BG"],
+            [c.bgCard, "Card"],
+            [c.textPrimary, "Text"],
+          ]
+            .map(
+              ([col, label]) => `
+            <div class="swatch-wrap">
+              <div class="swatch" style="background:${col}; border:1px solid rgba(128,128,128,0.3)"></div>
+              <div class="swatch-label">${label}</div>
+            </div>
+          `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+          wrapper.querySelectorAll(".mode-tab").forEach((tab) => {
+            tab.addEventListener("click", () => {
+              activeMode = tab.dataset.mode;
+              render();
+            });
+          });
+        }
+
+        render();
+        return wrapper;
+      }
+
+      const grid = document.getElementById("palettes");
+      palettes.forEach((p) => grid.appendChild(buildPalette(p)));
+    </script>
+  </body>
+</html>

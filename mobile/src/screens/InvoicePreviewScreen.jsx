@@ -1101,9 +1101,9 @@ export default function InvoicePreviewScreen() {
               </View>
               <View
                 style={{
-                  backgroundColor: statusConfig.bg,
-                  borderWidth: 1,
-                  borderColor: statusConfig.border,
+                  backgroundColor: "rgba(255,255,255,0.18)",
+                  borderWidth: 1.5,
+                  borderColor: "rgba(255,255,255,0.40)",
                   paddingHorizontal: 10,
                   paddingVertical: 5,
                   borderRadius: 20,
@@ -1114,19 +1114,19 @@ export default function InvoicePreviewScreen() {
               >
                 <View
                   style={{
-                    width: 5,
-                    height: 5,
+                    width: 6,
+                    height: 6,
                     borderRadius: 3,
-                    backgroundColor: statusConfig.color,
+                    backgroundColor: "#fff",
                   }}
                 />
                 <Text
                   style={{
                     fontFamily: "Inter",
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: "800",
-                    color: statusConfig.color,
-                    letterSpacing: 0.8,
+                    color: "#fff",
+                    letterSpacing: 1,
                   }}
                 >
                   {statusConfig.label}

@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "auth_token";
 const THEME_KEY = "app_theme_mode";
+const PALETTE_KEY = "app_theme_palette";
 
 /**
  * Save JWT token to hardware-backed encrypted storage (Keychain / Keystore).
@@ -43,12 +44,26 @@ async function getTheme() {
   }
 }
 
+async function savePalette(palette) {
+  await SecureStore.setItemAsync(PALETTE_KEY, palette);
+}
+
+async function getPalette() {
+  try {
+    return await SecureStore.getItemAsync(PALETTE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 const StorageUtils = {
   saveToken,
   getToken,
   clearToken,
   saveTheme,
   getTheme,
+  savePalette,
+  getPalette,
 };
 
 export default StorageUtils;

@@ -7,13 +7,26 @@ import {
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   ActivityIndicator,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
-import { Wrench, User, Briefcase, Phone } from "lucide-react-native";
+import {
+  Wrench,
+  User,
+  Briefcase,
+  Phone,
+  Moon,
+  Sun,
+  Check,
+  Palette,
+} from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
+import { setTheme, setPalette } from "@store/slices/themeSlice";
+import StorageUtils from "@utils/storageUtils";
+import { PALETTE_META } from "@constants/colors";
 
 import { useUpdateMeMutation, useGetMeQuery } from "@services/api/authApi";
 import { completeFirstLoginSetup, updateUser } from "@store/slices/authSlice";
@@ -23,7 +36,19 @@ export default function SetupProfileScreen() {
   const [companyName, setCompanyName] = useState("");
   const [phone, setPhone] = useState("");
   const dispatch = useDispatch();
-  const { colors } = useTheme();
+  const { colors, mode, palette } = useTheme();
+  const isDark = mode === "dark";
+
+  function handleSelectPalette(key) {
+    StorageUtils.savePalette(key); // fire-and-forget
+    dispatch(setPalette(key));
+  }
+
+  function handleToggleMode() {
+    const newMode = isDark ? "light" : "dark";
+    StorageUtils.saveTheme(newMode); // fire-and-forget
+    dispatch(setTheme(newMode));
+  }
 
   const { data: meResponse } = useGetMeQuery();
   const [updateMe, { isLoading }] = useUpdateMeMutation();
@@ -112,8 +137,14 @@ export default function SetupProfileScreen() {
           }}
         />
 
-        <View
-          style={{ flex: 1, paddingHorizontal: 24, justifyContent: "center" }}
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingHorizontal: 24,
+            justifyContent: "center",
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* Branding */}
           <View
@@ -348,6 +379,197 @@ export default function SetupProfileScreen() {
             </Text>
           </View>
 
+          {/* ── Theme Picker ── */}
+          <View
+            style={{
+              backgroundColor: colors.bgCard,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            {/* Palette header row */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 14,
+              }}
+            >
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: colors.primaryBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Palette color={colors.primary} size={16} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: "700",
+                    fontFamily: "Inter",
+                  }}
+                >
+                  Color Theme
+                </Text>
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontSize: 11,
+                    fontFamily: "Inter",
+                    fontWeight: "600",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {PALETTE_META.find((p) => p.key === palette)?.label ??
+                    palette}
+                </Text>
+              </View>
+            </View>
+
+            {/* Palette swatch row */}
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              {PALETTE_META.map((p) => {
+                const isSelected = palette === p.key;
+                const grad1 = isDark ? p.darkColor : p.lightColor;
+                const grad2 = isDark ? p.darkColor2 : p.lightColor2;
+                return (
+                  <TouchableOpacity
+                    key={p.key}
+                    onPress={() => handleSelectPalette(p.key)}
+                    activeOpacity={0.75}
+                    style={{ flex: 1, alignItems: "center", gap: 5 }}
+                  >
+                    <View
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 26,
+                        borderWidth: 2.5,
+                        borderColor: isSelected ? grad1 : "transparent",
+                        padding: 3,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <LinearGradient
+                        colors={[grad1, grad2]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: 22,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {isSelected && (
+                          <Check color="#fff" size={18} strokeWidth={3} />
+                        )}
+                      </LinearGradient>
+                    </View>
+                    <Text
+                      style={{
+                        color: isSelected ? grad1 : colors.textMuted,
+                        fontSize: 10,
+                        fontWeight: isSelected ? "700" : "400",
+                        fontFamily: "Inter",
+                        textAlign: "center",
+                      }}
+                    >
+                      {p.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Dark / Light toggle */}
+            <Text
+              style={{
+                color: colors.textSubtle,
+                fontSize: 10,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                fontFamily: "Inter",
+                marginBottom: 10,
+              }}
+            >
+              Appearance
+            </Text>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              {["dark", "light"].map((m) => {
+                const isActive = mode === m;
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => {
+                      if (!isActive) handleToggleMode();
+                    }}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      backgroundColor: isActive
+                        ? colors.primaryBg
+                        : colors.bgInputDeep,
+                      borderWidth: 1.5,
+                      borderColor: isActive
+                        ? colors.primaryBorderStrong
+                        : "transparent",
+                    }}
+                  >
+                    {m === "dark" ? (
+                      <Moon
+                        color={isActive ? colors.primary : colors.textMuted}
+                        size={15}
+                      />
+                    ) : (
+                      <Sun
+                        color={isActive ? colors.primary : colors.textMuted}
+                        size={15}
+                      />
+                    )}
+                    <Text
+                      style={{
+                        color: isActive ? colors.primary : colors.textMuted,
+                        fontSize: 13,
+                        fontWeight: isActive ? "700" : "400",
+                        fontFamily: "Inter",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {m}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
           {/* Continue Button */}
           <TouchableOpacity
             onPress={handleContinue}
@@ -389,7 +611,11 @@ export default function SetupProfileScreen() {
           <TouchableOpacity
             onPress={handleSkip}
             activeOpacity={0.7}
-            style={{ alignItems: "center", paddingVertical: 8 }}
+            style={{
+              alignItems: "center",
+              paddingVertical: 8,
+              marginBottom: 24,
+            }}
           >
             <Text
               style={{
@@ -401,7 +627,7 @@ export default function SetupProfileScreen() {
               Skip for now
             </Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
