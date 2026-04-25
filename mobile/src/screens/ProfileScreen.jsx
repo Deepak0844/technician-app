@@ -231,8 +231,8 @@ export default function ProfileScreen() {
           />
           <Text style={s.heroName}>{user.name || "Technician"}</Text>
           <View style={s.heroPill}>
-            <Phone size={11} color={colors.secondary} />
-            <Text style={[s.heroPillText, { color: colors.secondary }]}>
+            <Phone size={11} color="rgba(255,255,255,0.9)" />
+            <Text style={[s.heroPillText, { color: "rgba(255,255,255,0.9)" }]}>
               {user.phone}
             </Text>
           </View>
