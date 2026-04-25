@@ -2,8 +2,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
 
-/* eslint-disable import/namespace */
-
 /**
  * Converts an array of objects to a CSV string.
  * @param {Array} data - The array of job objects.

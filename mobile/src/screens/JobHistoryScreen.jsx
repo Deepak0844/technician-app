@@ -748,7 +748,7 @@ export default function JobHistoryScreen() {
                           : colors.textSecondary,
                       }}
                     >
-                      Today's Jobs
+                      Today&apos;s Jobs
                     </Text>
                     <Text
                       style={{

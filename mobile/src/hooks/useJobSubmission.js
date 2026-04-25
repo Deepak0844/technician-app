@@ -96,6 +96,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
     const payload = {
       customerId: selectedCustomer._id || selectedCustomer.serverId,
       applianceType: appliance,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       issue: issue.trim(),
       serviceDone: serviceDone.trim(),
       diagnosticFee: parsedFee,

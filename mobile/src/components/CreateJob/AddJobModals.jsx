@@ -1,5 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, Modal, Pressable } from "react-native";
+import { getLocalDateString } from "@utils/formatUtils";
 import { Calendar } from "react-native-calendars";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import { Text } from "@components/ui/text";
@@ -93,7 +94,7 @@ export default function AddJobModals({
               </TouchableOpacity>
             </View>
             <Calendar
-              current={serviceDate.toISOString().split("T")[0]}
+              current={getLocalDateString(serviceDate)}
               renderArrow={(direction) =>
                 direction === "left" ? (
                   <ChevronLeft size={20} color={colors.primary} />
@@ -115,7 +116,7 @@ export default function AddJobModals({
               }}
               onDayPress={(day) => setServiceDate(new Date(day.timestamp))}
               markedDates={{
-                [serviceDate.toISOString().split("T")[0]]: { selected: true },
+                [getLocalDateString(serviceDate)]: { selected: true },
               }}
             />
           </Pressable>
@@ -173,7 +174,7 @@ export default function AddJobModals({
               </TouchableOpacity>
             </View>
             <Calendar
-              minDate={new Date().toISOString().split("T")[0]}
+              minDate={getLocalDateString(new Date())}
               renderArrow={(direction) =>
                 direction === "left" ? (
                   <ChevronLeft size={20} color={colors.secondary} />
@@ -197,7 +198,7 @@ export default function AddJobModals({
               markedDates={
                 nextReminderDate
                   ? {
-                      [nextReminderDate.toISOString().split("T")[0]]: {
+                      [getLocalDateString(nextReminderDate)]: {
                         selected: true,
                       },
                     }

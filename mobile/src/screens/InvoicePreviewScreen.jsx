@@ -8,6 +8,8 @@ import {
   Linking,
   Modal,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -887,517 +889,663 @@ export default function InvoicePreviewScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
-      edges={["top"]}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* ── Top Bar ── */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          height: 52,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        }}
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+        edges={["top"]}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
+        {/* ── Top Bar ── */}
+        <View
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: colors.bgCard,
-            borderWidth: 1,
-            borderColor: colors.border,
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 16,
+            height: 52,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
           }}
-          activeOpacity={0.7}
         >
-          <ArrowLeft color={colors.textPrimary} size={18} />
-        </TouchableOpacity>
-
-        <View style={{ alignItems: "center" }}>
-          <Text
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
             style={{
-              fontFamily: "Space Grotesk",
-              fontSize: 14,
-              fontWeight: "700",
-              color: colors.textPrimary,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-            }}
-          >
-            Invoice Preview
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 10,
-              color: colors.textDisabled,
-            }}
-          >
-            {invoiceNumber}
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          onPress={handlePrintPreview}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            backgroundColor: colors.primaryBg,
-            borderWidth: 1,
-            borderColor: colors.primaryBorder,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          activeOpacity={0.7}
-        >
-          <Printer color={colors.primary} size={16} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ══ LOCKED BANNER ══ */}
-        {isLocked && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-              backgroundColor: colors.successBg,
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.bgCard,
               borderWidth: 1,
-              borderColor: colors.successBorder,
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 12,
-            }}
-          >
-            <Lock size={14} color={colors.success} />
-            <Text
-              style={{
-                fontFamily: "Inter",
-                fontSize: 12,
-                fontWeight: "700",
-                color: colors.success,
-                flex: 1,
-              }}
-            >
-              This invoice is locked — job is completed and paid.
-            </Text>
-          </View>
-        )}
-
-        {/* ══ INVOICE HERO CARD ══ */}
-        <LinearGradient
-          colors={colors.gradientPrimary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: 20,
-            padding: 20,
-            marginBottom: 12,
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          {/* Decorative circles */}
-          <View
-            style={{
-              position: "absolute",
-              top: -40,
-              right: -40,
-              width: 140,
-              height: 140,
-              borderRadius: 70,
-              backgroundColor: "rgba(255,255,255,0.07)",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              bottom: -30,
-              left: -30,
-              width: 110,
-              height: 110,
-              borderRadius: 55,
-              backgroundColor: "rgba(255,255,255,0.05)",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              top: 60,
-              right: 30,
-              width: 60,
-              height: 60,
-              borderRadius: 30,
-              backgroundColor: "rgba(255,255,255,0.04)",
-            }}
-          />
-
-          {/* Brand row */}
-          <View
-            style={{
-              flexDirection: "row",
+              borderColor: colors.border,
               alignItems: "center",
-              marginBottom: 16,
+              justifyContent: "center",
             }}
+            activeOpacity={0.7}
           >
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                backgroundColor: "rgba(255,255,255,0.18)",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 12,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.25)",
-              }}
-            >
-              <Wrench color="#fff" size={19} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 16,
-                  fontWeight: "800",
-                  color: "#fff",
-                  letterSpacing: -0.3,
-                }}
-                numberOfLines={1}
-              >
-                {techName}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 10,
-                  color: "rgba(255,255,255,0.65)",
-                  marginTop: 1,
-                }}
-              >
-                Professional Appliance Services
-              </Text>
-            </View>
-            <View
-              style={{
-                backgroundColor: statusConfig.bg,
-                borderWidth: 1,
-                borderColor: statusConfig.border,
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 20,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <View
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: 3,
-                  backgroundColor: statusConfig.color,
-                }}
-              />
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 9,
-                  fontWeight: "800",
-                  color: statusConfig.color,
-                  letterSpacing: 0.8,
-                }}
-              >
-                {statusConfig.label}
-              </Text>
-            </View>
-          </View>
+            <ArrowLeft color={colors.textPrimary} size={18} />
+          </TouchableOpacity>
 
-          <View
-            style={{
-              height: 1,
-              backgroundColor: "rgba(255,255,255,0.18)",
-              marginBottom: 16,
-            }}
-          />
-
-          {/* 2×2 Meta grid */}
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-            {/* Invoice Number */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 8,
-                  color: "rgba(255,255,255,0.6)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.2,
-                  marginBottom: 5,
-                }}
-              >
-                Invoice Number
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 16,
-                  fontWeight: "900",
-                  color: "#fff",
-                  letterSpacing: -0.3,
-                }}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                {invoiceNumber}
-              </Text>
-            </View>
-
-            {/* Issue Date */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 8,
-                  color: "rgba(255,255,255,0.6)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.2,
-                  marginBottom: 5,
-                }}
-              >
-                Issue Date
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: "#fff",
-                }}
-                numberOfLines={1}
-              >
-                {formatDate(job.serviceDate)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-            {/* Customer */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 8,
-                  color: "rgba(255,255,255,0.6)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.2,
-                  marginBottom: 5,
-                }}
-              >
-                Customer
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: "#fff",
-                }}
-                numberOfLines={1}
-              >
-                {customerName}
-              </Text>
-            </View>
-
-            {/* Job Ref */}
-            <View
-              style={{
-                flex: 1,
-                backgroundColor: "rgba(255,255,255,0.1)",
-                borderRadius: 12,
-                padding: 12,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 8,
-                  color: "rgba(255,255,255,0.6)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.2,
-                  marginBottom: 5,
-                }}
-              >
-                Job Ref
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: "#fff",
-                }}
-                numberOfLines={1}
-              >
-                #{job._id?.slice(-6).toUpperCase()}
-              </Text>
-            </View>
-          </View>
-
-          {/* Grand total preview */}
-          <View
-            style={{
-              paddingTop: 14,
-              borderTopWidth: 1,
-              borderTopColor: "rgba(255,255,255,0.18)",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <View>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 9,
-                  color: "rgba(255,255,255,0.65)",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.2,
-                  marginBottom: 2,
-                }}
-              >
-                Grand Total
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 9,
-                  color: "rgba(255,255,255,0.45)",
-                }}
-              >
-                {job.applianceType || "Appliance Repair"}
-              </Text>
-            </View>
+          <View style={{ alignItems: "center" }}>
             <Text
               style={{
                 fontFamily: "Space Grotesk",
-                fontSize: 30,
-                fontWeight: "900",
-                color: "#fff",
-                letterSpacing: -0.5,
+                fontSize: 14,
+                fontWeight: "700",
+                color: colors.textPrimary,
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
               }}
             >
-              {formatCurrency(grandTotal)}
+              Invoice Preview
             </Text>
-          </View>
-        </LinearGradient>
-
-        {/* ══ BILLING CARDS ══ */}
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
-          {/* FROM card */}
-          <Card colors={colors} style={{ flex: 1, margin: 0, padding: 14 }}>
             <Text
               style={{
                 fontFamily: "Inter",
-                fontSize: 8,
-                fontWeight: "800",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: colors.primary,
-                marginBottom: 10,
+                fontSize: 10,
+                color: colors.textDisabled,
               }}
             >
-              FROM
+              {invoiceNumber}
             </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={handlePrintPreview}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              backgroundColor: colors.primaryBg,
+              borderWidth: 1,
+              borderColor: colors.primaryBorder,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            activeOpacity={0.7}
+          >
+            <Printer color={colors.primary} size={16} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* ══ LOCKED BANNER ══ */}
+          {isLocked && (
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                gap: 6,
-                marginBottom: 6,
+                gap: 10,
+                backgroundColor: colors.successBg,
+                borderWidth: 1,
+                borderColor: colors.successBorder,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 12,
+              }}
+            >
+              <Lock size={14} color={colors.success} />
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: colors.success,
+                  flex: 1,
+                }}
+              >
+                This invoice is locked — job is completed and paid.
+              </Text>
+            </View>
+          )}
+
+          {/* ══ INVOICE HERO CARD ══ */}
+          <LinearGradient
+            colors={colors.gradientPrimary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              borderRadius: 20,
+              padding: 20,
+              marginBottom: 12,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            {/* Decorative circles */}
+            <View
+              style={{
+                position: "absolute",
+                top: -40,
+                right: -40,
+                width: 140,
+                height: 140,
+                borderRadius: 70,
+                backgroundColor: "rgba(255,255,255,0.07)",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: -30,
+                left: -30,
+                width: 110,
+                height: 110,
+                borderRadius: 55,
+                backgroundColor: "rgba(255,255,255,0.05)",
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                top: 60,
+                right: 30,
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                backgroundColor: "rgba(255,255,255,0.04)",
+              }}
+            />
+
+            {/* Brand row */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 16,
               }}
             >
               <View
                 style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  backgroundColor: colors.primaryBg,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: "rgba(255,255,255,0.18)",
                   alignItems: "center",
                   justifyContent: "center",
+                  marginRight: 12,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.25)",
                 }}
               >
-                <Building2 size={13} color={colors.primary} />
+                <Wrench color="#fff" size={19} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 16,
+                    fontWeight: "800",
+                    color: "#fff",
+                    letterSpacing: -0.3,
+                  }}
+                  numberOfLines={1}
+                >
+                  {techName}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: "rgba(255,255,255,0.65)",
+                    marginTop: 1,
+                  }}
+                >
+                  Professional Appliance Services
+                </Text>
+              </View>
+              <View
+                style={{
+                  backgroundColor: statusConfig.bg,
+                  borderWidth: 1,
+                  borderColor: statusConfig.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  borderRadius: 20,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <View
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: 3,
+                    backgroundColor: statusConfig.color,
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    fontWeight: "800",
+                    color: statusConfig.color,
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  {statusConfig.label}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={{
+                height: 1,
+                backgroundColor: "rgba(255,255,255,0.18)",
+                marginBottom: 16,
+              }}
+            />
+
+            {/* 2×2 Meta grid */}
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+              {/* Invoice Number */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.15)",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 8,
+                    color: "rgba(255,255,255,0.6)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.2,
+                    marginBottom: 5,
+                  }}
+                >
+                  Invoice Number
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 16,
+                    fontWeight: "900",
+                    color: "#fff",
+                    letterSpacing: -0.3,
+                  }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {invoiceNumber}
+                </Text>
+              </View>
+
+              {/* Issue Date */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.15)",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 8,
+                    color: "rgba(255,255,255,0.6)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.2,
+                    marginBottom: 5,
+                  }}
+                >
+                  Issue Date
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#fff",
+                  }}
+                  numberOfLines={1}
+                >
+                  {formatDate(job.serviceDate)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
+              {/* Customer */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.15)",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 8,
+                    color: "rgba(255,255,255,0.6)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.2,
+                    marginBottom: 5,
+                  }}
+                >
+                  Customer
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#fff",
+                  }}
+                  numberOfLines={1}
+                >
+                  {customerName}
+                </Text>
+              </View>
+
+              {/* Job Ref */}
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 12,
+                  padding: 12,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.15)",
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 8,
+                    color: "rgba(255,255,255,0.6)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.2,
+                    marginBottom: 5,
+                  }}
+                >
+                  Job Ref
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#fff",
+                  }}
+                  numberOfLines={1}
+                >
+                  #{job._id?.slice(-6).toUpperCase()}
+                </Text>
+              </View>
+            </View>
+
+            {/* Grand total preview */}
+            <View
+              style={{
+                paddingTop: 14,
+                borderTopWidth: 1,
+                borderTopColor: "rgba(255,255,255,0.18)",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    color: "rgba(255,255,255,0.65)",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.2,
+                    marginBottom: 2,
+                  }}
+                >
+                  Grand Total
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    color: "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {job.applianceType || "Appliance Repair"}
+                </Text>
               </View>
               <Text
                 style={{
                   fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  flex: 1,
+                  fontSize: 30,
+                  fontWeight: "900",
+                  color: "#fff",
+                  letterSpacing: -0.5,
                 }}
-                numberOfLines={2}
               >
-                {techName}
+                {formatCurrency(grandTotal)}
               </Text>
             </View>
-            {techUser?.name && techUser.name !== techName ? (
+          </LinearGradient>
+
+          {/* ══ BILLING CARDS ══ */}
+          <View style={{ flexDirection: "row", gap: 10, marginBottom: 12 }}>
+            {/* FROM card */}
+            <Card colors={colors} style={{ flex: 1, margin: 0, padding: 14 }}>
               <Text
                 style={{
                   fontFamily: "Inter",
-                  fontSize: 10,
-                  color: colors.textDisabled,
-                  marginBottom: 4,
+                  fontSize: 8,
+                  fontWeight: "800",
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  color: colors.primary,
+                  marginBottom: 10,
                 }}
               >
-                {techUser.name}
+                FROM
               </Text>
-            ) : null}
-            {techUser?.phone ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Building2 size={13} color={colors.primary} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    flex: 1,
+                  }}
+                  numberOfLines={2}
+                >
+                  {techName}
+                </Text>
+              </View>
+              {techUser?.name && techUser.name !== techName ? (
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    color: colors.textDisabled,
+                    marginBottom: 4,
+                  }}
+                >
+                  {techUser.name}
+                </Text>
+              ) : null}
+              {techUser?.phone ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    marginBottom: 3,
+                  }}
+                >
+                  <Phone size={10} color={colors.textMuted} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      color: colors.textMuted,
+                    }}
+                  >
+                    {techUser.phone}
+                  </Text>
+                </View>
+              ) : null}
+              {techUser?.email ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 5,
+                    marginBottom: 3,
+                  }}
+                >
+                  <Mail size={10} color={colors.textMuted} />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      color: colors.textMuted,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {techUser.email}
+                  </Text>
+                </View>
+              ) : null}
+              {techUser?.address ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-start",
+                    gap: 5,
+                    marginBottom: 3,
+                  }}
+                >
+                  <MapPin
+                    size={10}
+                    color={colors.textMuted}
+                    style={{ marginTop: 1 }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 10,
+                      color: colors.textMuted,
+                      flex: 1,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {techUser.address}
+                  </Text>
+                </View>
+              ) : null}
+              {techUser?.gstNumber ? (
+                <View
+                  style={{
+                    marginTop: 6,
+                    backgroundColor: colors.primaryBg,
+                    borderRadius: 6,
+                    paddingHorizontal: 7,
+                    paddingVertical: 3,
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 9,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    GST: {techUser.gstNumber}
+                  </Text>
+                </View>
+              ) : null}
+            </Card>
+
+            {/* BILL TO card */}
+            <Card colors={colors} style={{ flex: 1, margin: 0, padding: 14 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 8,
+                  fontWeight: "800",
+                  letterSpacing: 2,
+                  textTransform: "uppercase",
+                  color: colors.secondary,
+                  marginBottom: 10,
+                }}
+              >
+                BILL TO
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  marginBottom: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    backgroundColor: colors.secondaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <User size={13} color={colors.secondary} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    flex: 1,
+                  }}
+                  numberOfLines={2}
+                >
+                  {customerName}
+                </Text>
+              </View>
               <View
                 style={{
                   flexDirection: "row",
@@ -1414,473 +1562,196 @@ export default function InvoicePreviewScreen() {
                     color: colors.textMuted,
                   }}
                 >
-                  {techUser.phone}
+                  {customerPhone}
                 </Text>
               </View>
-            ) : null}
-            {techUser?.email ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 5,
-                  marginBottom: 3,
-                }}
-              >
-                <Mail size={10} color={colors.textMuted} />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    color: colors.textMuted,
-                  }}
-                  numberOfLines={1}
-                >
-                  {techUser.email}
-                </Text>
-              </View>
-            ) : null}
-            {techUser?.address ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  gap: 5,
-                  marginBottom: 3,
-                }}
-              >
-                <MapPin
-                  size={10}
-                  color={colors.textMuted}
-                  style={{ marginTop: 1 }}
-                />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    color: colors.textMuted,
-                    flex: 1,
-                  }}
-                  numberOfLines={2}
-                >
-                  {techUser.address}
-                </Text>
-              </View>
-            ) : null}
-            {techUser?.gstNumber ? (
-              <View
-                style={{
-                  marginTop: 6,
-                  backgroundColor: colors.primaryBg,
-                  borderRadius: 6,
-                  paddingHorizontal: 7,
-                  paddingVertical: 3,
-                  alignSelf: "flex-start",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 9,
-                    fontWeight: "700",
-                    color: colors.primary,
-                  }}
-                >
-                  GST: {techUser.gstNumber}
-                </Text>
-              </View>
-            ) : null}
-          </Card>
-
-          {/* BILL TO card */}
-          <Card colors={colors} style={{ flex: 1, margin: 0, padding: 14 }}>
-            <Text
-              style={{
-                fontFamily: "Inter",
-                fontSize: 8,
-                fontWeight: "800",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                color: colors.secondary,
-                marginBottom: 10,
-              }}
-            >
-              BILL TO
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 6,
-              }}
-            >
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  backgroundColor: colors.secondaryBg,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <User size={13} color={colors.secondary} />
-              </View>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  flex: 1,
-                }}
-                numberOfLines={2}
-              >
-                {customerName}
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 5,
-                marginBottom: 3,
-              }}
-            >
-              <Phone size={10} color={colors.textMuted} />
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 10,
-                  color: colors.textMuted,
-                }}
-              >
-                {customerPhone}
-              </Text>
-            </View>
-            {job?.location?.address ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  gap: 5,
-                  marginTop: 2,
-                }}
-              >
-                <MapPin
-                  size={10}
-                  color={colors.textMuted}
-                  style={{ marginTop: 1 }}
-                />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    color: colors.textMuted,
-                    flex: 1,
-                    lineHeight: 14,
-                  }}
-                  numberOfLines={3}
-                >
-                  {job.location.address}
-                </Text>
-              </View>
-            ) : null}
-          </Card>
-        </View>
-
-        {/* ══ SERVICE DETAILS ══ */}
-        <Card colors={colors}>
-          <SectionHeader
-            icon={Wrench}
-            title="Service Details"
-            colors={colors}
-          />
-          <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
-            <InfoPill
-              icon={Wrench}
-              label="Appliance"
-              value={job.applianceType}
-              colors={colors}
-              accent={colors.primary}
-            />
-            <InfoPill
-              icon={CalendarIcon}
-              label="Service Date"
-              value={formatDate(job.serviceDate)}
-              colors={colors}
-            />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 8,
-              marginBottom: job.issue || job.serviceDone ? 8 : 0,
-            }}
-          >
-            <InfoPill
-              icon={ShieldCheck}
-              label="Warranty"
-              value={job.warranty || "No Warranty"}
-              colors={colors}
-              accent={
-                job.warranty && job.warranty !== "No Warranty"
-                  ? colors.success
-                  : undefined
-              }
-            />
-            {job.nextReminderDate ? (
-              <InfoPill
-                icon={Bell}
-                label="Next Service"
-                value={formatDate(job.nextReminderDate)}
-                colors={colors}
-                accent={colors.success}
-              />
-            ) : null}
-          </View>
-          {job.issue ? (
-            <>
-              <Divider colors={colors} />
-              <InfoRow
-                icon={<Hash size={13} color={colors.textMuted} />}
-                label="Issue Reported"
-                value={job.issue}
-                colors={colors}
-              />
-            </>
-          ) : null}
-          {job.serviceDone ? (
-            <>
-              <Divider colors={colors} />
-              <InfoRow
-                icon={<CheckCircle2 size={13} color={colors.success} />}
-                label="Work Done"
-                value={job.serviceDone}
-                valueColor={colors.success}
-                colors={colors}
-              />
-            </>
-          ) : null}
-        </Card>
-
-        {/* ══ LINE ITEMS ══ */}
-        <Card colors={colors}>
-          <SectionHeader
-            icon={Receipt}
-            title="Service Breakdown"
-            colors={colors}
-            action={
-              isLocked ? null : (
-                <TouchableOpacity
-                  onPress={handleAddRow}
+              {job?.location?.address ? (
+                <View
                   style={{
                     flexDirection: "row",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 5,
-                    backgroundColor: colors.primaryBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: colors.primaryBorder,
+                    marginTop: 2,
                   }}
-                  activeOpacity={0.75}
                 >
-                  <Plus size={12} color={colors.primary} />
+                  <MapPin
+                    size={10}
+                    color={colors.textMuted}
+                    style={{ marginTop: 1 }}
+                  />
                   <Text
                     style={{
                       fontFamily: "Inter",
                       fontSize: 10,
-                      fontWeight: "700",
-                      color: colors.primary,
+                      color: colors.textMuted,
+                      flex: 1,
+                      lineHeight: 14,
                     }}
+                    numberOfLines={3}
                   >
-                    Add Row
+                    {job.location.address}
                   </Text>
-                </TouchableOpacity>
-              )
-            }
-          />
-
-          {/* Table header */}
-          <View
-            style={{
-              flexDirection: "row",
-              backgroundColor: colors.bgSurface,
-              borderRadius: 8,
-              paddingVertical: 8,
-              paddingHorizontal: 6,
-              marginBottom: 2,
-            }}
-          >
-            {[
-              { label: "Description", style: { flex: 1 } },
-              { label: "Qty", style: { width: 36, textAlign: "center" } },
-              { label: "Rate", style: { width: 64, textAlign: "right" } },
-              { label: "Amt", style: { width: 64, textAlign: "right" } },
-              { label: "", style: { width: 28 } },
-            ].map((col, i) => (
-              <Text
-                key={i}
-                style={[
-                  {
-                    fontFamily: "Inter",
-                    fontSize: 9,
-                    fontWeight: "700",
-                    color: colors.primary,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
-                  },
-                  col.style,
-                ]}
-              >
-                {col.label}
-              </Text>
-            ))}
+                </View>
+              ) : null}
+            </Card>
           </View>
 
-          {lineItems.map((item, idx) => {
-            const lineTotal = computeLineTotal(item);
-            return (
-              <View
-                key={item.id}
-                style={{
-                  flexDirection: "row",
-                  paddingVertical: 8,
-                  paddingHorizontal: 4,
-                  alignItems: "center",
-                  borderRadius: 6,
-                  backgroundColor:
-                    idx % 2 === 1 ? colors.bgSurface : "transparent",
-                }}
-              >
-                <TextInput
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    color: colors.textPrimary,
-                    flex: 1,
-                    paddingVertical: 4,
-                    paddingHorizontal: 2,
-                    minHeight: 32,
-                  }}
-                  value={item.description}
-                  onChangeText={(v) =>
-                    handleChangeField(item.id, "description", v)
-                  }
-                  placeholder="Description"
-                  placeholderTextColor={colors.textDisabled}
-                  multiline
-                />
-                <TextInput
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    color: colors.textPrimary,
-                    width: 36,
-                    textAlign: "center",
-                    paddingVertical: 4,
-                  }}
-                  value={String(item.qty)}
-                  onChangeText={(v) => handleChangeField(item.id, "qty", v)}
-                  keyboardType="numeric"
-                  placeholder="1"
-                  placeholderTextColor={colors.textDisabled}
-                />
-                <TextInput
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    color: colors.textPrimary,
-                    width: 64,
-                    textAlign: "right",
-                    paddingVertical: 4,
-                  }}
-                  value={String(item.rate)}
-                  onChangeText={(v) => handleChangeField(item.id, "rate", v)}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={colors.textDisabled}
-                />
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 11,
-                    color: colors.textPrimary,
-                    fontWeight: "700",
-                    width: 64,
-                    textAlign: "right",
-                    paddingRight: 2,
-                  }}
-                >
-                  {lineTotal.toFixed(0)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => handleDeleteRow(item.id)}
-                  style={{
-                    width: 28,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={13} color={colors.danger} />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-
-          {/* Parts sub-section */}
-          <View
-            style={{
-              marginTop: 10,
-              paddingTop: 10,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-            }}
-          >
+          {/* ══ SERVICE DETAILS ══ */}
+          <Card colors={colors}>
+            <SectionHeader
+              icon={Wrench}
+              title="Service Details"
+              colors={colors}
+            />
+            <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+              <InfoPill
+                icon={Wrench}
+                label="Appliance"
+                value={job.applianceType}
+                colors={colors}
+                accent={colors.primary}
+              />
+              <InfoPill
+                icon={CalendarIcon}
+                label="Service Date"
+                value={formatDate(job.serviceDate)}
+                colors={colors}
+              />
+            </View>
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 8,
+                gap: 8,
+                marginBottom: job.issue || job.serviceDone ? 8 : 0,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 9,
-                  fontWeight: "800",
-                  color: colors.secondary,
-                  textTransform: "uppercase",
-                  letterSpacing: 1.5,
-                }}
-              >
-                Replaced Parts / Spares
-              </Text>
-              <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7}>
+              <InfoPill
+                icon={ShieldCheck}
+                label="Warranty"
+                value={job.warranty || "No Warranty"}
+                colors={colors}
+                accent={
+                  job.warranty && job.warranty !== "No Warranty"
+                    ? colors.success
+                    : undefined
+                }
+              />
+              {job.nextReminderDate ? (
+                <InfoPill
+                  icon={Bell}
+                  label="Next Service"
+                  value={formatDate(job.nextReminderDate)}
+                  colors={colors}
+                  accent={colors.success}
+                />
+              ) : null}
+            </View>
+            {job.issue ? (
+              <>
+                <Divider colors={colors} />
+                <InfoRow
+                  icon={<Hash size={13} color={colors.textMuted} />}
+                  label="Issue Reported"
+                  value={job.issue}
+                  colors={colors}
+                />
+              </>
+            ) : null}
+            {job.serviceDone ? (
+              <>
+                <Divider colors={colors} />
+                <InfoRow
+                  icon={<CheckCircle2 size={13} color={colors.success} />}
+                  label="Work Done"
+                  value={job.serviceDone}
+                  valueColor={colors.success}
+                  colors={colors}
+                />
+              </>
+            ) : null}
+          </Card>
+
+          {/* ══ LINE ITEMS ══ */}
+          <Card colors={colors}>
+            <SectionHeader
+              icon={Receipt}
+              title="Service Breakdown"
+              colors={colors}
+              action={
+                isLocked ? null : (
+                  <TouchableOpacity
+                    onPress={handleAddRow}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 5,
+                      backgroundColor: colors.primaryBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: colors.primaryBorder,
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Plus size={12} color={colors.primary} />
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: colors.primary,
+                      }}
+                    >
+                      Add Row
+                    </Text>
+                  </TouchableOpacity>
+                )
+              }
+            />
+
+            {/* Table header */}
+            <View
+              style={{
+                flexDirection: "row",
+                backgroundColor: colors.bgSurface,
+                borderRadius: 8,
+                paddingVertical: 8,
+                paddingHorizontal: 6,
+                marginBottom: 2,
+              }}
+            >
+              {[
+                { label: "Description", style: { flex: 1 } },
+                { label: "Qty", style: { width: 36, textAlign: "center" } },
+                { label: "Rate", style: { width: 64, textAlign: "right" } },
+                { label: "Amt", style: { width: 64, textAlign: "right" } },
+                { label: "", style: { width: 28 } },
+              ].map((col, i) => (
                 <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: colors.primary,
-                  }}
+                  key={i}
+                  style={[
+                    {
+                      fontFamily: "Inter",
+                      fontSize: 9,
+                      fontWeight: "700",
+                      color: colors.primary,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    },
+                    col.style,
+                  ]}
                 >
-                  + Add Part
+                  {col.label}
                 </Text>
-              </TouchableOpacity>
+              ))}
             </View>
 
-            {partsUsed.map((part, idx) => {
-              const partTotal =
-                (Number(part.price) || 0) * (Number(part.quantity) || 0);
+            {lineItems.map((item, idx) => {
+              const lineTotal = computeLineTotal(item);
               return (
                 <View
-                  key={`part-${idx}`}
+                  key={item.id}
                   style={{
                     flexDirection: "row",
                     paddingVertical: 8,
@@ -1901,9 +1772,11 @@ export default function InvoicePreviewScreen() {
                       paddingHorizontal: 2,
                       minHeight: 32,
                     }}
-                    value={part.name}
-                    onChangeText={(v) => handleChangePart(idx, "name", v)}
-                    placeholder="Part name"
+                    value={item.description}
+                    onChangeText={(v) =>
+                      handleChangeField(item.id, "description", v)
+                    }
+                    placeholder="Description"
                     placeholderTextColor={colors.textDisabled}
                     multiline
                   />
@@ -1916,8 +1789,8 @@ export default function InvoicePreviewScreen() {
                       textAlign: "center",
                       paddingVertical: 4,
                     }}
-                    value={String(part.quantity)}
-                    onChangeText={(v) => handleChangePart(idx, "quantity", v)}
+                    value={String(item.qty)}
+                    onChangeText={(v) => handleChangeField(item.id, "qty", v)}
                     keyboardType="numeric"
                     placeholder="1"
                     placeholderTextColor={colors.textDisabled}
@@ -1931,8 +1804,8 @@ export default function InvoicePreviewScreen() {
                       textAlign: "right",
                       paddingVertical: 4,
                     }}
-                    value={String(part.price)}
-                    onChangeText={(v) => handleChangePart(idx, "price", v)}
+                    value={String(item.rate)}
+                    onChangeText={(v) => handleChangeField(item.id, "rate", v)}
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.textDisabled}
@@ -1948,10 +1821,10 @@ export default function InvoicePreviewScreen() {
                       paddingRight: 2,
                     }}
                   >
-                    {partTotal.toFixed(0)}
+                    {lineTotal.toFixed(0)}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => handleDeletePart(idx)}
+                    onPress={() => handleDeleteRow(item.id)}
                     style={{
                       width: 28,
                       alignItems: "center",
@@ -1965,584 +1838,786 @@ export default function InvoicePreviewScreen() {
               );
             })}
 
-            {lineItems.length === 0 && partsUsed.length === 0 && (
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  color: colors.textDisabled,
-                  textAlign: "center",
-                  paddingVertical: 14,
-                  fontStyle: "italic",
-                }}
-              >
-                {'No items yet — tap "Add Row" or "Add Part"'}
-              </Text>
-            )}
-          </View>
-        </Card>
-
-        {/* ══ PAYMENT SUMMARY ══ */}
-        <Card colors={colors}>
-          <SectionHeader
-            icon={IndianRupee}
-            title="Payment Summary"
-            colors={colors}
-          />
-
-          {lineItems.length > 0 && (
+            {/* Parts sub-section */}
             <View
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: 6,
+                marginTop: 10,
+                paddingTop: 10,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
               }}
             >
-              <Text
+              <View
                 style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  color: colors.textMuted,
-                }}
-              >
-                Services & Fees
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "600",
-                  color: colors.textPrimary,
-                }}
-              >
-                {formatCurrency(subtotal)}
-              </Text>
-            </View>
-          )}
-          {partsTotal > 0 && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginBottom: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  color: colors.textMuted,
-                }}
-              >
-                Parts &amp; Spares
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "600",
-                  color: colors.textPrimary,
-                }}
-              >
-                {formatCurrency(partsTotal)}
-              </Text>
-            </View>
-          )}
-
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              borderRadius: 14,
-              padding: 16,
-              marginTop: 8,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: "Inter",
-                fontSize: 10,
-                color: "rgba(255,255,255,0.7)",
-                textTransform: "uppercase",
-                letterSpacing: 2,
-              }}
-            >
-              Grand Total
-            </Text>
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 26,
-                fontWeight: "900",
-                color: "#fff",
-              }}
-            >
-              {formatCurrency(grandTotal)}
-            </Text>
-          </LinearGradient>
-
-          {/* Payment status toggle */}
-          <View
-            style={{
-              marginTop: 16,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              paddingTop: 16,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: isPaid ? 16 : 0,
-              }}
-            >
-              <View>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                    marginBottom: 3,
-                  }}
-                >
-                  Payment Status
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    color: isPaid ? colors.success : colors.warningIcon,
-                  }}
-                >
-                  {isPaid ? "Successfully Collected" : "Payment Pending"}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => !isLocked && setIsPaid(!isPaid)}
-                disabled={isLocked}
-                style={{
-                  backgroundColor: isPaid ? colors.successBg : colors.bgSurface,
-                  borderWidth: 1.5,
-                  borderColor: isPaid ? colors.successBorder : colors.border,
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 10,
                   flexDirection: "row",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 8,
+                  marginBottom: 8,
                 }}
               >
-                <View
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 5,
-                    backgroundColor: isPaid
-                      ? colors.success
-                      : colors.textDisabled,
-                  }}
-                />
                 <Text
                   style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 11,
+                    fontFamily: "Inter",
+                    fontSize: 9,
                     fontWeight: "800",
-                    color: isPaid ? colors.success : colors.textPrimary,
+                    color: colors.secondary,
+                    textTransform: "uppercase",
+                    letterSpacing: 1.5,
                   }}
                 >
-                  {isPaid ? "PAID" : "UNPAID"}
+                  Replaced Parts / Spares
                 </Text>
-              </TouchableOpacity>
-            </View>
-
-            {isPaid && (
-              <View>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                    marginBottom: 10,
-                  }}
-                >
-                  Payment Method
-                </Text>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  {[
-                    { id: "cash", label: "Cash", icon: Banknote },
-                    { id: "upi", label: "UPI", icon: Wallet },
-                    { id: "online", label: "Online", icon: CreditCard },
-                    { id: "cheque", label: "Cheque", icon: FileText },
-                  ].map((method) => {
-                    const active = paymentMethod === method.id;
-                    return (
-                      <TouchableOpacity
-                        key={method.id}
-                        onPress={() => setPaymentMethod(method.id)}
-                        style={{
-                          flex: 1,
-                          alignItems: "center",
-                          paddingVertical: 10,
-                          borderRadius: 10,
-                          borderWidth: 1.5,
-                          borderColor: active ? colors.primary : colors.border,
-                          backgroundColor: active
-                            ? colors.primaryBg
-                            : colors.bgSurface,
-                          gap: 4,
-                        }}
-                      >
-                        <method.icon
-                          size={16}
-                          color={active ? colors.primary : colors.textMuted}
-                        />
-                        <Text
-                          style={{
-                            fontFamily: "Inter",
-                            fontSize: 9,
-                            fontWeight: "700",
-                            color: active ? colors.primary : colors.textMuted,
-                          }}
-                        >
-                          {method.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </View>
-        </Card>
-
-        {/* ══ WARRANTY ══ */}
-        {job.warranty && job.warranty !== "No Warranty" ? (
-          <View
-            style={{
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 12,
-              borderWidth: 2,
-              borderStyle: "dashed",
-              borderColor: colors.primaryBorder,
-              backgroundColor: colors.primaryBg,
-              flexDirection: "row",
-              gap: 12,
-              alignItems: "flex-start",
-            }}
-          >
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: colors.primary,
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <ShieldCheck size={20} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 9,
-                  fontWeight: "800",
-                  textTransform: "uppercase",
-                  letterSpacing: 1.5,
-                  color: colors.primary,
-                  marginBottom: 4,
-                }}
-              >
-                Service Warranty Certificate
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 14,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  marginBottom: 8,
-                }}
-              >
-                {job.warranty} Coverage
-              </Text>
-
-              {/* Warranty start date — tappable to edit */}
-              <TouchableOpacity
-                onPress={() => !isLocked && setShowWarrantyDatePicker(true)}
-                activeOpacity={isLocked ? 1 : 0.7}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  backgroundColor: isLocked ? colors.bgSurface : colors.bgCard,
-                  borderWidth: 1,
-                  borderColor: isLocked ? colors.border : colors.primaryBorder,
-                  borderRadius: 8,
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  alignSelf: "flex-start",
-                  marginBottom: 8,
-                }}
-              >
-                <CalendarIcon
-                  size={11}
-                  color={isLocked ? colors.textDisabled : colors.primary}
-                />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 11,
-                    fontWeight: "600",
-                    color: isLocked ? colors.textDisabled : colors.primary,
-                  }}
-                >
-                  Starts: {formatDate(warrantyStartDate)}
-                </Text>
-                {!isLocked && <Edit3 size={10} color={colors.primary} />}
-              </TouchableOpacity>
-
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 11,
-                  color: colors.textMuted,
-                  lineHeight: 17,
-                }}
-              >
-                Covers labour &amp; parts as listed. Void if physically damaged,
-                tampered with, or exposed to power surges after service.
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Warranty Date Picker Modal */}
-        <Modal
-          visible={showWarrantyDatePicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowWarrantyDatePicker(false)}
-        >
-          <Pressable
-            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
-            onPress={() => setShowWarrantyDatePicker(false)}
-          />
-          <View
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: colors.bgCard,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              padding: 20,
-              paddingBottom: 40,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 15,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                }}
-              >
-                Warranty Start Date
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowWarrantyDatePicker(false)}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: colors.primary,
-                  }}
-                >
-                  Done
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Calendar
-              current={warrantyStartDate.toISOString().split("T")[0]}
-              markedDates={{
-                [warrantyStartDate.toISOString().split("T")[0]]: {
-                  selected: true,
-                  selectedColor: colors.primary,
-                },
-              }}
-              onDayPress={(day) => {
-                setWarrantyStartDate(new Date(day.dateString));
-                setShowWarrantyDatePicker(false);
-              }}
-              theme={{
-                calendarBackground: colors.bgCard,
-                textSectionTitleColor: colors.textMuted,
-                selectedDayBackgroundColor: colors.primary,
-                selectedDayTextColor: "#fff",
-                todayTextColor: colors.primary,
-                dayTextColor: colors.textPrimary,
-                textDisabledColor: colors.textDisabled,
-                arrowColor: colors.primary,
-                monthTextColor: colors.textPrimary,
-                textMonthFontFamily: "Space Grotesk",
-                textDayFontFamily: "Inter",
-                textDayHeaderFontFamily: "Inter",
-              }}
-            />
-          </View>
-        </Modal>
-
-        {/* ══ TERMS & CONDITIONS ══ */}
-        <Card colors={colors}>
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-            onPress={() => setShowTerms(!showTerms)}
-            activeOpacity={0.7}
-          >
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 7 }}
-            >
-              <Info size={14} color={colors.textMuted} />
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 13,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                }}
-              >
-                Terms &amp; Conditions
-              </Text>
-            </View>
-            {showTerms ? (
-              <ChevronDown size={14} color={colors.textDisabled} />
-            ) : (
-              <ChevronRight size={14} color={colors.textDisabled} />
-            )}
-          </TouchableOpacity>
-
-          {showTerms && (
-            <View style={{ marginTop: 14, gap: 8 }}>
-              {[
-                "Warranty is valid only for the specific fault repaired and parts replaced as listed in this invoice.",
-                "Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.",
-                "This is a computer-generated invoice.",
-              ].map((term, i) => (
-                <View key={i} style={{ flexDirection: "row", gap: 8 }}>
-                  <View
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: colors.primaryBorder,
-                      marginTop: 5,
-                      flexShrink: 0,
-                    }}
-                  />
+                <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7}>
                   <Text
                     style={{
                       fontFamily: "Inter",
                       fontSize: 10,
-                      color: colors.textDisabled,
-                      lineHeight: 16,
-                      flex: 1,
+                      fontWeight: "700",
+                      color: colors.primary,
                     }}
                   >
-                    {term}
+                    + Add Part
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {partsUsed.map((part, idx) => {
+                const partTotal =
+                  (Number(part.price) || 0) * (Number(part.quantity) || 0);
+                return (
+                  <View
+                    key={`part-${idx}`}
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 8,
+                      paddingHorizontal: 4,
+                      alignItems: "center",
+                      borderRadius: 6,
+                      backgroundColor:
+                        idx % 2 === 1 ? colors.bgSurface : "transparent",
+                    }}
+                  >
+                    <TextInput
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        flex: 1,
+                        paddingVertical: 4,
+                        paddingHorizontal: 2,
+                        minHeight: 32,
+                      }}
+                      value={part.name}
+                      onChangeText={(v) => handleChangePart(idx, "name", v)}
+                      placeholder="Part name"
+                      placeholderTextColor={colors.textDisabled}
+                      multiline
+                    />
+                    <TextInput
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        width: 36,
+                        textAlign: "center",
+                        paddingVertical: 4,
+                      }}
+                      value={String(part.quantity)}
+                      onChangeText={(v) => handleChangePart(idx, "quantity", v)}
+                      keyboardType="numeric"
+                      placeholder="1"
+                      placeholderTextColor={colors.textDisabled}
+                    />
+                    <TextInput
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        width: 64,
+                        textAlign: "right",
+                        paddingVertical: 4,
+                      }}
+                      value={String(part.price)}
+                      onChangeText={(v) => handleChangePart(idx, "price", v)}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.textDisabled}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 11,
+                        color: colors.textPrimary,
+                        fontWeight: "700",
+                        width: 64,
+                        textAlign: "right",
+                        paddingRight: 2,
+                      }}
+                    >
+                      {partTotal.toFixed(0)}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => handleDeletePart(idx)}
+                      style={{
+                        width: 28,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={13} color={colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+
+              {lineItems.length === 0 && partsUsed.length === 0 && (
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    color: colors.textDisabled,
+                    textAlign: "center",
+                    paddingVertical: 14,
+                    fontStyle: "italic",
+                  }}
+                >
+                  {'No items yet — tap "Add Row" or "Add Part"'}
+                </Text>
+              )}
+            </View>
+          </Card>
+
+          {/* ══ PAYMENT SUMMARY ══ */}
+          <Card colors={colors}>
+            <SectionHeader
+              icon={IndianRupee}
+              title="Payment Summary"
+              colors={colors}
+            />
+
+            {lineItems.length > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    color: colors.textMuted,
+                  }}
+                >
+                  Services & Fees
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {formatCurrency(subtotal)}
+                </Text>
+              </View>
+            )}
+            {partsTotal > 0 && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    color: colors.textMuted,
+                  }}
+                >
+                  Parts &amp; Spares
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {formatCurrency(partsTotal)}
+                </Text>
+              </View>
+            )}
+
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                borderRadius: 14,
+                padding: 16,
+                marginTop: 8,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 10,
+                  color: "rgba(255,255,255,0.7)",
+                  textTransform: "uppercase",
+                  letterSpacing: 2,
+                }}
+              >
+                Grand Total
+              </Text>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 26,
+                  fontWeight: "900",
+                  color: "#fff",
+                }}
+              >
+                {formatCurrency(grandTotal)}
+              </Text>
+            </LinearGradient>
+
+            {/* Payment status toggle */}
+            <View
+              style={{
+                marginTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+                paddingTop: 16,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: isPaid ? 16 : 0,
+                }}
+              >
+                <View>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: colors.textPrimary,
+                      marginBottom: 3,
+                    }}
+                  >
+                    Payment Status
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      color: isPaid ? colors.success : colors.warningIcon,
+                    }}
+                  >
+                    {isPaid ? "Successfully Collected" : "Payment Pending"}
                   </Text>
                 </View>
-              ))}
-            </View>
-          )}
-        </Card>
+                <TouchableOpacity
+                  onPress={() => !isLocked && setIsPaid(!isPaid)}
+                  disabled={isLocked}
+                  style={{
+                    backgroundColor: isPaid
+                      ? colors.successBg
+                      : colors.bgSurface,
+                    borderWidth: 1.5,
+                    borderColor: isPaid ? colors.successBorder : colors.border,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      backgroundColor: isPaid
+                        ? colors.success
+                        : colors.textDisabled,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 11,
+                      fontWeight: "800",
+                      color: isPaid ? colors.success : colors.textPrimary,
+                    }}
+                  >
+                    {isPaid ? "PAID" : "UNPAID"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-        {/* ══ THANK YOU ══ */}
+              {isPaid && (
+                <View>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: colors.textPrimary,
+                      marginBottom: 10,
+                    }}
+                  >
+                    Payment Method
+                  </Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {[
+                      { id: "cash", label: "Cash", icon: Banknote },
+                      { id: "upi", label: "UPI", icon: Wallet },
+                      { id: "online", label: "Online", icon: CreditCard },
+                      { id: "cheque", label: "Cheque", icon: FileText },
+                    ].map((method) => {
+                      const active = paymentMethod === method.id;
+                      return (
+                        <TouchableOpacity
+                          key={method.id}
+                          onPress={() => setPaymentMethod(method.id)}
+                          style={{
+                            flex: 1,
+                            alignItems: "center",
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            borderWidth: 1.5,
+                            borderColor: active
+                              ? colors.primary
+                              : colors.border,
+                            backgroundColor: active
+                              ? colors.primaryBg
+                              : colors.bgSurface,
+                            gap: 4,
+                          }}
+                        >
+                          <method.icon
+                            size={16}
+                            color={active ? colors.primary : colors.textMuted}
+                          />
+                          <Text
+                            style={{
+                              fontFamily: "Inter",
+                              fontSize: 9,
+                              fontWeight: "700",
+                              color: active ? colors.primary : colors.textMuted,
+                            }}
+                          >
+                            {method.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+            </View>
+          </Card>
+
+          {/* ══ WARRANTY ══ */}
+          {job.warranty && job.warranty !== "No Warranty" ? (
+            <View
+              style={{
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 12,
+                borderWidth: 2,
+                borderStyle: "dashed",
+                borderColor: colors.primaryBorder,
+                backgroundColor: colors.primaryBg,
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "flex-start",
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  backgroundColor: colors.primary,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <ShieldCheck size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 9,
+                    fontWeight: "800",
+                    textTransform: "uppercase",
+                    letterSpacing: 1.5,
+                    color: colors.primary,
+                    marginBottom: 4,
+                  }}
+                >
+                  Service Warranty Certificate
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    marginBottom: 8,
+                  }}
+                >
+                  {job.warranty} Coverage
+                </Text>
+
+                {/* Warranty start date — tappable to edit */}
+                <TouchableOpacity
+                  onPress={() => !isLocked && setShowWarrantyDatePicker(true)}
+                  activeOpacity={isLocked ? 1 : 0.7}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    backgroundColor: isLocked
+                      ? colors.bgSurface
+                      : colors.bgCard,
+                    borderWidth: 1,
+                    borderColor: isLocked
+                      ? colors.border
+                      : colors.primaryBorder,
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    alignSelf: "flex-start",
+                    marginBottom: 8,
+                  }}
+                >
+                  <CalendarIcon
+                    size={11}
+                    color={isLocked ? colors.textDisabled : colors.primary}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      fontWeight: "600",
+                      color: isLocked ? colors.textDisabled : colors.primary,
+                    }}
+                  >
+                    Starts: {formatDate(warrantyStartDate)}
+                  </Text>
+                  {!isLocked && <Edit3 size={10} color={colors.primary} />}
+                </TouchableOpacity>
+
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 11,
+                    color: colors.textMuted,
+                    lineHeight: 17,
+                  }}
+                >
+                  Covers labour &amp; parts as listed. Void if physically
+                  damaged, tampered with, or exposed to power surges after
+                  service.
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Warranty Date Picker Modal */}
+          <Modal
+            visible={showWarrantyDatePicker}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowWarrantyDatePicker(false)}
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }}
+              onPress={() => setShowWarrantyDatePicker(false)}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: colors.bgCard,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: 20,
+                paddingBottom: 40,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 15,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Warranty Start Date
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowWarrantyDatePicker(false)}
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 12,
+                      fontWeight: "700",
+                      color: colors.primary,
+                    }}
+                  >
+                    Done
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <Calendar
+                current={warrantyStartDate.toISOString().split("T")[0]}
+                markedDates={{
+                  [warrantyStartDate.toISOString().split("T")[0]]: {
+                    selected: true,
+                    selectedColor: colors.primary,
+                  },
+                }}
+                onDayPress={(day) => {
+                  setWarrantyStartDate(new Date(day.dateString));
+                  setShowWarrantyDatePicker(false);
+                }}
+                theme={{
+                  calendarBackground: colors.bgCard,
+                  textSectionTitleColor: colors.textMuted,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: "#fff",
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.textPrimary,
+                  textDisabledColor: colors.textDisabled,
+                  arrowColor: colors.primary,
+                  monthTextColor: colors.textPrimary,
+                  textMonthFontFamily: "Space Grotesk",
+                  textDayFontFamily: "Inter",
+                  textDayHeaderFontFamily: "Inter",
+                }}
+              />
+            </View>
+          </Modal>
+
+          {/* ══ TERMS & CONDITIONS ══ */}
+          <Card colors={colors}>
+            <TouchableOpacity
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+              onPress={() => setShowTerms(!showTerms)}
+              activeOpacity={0.7}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 7 }}
+              >
+                <Info size={14} color={colors.textMuted} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                  }}
+                >
+                  Terms &amp; Conditions
+                </Text>
+              </View>
+              {showTerms ? (
+                <ChevronDown size={14} color={colors.textDisabled} />
+              ) : (
+                <ChevronRight size={14} color={colors.textDisabled} />
+              )}
+            </TouchableOpacity>
+
+            {showTerms && (
+              <View style={{ marginTop: 14, gap: 8 }}>
+                {[
+                  "Warranty is valid only for the specific fault repaired and parts replaced as listed in this invoice.",
+                  "Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.",
+                  "This is a computer-generated invoice.",
+                ].map((term, i) => (
+                  <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+                    <View
+                      style={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: colors.primaryBorder,
+                        marginTop: 5,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        color: colors.textDisabled,
+                        lineHeight: 16,
+                        flex: 1,
+                      }}
+                    >
+                      {term}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* ══ THANK YOU ══ */}
+          <View
+            style={{
+              alignItems: "center",
+              paddingVertical: 24,
+              paddingHorizontal: 20,
+              marginBottom: 12,
+              backgroundColor: colors.bgCard,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 32, marginBottom: 8 }}>🙏</Text>
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                fontSize: 17,
+                fontWeight: "800",
+                color: colors.primary,
+                marginBottom: 4,
+              }}
+            >
+              Thank you, {customerName.split(" ")[0]}!
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Inter",
+                fontSize: 12,
+                color: colors.textMuted,
+                textAlign: "center",
+                lineHeight: 18,
+              }}
+            >
+              {"Thank you for choosing "}
+              {techName}
+              {".\nWe look forward to serving you again."}
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* ══ STICKY BOTTOM ACTION BAR ══ */}
         <View
           style={{
-            alignItems: "center",
-            paddingVertical: 24,
-            paddingHorizontal: 20,
-            marginBottom: 12,
-            backgroundColor: colors.bgCard,
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.bgPrimary,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 28,
+            gap: 10,
           }}
         >
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>🙏</Text>
-          <Text
-            style={{
-              fontFamily: "Space Grotesk",
-              fontSize: 17,
-              fontWeight: "800",
-              color: colors.primary,
-              marginBottom: 4,
-            }}
-          >
-            Thank you, {customerName.split(" ")[0]}!
-          </Text>
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 12,
-              color: colors.textMuted,
-              textAlign: "center",
-              lineHeight: 18,
-            }}
-          >
-            {"Thank you for choosing "}
-            {techName}
-            {".\nWe look forward to serving you again."}
-          </Text>
-        </View>
-      </ScrollView>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {isLocked ? (
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.successBorder,
+                  backgroundColor: colors.successBg,
+                }}
+              >
+                <Lock size={14} color={colors.success} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: colors.success,
+                  }}
+                >
+                  Completed &amp; Paid
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={handleSaveInvoice}
+                disabled={isSaving}
+                activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.primaryBorder,
+                  backgroundColor: colors.primaryBg,
+                }}
+              >
+                <Save size={15} color={colors.primary} />
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: colors.primary,
+                  }}
+                >
+                  {isSaving ? "Saving..." : "Save"}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-      {/* ══ STICKY BOTTOM ACTION BAR ══ */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: colors.bgPrimary,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 28,
-          gap: 10,
-        }}
-      >
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          {isLocked ? (
-            <View
+            <TouchableOpacity
+              onPress={handleWhatsAppShare}
+              activeOpacity={0.8}
               style={{
                 flex: 1,
                 flexDirection: "row",
@@ -2556,7 +2631,7 @@ export default function InvoicePreviewScreen() {
                 backgroundColor: colors.successBg,
               }}
             >
-              <Lock size={14} color={colors.success} />
+              <MessageCircle size={15} color={colors.success} />
               <Text
                 style={{
                   fontFamily: "Space Grotesk",
@@ -2565,111 +2640,52 @@ export default function InvoicePreviewScreen() {
                   color: colors.success,
                 }}
               >
-                Completed &amp; Paid
+                WhatsApp
               </Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={handleSaveInvoice}
-              disabled={isSaving}
-              activeOpacity={0.8}
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            onPress={handleGeneratePdf}
+            activeOpacity={0.85}
+            style={{
+              borderRadius: 14,
+              overflow: "hidden",
+              shadowColor: colors.primary,
+              shadowOpacity: 0.35,
+              shadowRadius: 14,
+              shadowOffset: { width: 0, height: 3 },
+              elevation: 8,
+            }}
+          >
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
               style={{
-                flex: 1,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 8,
-                paddingVertical: 12,
-                borderRadius: 12,
-                borderWidth: 1.5,
-                borderColor: colors.primaryBorder,
-                backgroundColor: colors.primaryBg,
+                gap: 10,
+                paddingVertical: 14,
               }}
             >
-              <Save size={15} color={colors.primary} />
+              <Download color="#fff" size={17} />
               <Text
                 style={{
                   fontFamily: "Space Grotesk",
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: "800",
-                  color: colors.primary,
+                  color: "#fff",
+                  letterSpacing: 0.5,
                 }}
               >
-                {isSaving ? "Saving..." : "Save"}
+                Download &amp; Share PDF
               </Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            onPress={handleWhatsAppShare}
-            activeOpacity={0.8}
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              paddingVertical: 12,
-              borderRadius: 12,
-              borderWidth: 1.5,
-              borderColor: colors.successBorder,
-              backgroundColor: colors.successBg,
-            }}
-          >
-            <MessageCircle size={15} color={colors.success} />
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 12,
-                fontWeight: "800",
-                color: colors.success,
-              }}
-            >
-              WhatsApp
-            </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          onPress={handleGeneratePdf}
-          activeOpacity={0.85}
-          style={{
-            borderRadius: 14,
-            overflow: "hidden",
-            shadowColor: colors.primary,
-            shadowOpacity: 0.35,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 3 },
-            elevation: 8,
-          }}
-        >
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              paddingVertical: 14,
-            }}
-          >
-            <Download color="#fff" size={17} />
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 13,
-                fontWeight: "800",
-                color: "#fff",
-                letterSpacing: 0.5,
-              }}
-            >
-              Download &amp; Share PDF
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }

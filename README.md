@@ -10,14 +10,18 @@ A full-stack mobile application for field technicians to manage service jobs, cu
 
 | Layer         | Technology                                      |
 | ------------- | ----------------------------------------------- |
-| Framework     | React Native 0.83 via **Expo SDK 55**           |
+| Framework     | React Native 0.83.4 via **Expo SDK 55**         |
 | Navigation    | React Navigation 7 (native-stack + bottom-tabs) |
-| State         | Redux Toolkit + RTK Query                       |
+| State         | Redux Toolkit 2 + RTK Query                     |
 | Persistence   | expo-secure-store (token + theme)               |
 | Styling       | NativeWind 4 (Tailwind CSS) + Gluestack UI      |
+| Animations    | @legendapp/motion + react-native-reanimated 4   |
+| Bottom Sheets | @gorhom/bottom-sheet 5                          |
 | Notifications | expo-notifications                              |
 | Location      | expo-location                                   |
+| Contacts      | expo-contacts                                   |
 | Invoices      | expo-print + expo-sharing                       |
+| Icons         | lucide-react-native                             |
 
 ### Server (`/server`)
 
@@ -37,29 +41,33 @@ A full-stack mobile application for field technicians to manage service jobs, cu
 
 ```
 technician-app/
-├── mobile/                   # React Native (Expo) app
+├── mobile/                   # React Native (Expo) app  [v1.1.0]
 │   ├── src/
 │   │   ├── components/       # Reusable UI & feature components
+│   │   │   ├── CreateJob/    # Multi-step job creation form components
+│   │   │   └── ui/           # Generic UI primitives
 │   │   ├── config/           # API base URL configuration
 │   │   ├── constants/        # Route names, colors, API tags
-│   │   ├── hooks/            # Custom hooks (location, theme, job submission)
+│   │   ├── hooks/            # Custom hooks (location, theme, job submission, reminders)
 │   │   ├── navigation/       # App navigator, auth stack, main tabs
-│   │   ├── screens/          # All app screens
-│   │   ├── services/         # RTK Query API slices (auth, customer, job, dashboard)
-│   │   ├── store/            # Redux store & slices (auth, theme)
-│   │   └── utils/            # Formatting, export, notification, storage helpers
+│   │   ├── screens/          # All app screens (14 screens)
+│   │   ├── services/         # RTK Query base + API slices (auth, customer, job, dashboard)
+│   │   ├── store/            # Redux store + slices (auth, theme)
+│   │   └── utils/            # Formatting, export, notification, location, storage helpers
 │   ├── assets/               # Icons, splash screens
+│   ├── plugins/              # Expo config plugins
+│   ├── scripts/              # Dev tooling (set-dev-host.js)
 │   ├── android/              # Native Android project (auto-generated via prebuild)
 │   └── app.json              # Expo configuration
 │
-├── server/                   # Express API server
+├── server/                   # Express API server  [v1.0.0]
 │   ├── bin/www.js            # HTTP server entry point
 │   ├── app.js                # Express app setup (middleware, routes)
 │   ├── config/               # DB connection & environment variable loader
 │   ├── constants/            # HTTP status codes & general constants
 │   ├── controllers/          # Route controllers (auth, customer, job, dashboard)
 │   ├── middlewares/          # Auth, validation, async handler
-│   ├── models/               # Mongoose models (User, Customer, Job)
+│   ├── models/               # Mongoose models (User, Customer, Job, TokenBlocklist)
 │   ├── routes/               # Express route definitions
 │   ├── schemas/              # Zod validation schemas
 │   ├── services/             # Business logic layer
@@ -175,6 +183,7 @@ npm run ios          # expo run:ios
 | `android-build:apk` | `cd android && ./gradlew assembleRelease`                | Build release APK               |
 | `android-build:aab` | `cd android && ./gradlew bundleRelease`                  | Build release AAB (Play Store)  |
 | `ios`               | `expo run:ios`                                           | Run on iOS                      |
+| `web`               | `expo start --web`                                       | Run in web browser              |
 | `prebuild:android`  | `expo prebuild -p android`                               | Generate native Android project |
 | `prebuild:ios`      | `expo prebuild -p ios`                                   | Generate native iOS project     |
 | `lint`              | `expo lint`                                              | Lint mobile code                |
@@ -199,12 +208,15 @@ All endpoints are prefixed with `/api/v1`.
 ## Key Features
 
 - **OTP-based Authentication** — Passwordless login via SMS OTP (2Factor.in)
+- **Profile Setup** — First-time technician profile creation after registration
 - **Job Management** — Create, edit, view, and track service jobs with timelines
+- **Job History** — Browse past completed jobs with filtering
 - **Customer Management** — Customer CRUD with contact import from device
 - **Invoice Generation** — PDF invoices via expo-print with share support
 - **Calendar View** — Visualize scheduled jobs on a calendar
+- **Reminders** — View and manage job reminders; rescheduled automatically on app start
 - **Push Notifications** — Reminders for upcoming jobs
-- **Location Capture** — Capture technician location per job
+- **Location Capture** — Capture technician location per job with map link support
 - **Dark/Light Theme** — Toggle via system or manual preference
 - **Dashboard** — At-a-glance stats (jobs, revenue, pending)
 

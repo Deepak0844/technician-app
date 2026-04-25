@@ -14,6 +14,7 @@ import { useGetJobsQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
+import { getLocalDateString } from "@utils/formatUtils";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
@@ -33,7 +34,7 @@ export default function CalendarScreen() {
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateString(new Date());
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [currentMonthStr, setCurrentMonthStr] = useState(
@@ -68,7 +69,7 @@ export default function CalendarScreen() {
     allJobs.forEach((j) => {
       if (j.serviceDate) {
         try {
-          const dateStr = new Date(j.serviceDate).toISOString().split("T")[0];
+          const dateStr = getLocalDateString(new Date(j.serviceDate));
           marks[dateStr] = { marked: true, dotColor: colors.primary };
         } catch (_e) {}
       }
@@ -98,9 +99,7 @@ export default function CalendarScreen() {
       allJobs.filter((j) => {
         if (!j.serviceDate) return false;
         try {
-          return (
-            new Date(j.serviceDate).toISOString().split("T")[0] === selectedDate
-          );
+          return getLocalDateString(new Date(j.serviceDate)) === selectedDate;
         } catch {
           return false;
         }

@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -177,234 +179,250 @@ export default function CustomerListScreen() {
   const totalCount = customersData?.pages?.[0]?.total ?? null;
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.bgPrimary }}
-      edges={["top"]}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* ── Header ── */}
-      <LinearGradient
-        colors={colors.gradientHeader}
-        style={{
-          paddingHorizontal: 20,
-          paddingTop: 14,
-          paddingBottom: 14,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-          gap: 14,
-        }}
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.bgPrimary }}
+        edges={["top"]}
       >
-        {/* Title row */}
-        <View
+        {/* ── Header ── */}
+        <LinearGradient
+          colors={colors.gradientHeader}
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 22,
-                fontWeight: "800",
-                color: colors.textPrimary,
-                lineHeight: 28,
-              }}
-            >
-              Customers
-            </Text>
-            {totalCount != null && (
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  color: colors.textMuted,
-                  marginTop: 1,
-                }}
-              >
-                {totalCount} {totalCount === 1 ? "customer" : "customers"}
-              </Text>
-            )}
-          </View>
-
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate(RouteNames.CUSTOMER_SEARCH)}
-              activeOpacity={0.8}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                backgroundColor: colors.primary,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 20,
-                shadowColor: colors.primary,
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 4,
-              }}
-            >
-              <UserPlus color="#fff" size={14} />
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: "#fff",
-                }}
-              >
-                Add
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate(RouteNames.PROFILE)}
-              activeOpacity={0.7}
-            >
-              <Avatar
-                size={36}
-                name={techUser?.name}
-                uri={techUser?.avatar || techUser?.imageUrl}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Search bar */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            backgroundColor: colors.bgInput,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: colors.borderInput,
-            paddingHorizontal: 14,
-            height: 44,
-            gap: 10,
-          }}
-        >
-          <Search color={colors.textMuted} size={16} />
-          <TextInput
-            placeholder="Search by name or phone..."
-            placeholderTextColor={colors.textDisabled}
-            value={query}
-            onChangeText={setQuery}
-            returnKeyType="search"
-            style={{
-              flex: 1,
-              color: colors.textPrimary,
-              fontFamily: "Inter",
-              fontSize: 14,
-              paddingVertical: 0,
-            }}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery("")} activeOpacity={0.7}>
-              <X color={colors.textMuted} size={16} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient>
-
-      {/* ── List ── */}
-      {isLoading ? (
-        <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
-      ) : (
-        <FlatList
-          data={allCustomers}
-          keyExtractor={(item) => item._id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: 16,
+            paddingHorizontal: 20,
             paddingTop: 14,
-            paddingBottom: 100,
+            paddingBottom: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            gap: 14,
           }}
-          onScrollBeginDrag={() => {
-            hasScrolledRef.current = true;
-          }}
-          onEndReached={() => {
-            if (hasScrolledRef.current && hasNextPage && !isFetchingNextPage) {
-              fetchNextPage();
-            }
-          }}
-          onEndReachedThreshold={0.5}
-          refreshControl={
-            <RefreshControl
-              refreshing={isFetching && !isFetchingNextPage && !!customersData}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
-            />
-          }
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <View style={{ paddingVertical: 20, alignItems: "center" }}>
-                <ActivityIndicator color={colors.primary} />
-              </View>
-            ) : null
-          }
-          renderItem={({ item }) => (
-            <CustomerCard
-              item={item}
-              colors={colors}
-              onPress={() =>
-                navigation.navigate(RouteNames.CUSTOMER_DETAILS, {
-                  customerId: item._id,
-                })
-              }
-            />
-          )}
-          ListEmptyComponent={
-            <View style={{ alignItems: "center", paddingTop: 60 }}>
-              <View
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 36,
-                  backgroundColor: colors.primaryBg,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <Users color={colors.primary} size={30} />
-              </View>
+        >
+          {/* Title row */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View>
               <Text
                 style={{
                   fontFamily: "Space Grotesk",
-                  fontSize: 16,
-                  fontWeight: "700",
+                  fontSize: 22,
+                  fontWeight: "800",
                   color: colors.textPrimary,
-                  marginBottom: 6,
-                  textAlign: "center",
+                  lineHeight: 28,
                 }}
               >
-                {query ? "No results found" : "No customers yet"}
+                Customers
               </Text>
-              <Text
-                style={{
-                  fontFamily: "Inter",
-                  color: colors.textMuted,
-                  textAlign: "center",
-                  fontSize: 13,
-                  lineHeight: 20,
-                  paddingHorizontal: 40,
-                }}
-              >
-                {query
-                  ? `No customers match "${query}"`
-                  : "Tap 'Add' to import customers from your contacts."}
-              </Text>
+              {totalCount != null && (
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    color: colors.textMuted,
+                    marginTop: 1,
+                  }}
+                >
+                  {totalCount} {totalCount === 1 ? "customer" : "customers"}
+                </Text>
+              )}
             </View>
-          }
-        />
-      )}
-    </SafeAreaView>
+
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <TouchableOpacity
+                onPress={() => navigation.navigate(RouteNames.CUSTOMER_SEARCH)}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  backgroundColor: colors.primary,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  shadowColor: colors.primary,
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
+                }}
+              >
+                <UserPlus color="#fff" size={14} />
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: "#fff",
+                  }}
+                >
+                  Add
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate(RouteNames.PROFILE)}
+                activeOpacity={0.7}
+              >
+                <Avatar
+                  size={36}
+                  name={techUser?.name}
+                  uri={techUser?.avatar || techUser?.imageUrl}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Search bar */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: colors.bgInput,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: colors.borderInput,
+              paddingHorizontal: 14,
+              height: 44,
+              gap: 10,
+            }}
+          >
+            <Search color={colors.textMuted} size={16} />
+            <TextInput
+              placeholder="Search by name or phone..."
+              placeholderTextColor={colors.textDisabled}
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
+              style={{
+                flex: 1,
+                color: colors.textPrimary,
+                fontFamily: "Inter",
+                fontSize: 14,
+                paddingVertical: 0,
+              }}
+            />
+            {query.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setQuery("")}
+                activeOpacity={0.7}
+              >
+                <X color={colors.textMuted} size={16} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </LinearGradient>
+
+        {/* ── List ── */}
+        {isLoading ? (
+          <View
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          >
+            <ActivityIndicator color={colors.primary} size="large" />
+          </View>
+        ) : (
+          <FlatList
+            data={allCustomers}
+            keyExtractor={(item) => item._id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 14,
+              paddingBottom: 100,
+            }}
+            onScrollBeginDrag={() => {
+              hasScrolledRef.current = true;
+            }}
+            onEndReached={() => {
+              if (
+                hasScrolledRef.current &&
+                hasNextPage &&
+                !isFetchingNextPage
+              ) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={
+                  isFetching && !isFetchingNextPage && !!customersData
+                }
+                onRefresh={onRefresh}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <ActivityIndicator color={colors.primary} />
+                </View>
+              ) : null
+            }
+            renderItem={({ item }) => (
+              <CustomerCard
+                item={item}
+                colors={colors}
+                onPress={() =>
+                  navigation.navigate(RouteNames.CUSTOMER_DETAILS, {
+                    customerId: item._id,
+                  })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              <View style={{ alignItems: "center", paddingTop: 60 }}>
+                <View
+                  style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 36,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  <Users color={colors.primary} size={30} />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: colors.textPrimary,
+                    marginBottom: 6,
+                    textAlign: "center",
+                  }}
+                >
+                  {query ? "No results found" : "No customers yet"}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    color: colors.textMuted,
+                    textAlign: "center",
+                    fontSize: 13,
+                    lineHeight: 20,
+                    paddingHorizontal: 40,
+                  }}
+                >
+                  {query
+                    ? `No customers match "${query}"`
+                    : "Tap 'Add' to import customers from your contacts."}
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }

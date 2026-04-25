@@ -17,7 +17,11 @@ import asyncHandler from "#middlewares/asyncHandler.js";
  * @access  Private
  */
 export const getDashboardSummary = asyncHandler(async (req, res) => {
-  const summary = await DashboardService.getDashboardSummary(req.user._id);
+  const timezone = req.headers["x-timezone"];
+  const summary = await DashboardService.getDashboardSummary(
+    req.user._id,
+    timezone,
+  );
   return ResponseUtils.success(
     res,
     summary,

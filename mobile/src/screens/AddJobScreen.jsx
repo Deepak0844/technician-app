@@ -10,6 +10,8 @@ import {
   View,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -235,7 +237,7 @@ export default function AddJobScreen() {
   const [updateCustomer, { isLoading: isUpdatingCustomer }] =
     useUpdateCustomerMutation();
 
-  function resetForm() {
+  const resetForm = useCallback(() => {
     setSelectedCustomer(initialCustomer || null);
     setAppliance(ApplianceTypes[0]);
     setIssue("");
@@ -273,7 +275,7 @@ export default function AddJobScreen() {
     setNewLocationLat(null);
     setNewLocationLng(null);
     setSaveToProfile(true);
-  }
+  }, [initialCustomer, initialDate]);
 
   // Reset form every time this screen comes into focus (only for new jobs).
   // Skip reset if: returning from CustomerSearchScreen (ref flag)
@@ -288,7 +290,7 @@ export default function AddJobScreen() {
         resetForm();
       }
       returningFromSearchRef.current = false;
-    }, [editingJob]),
+    }, [editingJob, resetForm]),
   );
 
   const handleFinish = () => {
@@ -450,118 +452,220 @@ export default function AddJobScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={{ flex: 1, paddingHorizontal: 16 }}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
       >
-        <View style={{ height: 16 }} />
+        <ScrollView
+          style={{ flex: 1, paddingHorizontal: 16 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={{ height: 16 }} />
 
-        <CustomerSection
-          selectedCustomer={selectedCustomer}
-          setSelectedCustomer={setSelectedCustomer}
-          topRecent={topRecent}
-          onSearchPress={() => {
-            returningFromSearchRef.current = true;
-            // Detect whether this AddJobScreen is rendered inside the Tab navigator
-            // or as a standalone Stack screen, so CustomerSearchScreen can navigate
-            // back correctly without pushing a duplicate Stack-level AddJobScreen.
-            const navState = navigation.getState();
-            navigation.navigate(RouteNames.CUSTOMER_SEARCH, {
-              fromScreen: RouteNames.ADD_JOB,
-              fromScreenIsTab: navState?.type === "tab",
-            });
-          }}
-          selectedLocation={selectedLocation}
-          onSelectLocation={setSelectedLocation}
-          onAddLocationPress={() => setShowAddLocationModal(true)}
-        />
-
-        <TimelineSection
-          serviceDate={serviceDate}
-          selectedTime={selectedTime}
-          nextReminderDate={nextReminderDate}
-          onDatePress={() => setShowCalendar(true)}
-          onTimePress={() => setShowTimePicker(true)}
-          onReminderPress={() => setShowReminderCalendar(true)}
-          onClearReminder={() => setNextReminderDate(null)}
-          status={status}
-          onStatusPress={() => setShowStatusModal(true)}
-          isPaid={isPaid}
-          setIsPaid={setIsPaid}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-        />
-
-        <JobDetailsForm
-          appliance={appliance}
-          setAppliance={setAppliance}
-          issue={issue}
-          setIssue={setIssue}
-          serviceDone={serviceDone}
-          setServiceDone={setServiceDone}
-          diagnosticFee={diagnosticFee}
-          setDiagnosticFee={setDiagnosticFee}
-          amount={amount}
-          setAmount={setAmount}
-          priority={priority}
-          setPriority={setPriority}
-          internalNotes={internalNotes}
-          setInternalNotes={setInternalNotes}
-        />
-
-        <PartsSection parts={partsUsed} setParts={setPartsUsed} />
-
-        <WarrantySection
-          warranty={warranty}
-          setWarranty={setWarranty}
-          customWarranty={customWarranty}
-          setCustomWarranty={setCustomWarranty}
-          showCustomWarranty={showCustomWarranty}
-          setShowCustomWarranty={setShowCustomWarranty}
-        />
-
-        {/* Invoice Summary */}
-        {(parseFloat(diagnosticFee) > 0 ||
-          parseFloat(amount) > 0 ||
-          partsUsed.length > 0) && (
-          <View
-            style={{
-              marginBottom: 24,
-              borderRadius: 16,
-              backgroundColor: colors.bgCard,
-              borderWidth: 1,
-              borderColor: colors.primaryBorder,
-              overflow: "hidden",
+          <CustomerSection
+            selectedCustomer={selectedCustomer}
+            setSelectedCustomer={setSelectedCustomer}
+            topRecent={topRecent}
+            onSearchPress={() => {
+              returningFromSearchRef.current = true;
+              // Detect whether this AddJobScreen is rendered inside the Tab navigator
+              // or as a standalone Stack screen, so CustomerSearchScreen can navigate
+              // back correctly without pushing a duplicate Stack-level AddJobScreen.
+              const navState = navigation.getState();
+              navigation.navigate(RouteNames.CUSTOMER_SEARCH, {
+                fromScreen: RouteNames.ADD_JOB,
+                fromScreenIsTab: navState?.type === "tab",
+              });
             }}
-          >
+            selectedLocation={selectedLocation}
+            onSelectLocation={setSelectedLocation}
+            onAddLocationPress={() => setShowAddLocationModal(true)}
+          />
+
+          <TimelineSection
+            serviceDate={serviceDate}
+            selectedTime={selectedTime}
+            nextReminderDate={nextReminderDate}
+            onDatePress={() => setShowCalendar(true)}
+            onTimePress={() => setShowTimePicker(true)}
+            onReminderPress={() => setShowReminderCalendar(true)}
+            onClearReminder={() => setNextReminderDate(null)}
+            status={status}
+            onStatusPress={() => setShowStatusModal(true)}
+            isPaid={isPaid}
+            setIsPaid={setIsPaid}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+          />
+
+          <JobDetailsForm
+            appliance={appliance}
+            setAppliance={setAppliance}
+            issue={issue}
+            setIssue={setIssue}
+            serviceDone={serviceDone}
+            setServiceDone={setServiceDone}
+            diagnosticFee={diagnosticFee}
+            setDiagnosticFee={setDiagnosticFee}
+            amount={amount}
+            setAmount={setAmount}
+            priority={priority}
+            setPriority={setPriority}
+            internalNotes={internalNotes}
+            setInternalNotes={setInternalNotes}
+          />
+
+          <PartsSection parts={partsUsed} setParts={setPartsUsed} />
+
+          <WarrantySection
+            warranty={warranty}
+            setWarranty={setWarranty}
+            customWarranty={customWarranty}
+            setCustomWarranty={setCustomWarranty}
+            showCustomWarranty={showCustomWarranty}
+            setShowCustomWarranty={setShowCustomWarranty}
+          />
+
+          {/* Invoice Summary */}
+          {(parseFloat(diagnosticFee) > 0 ||
+            parseFloat(amount) > 0 ||
+            partsUsed.length > 0) && (
             <View
               style={{
-                backgroundColor: colors.primaryBg,
-                paddingHorizontal: 20,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.primaryBorder,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
+                marginBottom: 24,
+                borderRadius: 16,
+                backgroundColor: colors.bgCard,
+                borderWidth: 1,
+                borderColor: colors.primaryBorder,
+                overflow: "hidden",
               }}
             >
-              <Text
+              <View
                 style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 10,
-                  fontWeight: "700",
-                  color: colors.primary,
-                  letterSpacing: 4,
-                  textTransform: "uppercase",
+                  backgroundColor: colors.primaryBg,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.primaryBorder,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                Invoice Summary
-              </Text>
-              <Receipt size={12} color={colors.primary} />
-            </View>
-            <View style={{ padding: 20, gap: 10 }}>
-              {parseFloat(diagnosticFee) > 0 && (
+                <Text
+                  style={{
+                    fontFamily: "Space Grotesk",
+                    fontSize: 10,
+                    fontWeight: "700",
+                    color: colors.primary,
+                    letterSpacing: 4,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Invoice Summary
+                </Text>
+                <Receipt size={12} color={colors.primary} />
+              </View>
+              <View style={{ padding: 20, gap: 10 }}>
+                {parseFloat(diagnosticFee) > 0 && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 13,
+                        color: colors.textMuted,
+                      }}
+                    >
+                      Diagnostic / Visit Fee
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      ₹{(parseFloat(diagnosticFee) || 0).toFixed(0)}
+                    </Text>
+                  </View>
+                )}
+                {parseFloat(amount) > 0 && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 13,
+                        color: colors.textMuted,
+                      }}
+                    >
+                      Service Charge
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      ₹{(parseFloat(amount) || 0).toFixed(0)}
+                    </Text>
+                  </View>
+                )}
+                {partsUsed.length > 0 && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 13,
+                        color: colors.textMuted,
+                      }}
+                    >
+                      Spare Parts ({partsUsed.length})
+                    </Text>
+                    <Text
+                      style={{
+                        fontFamily: "Space Grotesk",
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      ₹
+                      {partsUsed
+                        .reduce((acc, p) => acc + p.price * p.quantity, 0)
+                        .toFixed(0)}
+                    </Text>
+                  </View>
+                )}
+                <View
+                  style={{
+                    height: 1,
+                    backgroundColor: colors.border,
+                    marginVertical: 2,
+                  }}
+                />
                 <View
                   style={{
                     flexDirection: "row",
@@ -571,179 +675,87 @@ export default function AddJobScreen() {
                 >
                   <Text
                     style={{
-                      fontFamily: "Inter",
-                      fontSize: 13,
-                      color: colors.textMuted,
+                      fontFamily: "Space Grotesk",
+                      fontSize: 14,
+                      fontWeight: "800",
+                      color: colors.textPrimary,
+                      textTransform: "uppercase",
+                      letterSpacing: 1,
                     }}
                   >
-                    Diagnostic / Visit Fee
+                    Grand Total
                   </Text>
                   <Text
                     style={{
                       fontFamily: "Space Grotesk",
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: colors.textPrimary,
-                    }}
-                  >
-                    ₹{(parseFloat(diagnosticFee) || 0).toFixed(0)}
-                  </Text>
-                </View>
-              )}
-              {parseFloat(amount) > 0 && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 13,
-                      color: colors.textMuted,
-                    }}
-                  >
-                    Service Charge
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: colors.textPrimary,
-                    }}
-                  >
-                    ₹{(parseFloat(amount) || 0).toFixed(0)}
-                  </Text>
-                </View>
-              )}
-              {partsUsed.length > 0 && (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 13,
-                      color: colors.textMuted,
-                    }}
-                  >
-                    Spare Parts ({partsUsed.length})
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      fontSize: 13,
-                      fontWeight: "700",
-                      color: colors.textPrimary,
+                      fontSize: 22,
+                      fontWeight: "800",
+                      color: colors.primary,
                     }}
                   >
                     ₹
-                    {partsUsed
-                      .reduce((acc, p) => acc + p.price * p.quantity, 0)
-                      .toFixed(0)}
+                    {(
+                      (parseFloat(diagnosticFee) || 0) +
+                      (parseFloat(amount) || 0) +
+                      partsUsed.reduce(
+                        (acc, p) => acc + p.price * p.quantity,
+                        0,
+                      )
+                    ).toFixed(0)}
                   </Text>
                 </View>
-              )}
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: colors.border,
-                  marginVertical: 2,
-                }}
-              />
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 14,
-                    fontWeight: "800",
-                    color: colors.textPrimary,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  Grand Total
-                </Text>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 22,
-                    fontWeight: "800",
-                    color: colors.primary,
-                  }}
-                >
-                  ₹
-                  {(
-                    (parseFloat(diagnosticFee) || 0) +
-                    (parseFloat(amount) || 0) +
-                    partsUsed.reduce((acc, p) => acc + p.price * p.quantity, 0)
-                  ).toFixed(0)}
-                </Text>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Submit Action */}
-        <TouchableOpacity
-          onPress={handleSubmit}
-          disabled={isSyncing}
-          activeOpacity={0.8}
-          style={{
-            marginBottom: 48,
-            overflow: "hidden",
-            borderRadius: 16,
-            elevation: 12,
-          }}
-        >
-          <LinearGradient
-            colors={colors.gradientPrimary}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+          {/* Submit Action */}
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={isSyncing}
+            activeOpacity={0.8}
             style={{
-              paddingVertical: 20,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: 12,
+              marginBottom: 48,
+              overflow: "hidden",
+              borderRadius: 16,
+              elevation: 12,
             }}
           >
-            {isSyncing ? (
-              <ActivityIndicator color={colors.bgPrimary} size="small" />
-            ) : (
-              <>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    color: colors.bgPrimary,
-                    fontWeight: "900",
-                    textTransform: "uppercase",
-                    letterSpacing: 4,
-                    fontSize: 12,
-                  }}
-                >
-                  {editingJob ? "Save Changes" : "Create Job"}
-                </Text>
-                <Zap color={colors.bgPrimary} size={14} />
-              </>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-        <View style={{ height: 96 }} />
-      </ScrollView>
+            <LinearGradient
+              colors={colors.gradientPrimary}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={{
+                paddingVertical: 20,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 12,
+              }}
+            >
+              {isSyncing ? (
+                <ActivityIndicator color={colors.bgPrimary} size="small" />
+              ) : (
+                <>
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      color: colors.bgPrimary,
+                      fontWeight: "900",
+                      textTransform: "uppercase",
+                      letterSpacing: 4,
+                      fontSize: 12,
+                    }}
+                  >
+                    {editingJob ? "Save Changes" : "Create Job"}
+                  </Text>
+                  <Zap color={colors.bgPrimary} size={14} />
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+          <View style={{ height: 96 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <AddJobModals
         colors={colors}

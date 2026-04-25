@@ -7,6 +7,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
   const { url = "", method = "get", params, data } = args;
 
   const token = await StorageUtils.getToken();
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   try {
     const response = await axios({
@@ -14,7 +15,10 @@ const customBaseQuery = () => async (rawArgs, api) => {
       method,
       params,
       data,
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "X-Timezone": timezone,
+      },
       signal: api.signal,
     });
     return { data: response.data };

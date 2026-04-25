@@ -6,6 +6,9 @@ import { DefaultPagination, JobStatus } from "#constants/generalConstants.js";
 // Models
 import Job from "#models/Job.js";
 
+// Utils
+import { getDateBoundsInTZ } from "#utils/dateUtils.js";
+
 // Helper: MongoDB expression to sum amount + diagnosticFee + all partsUsed costs
 const jobTotalExpr = {
   $add: [
@@ -26,32 +29,19 @@ const jobTotalExpr = {
 /**
  * Aggregate dashboard summary for a technician
  */
-async function getDashboardSummary(userId) {
-  const now = new Date();
+async function getDashboardSummary(userId, timezone) {
   const userObjectId = new mongoose.Types.ObjectId(userId);
 
-  // Today boundaries
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart);
-  todayEnd.setDate(todayEnd.getDate() + 1);
-
-  // This week boundaries (Monday to Sunday)
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(
-    weekStart.getDate() -
-      weekStart.getDay() +
-      (weekStart.getDay() === 0 ? -6 : 1),
-  );
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-
-  // This month boundaries
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-  // Previous month boundaries
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+  const {
+    todayStart,
+    todayEnd,
+    weekStart,
+    weekEnd,
+    monthStart,
+    monthEnd,
+    prevMonthStart,
+    prevMonthEnd,
+  } = getDateBoundsInTZ(timezone);
 
   const [
     todayJobs,
