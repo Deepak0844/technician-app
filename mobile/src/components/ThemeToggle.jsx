@@ -1,13 +1,13 @@
 import React from "react";
 import { View, Switch, Text, TouchableOpacity } from "react-native";
 import { useDispatch } from "react-redux";
-import { toggleTheme } from "@store/slices/themeSlice";
+import { setTheme } from "@store/slices/themeSlice";
 import useTheme from "@hooks/useTheme";
+import StorageUtils from "@utils/storageUtils";
 import { Moon, Sun } from "lucide-react-native";
 
 /**
  * ThemeToggle — drop this anywhere to let the user switch dark/light mode.
- * Dispatches toggleTheme() which updates Redux state and re-renders all themed screens.
  */
 export default function ThemeToggle() {
   const dispatch = useDispatch();
@@ -15,7 +15,9 @@ export default function ThemeToggle() {
   const isDark = mode === "dark";
 
   function handleToggle() {
-    dispatch(toggleTheme());
+    const newMode = isDark ? "light" : "dark";
+    StorageUtils.saveTheme(newMode); // fire-and-forget
+    dispatch(setTheme(newMode));
   }
 
   return (
@@ -36,16 +38,12 @@ export default function ThemeToggle() {
             width: 34,
             height: 34,
             borderRadius: 9,
-            backgroundColor: isDark
-              ? "rgba(200,153,255,0.10)"
-              : "rgba(124,58,237,0.10)",
+            backgroundColor: colors.primaryBg,
             alignItems: "center",
             justifyContent: "center",
             marginRight: 12,
             borderWidth: 1,
-            borderColor: isDark
-              ? "rgba(200,153,255,0.2)"
-              : "rgba(124,58,237,0.2)",
+            borderColor: colors.primaryBorder,
           }}
         >
           {isDark ? (

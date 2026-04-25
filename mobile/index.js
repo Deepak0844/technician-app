@@ -13,13 +13,12 @@ import "./global.css";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
 // Store
-import store from "./src/store/index";
+import { createAppStore } from "./src/store/index";
 import {
   clearCredentials,
   setBootstrapToken,
 } from "./src/store/slices/authSlice";
 import StorageUtils from "./src/utils/storageUtils";
-import { initializeTheme } from "./src/store/slices/themeSlice";
 
 // Navigation
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -64,12 +63,10 @@ function AppBootstrap() {
   const dispatch = useDispatch();
   const tokenLoaded = useSelector((state) => state.auth.tokenLoaded);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  const isThemeInitialized = useSelector((state) => state.theme.isInitialized);
-  const isReady = tokenLoaded && isThemeInitialized;
+  const isReady = tokenLoaded;
 
   useEffect(
     function bootstrap() {
-      dispatch(initializeTheme());
       StorageUtils.getToken().then((token) => {
         if (!token) {
           dispatch(clearCredentials()); // no token → tokenLoaded = true immediately
@@ -168,6 +165,15 @@ function RootApp() {
 }
 
 function App() {
+  const [store, setStore] = React.useState(null);
+
+  React.useEffect(() => {
+    createAppStore().then(setStore);
+  }, []);
+
+  // Native splash is still visible while store initialises (~5-15ms)
+  if (!store) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>

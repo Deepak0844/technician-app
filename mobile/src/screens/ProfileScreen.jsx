@@ -22,6 +22,7 @@ import {
 } from "@services/api/authApi";
 import { useLazyGetJobsQuery } from "@services/api/jobApi";
 import { clearCredentials, updateUser } from "@store/slices/authSlice";
+import { setPalette } from "@store/slices/themeSlice";
 import StorageUtils from "@utils/storageUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -40,6 +41,7 @@ import {
   User,
   Calendar,
   ChevronRight,
+  Palette,
 } from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
 import { formatDate } from "@utils/formatUtils";
@@ -47,6 +49,7 @@ import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
 import ThemeToggle from "../components/ThemeToggle";
 import Avatar from "../components/Avatar";
+import { PALETTE_META } from "@constants/colors";
 
 // Dimensions imported for potential future use
 Dimensions.get("window");
@@ -54,7 +57,13 @@ Dimensions.get("window");
 export default function ProfileScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, mode, palette } = useTheme();
+  const isDark = mode === "dark";
+
+  function handleSelectPalette(key) {
+    StorageUtils.savePalette(key);
+    dispatch(setPalette(key));
+  }
   const cachedUser = useSelector((state) => state.auth.user);
   const { data: meResponse, isLoading } = useGetMeQuery();
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
@@ -189,7 +198,7 @@ export default function ProfileScreen() {
       >
         {/* ── Hero Banner ────────────────────────────────────── */}
         <LinearGradient
-          colors={["#1a0533", "#2d1b69", "#1e3a5f"]}
+          colors={colors.gradientPrimary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={s.heroBanner}
@@ -222,8 +231,8 @@ export default function ProfileScreen() {
           />
           <Text style={s.heroName}>{user.name || "Technician"}</Text>
           <View style={s.heroPill}>
-            <Phone size={11} color={colors.secondary} />
-            <Text style={[s.heroPillText, { color: colors.secondary }]}>
+            <Phone size={11} color="rgba(255,255,255,0.9)" />
+            <Text style={[s.heroPillText, { color: "rgba(255,255,255,0.9)" }]}>
               {user.phone}
             </Text>
           </View>
@@ -365,6 +374,122 @@ export default function ProfileScreen() {
               onPress={() => navigation.navigate("Reminders")}
               colors={colors}
             />
+            <View style={[s.divider, { backgroundColor: colors.border }]} />
+
+            {/* ── Color Theme Picker ── */}
+            <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+              {/* Row title */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 14,
+                }}
+              >
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    backgroundColor: colors.primaryBg,
+                    borderWidth: 1,
+                    borderColor: colors.primaryBorder,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Palette size={16} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: colors.textPrimary,
+                    }}
+                  >
+                    Color Theme
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: "Inter",
+                      fontSize: 11,
+                      color: colors.textMuted,
+                      marginTop: 1,
+                    }}
+                  >
+                    {PALETTE_META.find((p) => p.key === palette)?.label ??
+                      "Purple"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Swatch row */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                {PALETTE_META.map((p) => {
+                  const isSelected = palette === p.key;
+                  const c1 = isDark ? p.darkColor : p.lightColor;
+                  const c2 = isDark ? p.darkColor2 : p.lightColor2;
+                  return (
+                    <TouchableOpacity
+                      key={p.key}
+                      onPress={() => handleSelectPalette(p.key)}
+                      activeOpacity={0.75}
+                      style={{ flex: 1, alignItems: "center", gap: 7 }}
+                    >
+                      {/* Swatch circle */}
+                      <View
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 26,
+                          padding: 3,
+                          borderWidth: 2.5,
+                          borderColor: isSelected ? c1 : "transparent",
+                        }}
+                      >
+                        <LinearGradient
+                          colors={[c1, c2]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{
+                            flex: 1,
+                            borderRadius: 22,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {isSelected && (
+                            <Check color="#fff" size={18} strokeWidth={3} />
+                          )}
+                        </LinearGradient>
+                      </View>
+                      {/* Label */}
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 10,
+                          fontWeight: isSelected ? "700" : "400",
+                          color: isSelected ? c1 : colors.textMuted,
+                          textAlign: "center",
+                        }}
+                        numberOfLines={1}
+                      >
+                        {p.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
             <View style={[s.divider, { backgroundColor: colors.border }]} />
             <ThemeToggle />
             <View style={[s.divider, { backgroundColor: colors.border }]} />

@@ -8,16 +8,15 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useSelector } from "react-redux";
 import AuthStack from "@navigation/AuthStack";
 import MainTabs from "@navigation/MainTabs";
-import { DarkColors, LightColors } from "@constants/colors";
 import { StackNames } from "@constants/routeNames";
 import { navigationRef } from "@navigation/navigationRef";
+import useTheme from "@hooks/useTheme";
 
 const RootStack = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
-  const mode = useSelector((state) => state.theme.mode);
-  const colors = mode === "dark" ? DarkColors : LightColors;
+  const { colors, mode } = useTheme();
   const BaseTheme = mode === "dark" ? DarkTheme : DefaultTheme;
 
   const AppTheme = {
