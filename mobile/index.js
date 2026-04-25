@@ -4,12 +4,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
+import * as Contacts from "expo-contacts";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "./global.css";
+import { StatusBar } from "expo-status-bar";
 import { GluestackUIProvider } from "./src/components/ui/gluestack-ui-provider";
 
 // Store
@@ -83,29 +85,34 @@ function AppBootstrap() {
     [dispatch],
   );
 
-  // Step 1 — Request location permission immediately on app start (before auth)
-  useEffect(function requestLocationPermission() {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          console.log("Location permission denied at startup");
-        }
-      } catch (err) {
-        console.warn("Failed to request location permission at startup:", err);
-      }
-    })();
-  }, []);
-
-  // Step 2 — Request notification permission in the "middle of the app":
-  // wait until the app is fully visible (splash hidden, user authenticated),
-  // then add a short delay so the dialog appears naturally after first render.
+  // Request all required permissions once after the user is authenticated
   useEffect(
-    function requestNotificationPermission() {
+    function requestAllPermissions() {
       if (!isAuthenticated || !isReady) return;
-      const timer = setTimeout(() => {
-        NotificationUtils.requestPermissions();
-      }, 1500);
+
+      const timer = setTimeout(async () => {
+        try {
+          // 1. Notifications
+          await NotificationUtils.requestPermissions();
+
+          // 2. Location (foreground)
+          const { status: locStatus } =
+            await Location.requestForegroundPermissionsAsync();
+          if (locStatus !== "granted") {
+            console.log("[Permissions] Location permission denied.");
+          }
+
+          // 3. Contacts
+          const { status: contactsStatus } =
+            await Contacts.requestPermissionsAsync();
+          if (contactsStatus !== "granted") {
+            console.log("[Permissions] Contacts permission denied.");
+          }
+        } catch (err) {
+          console.warn("[Permissions] Error requesting permissions:", err);
+        }
+      }, 800);
+
       return () => clearTimeout(timer);
     },
     [isAuthenticated, isReady],
@@ -159,6 +166,7 @@ function RootApp() {
   const mode = useSelector((state) => state.theme.mode);
   return (
     <GluestackUIProvider mode={mode}>
+      <StatusBar style={mode === "dark" ? "light" : "dark"} />
       <AppBootstrap />
     </GluestackUIProvider>
   );

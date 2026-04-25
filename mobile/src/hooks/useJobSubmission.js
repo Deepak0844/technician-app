@@ -3,7 +3,6 @@ import {
   useCreateJobMutation,
   useUpdateJobMutation,
 } from "@services/api/jobApi";
-import NotificationUtils from "@utils/notificationUtils";
 import { JobStatuses } from "@constants/appConstants";
 
 export default function useJobSubmission({ userId, editingJob, onSuccess }) {
@@ -118,20 +117,6 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
     try {
       if (editingJob) {
         await updateJob({ id: editingJob._id, ...payload }).unwrap();
-        await NotificationUtils.cancelJobReminders(editingJob._id);
-        if (
-          resolvedStatus !== JobStatuses.COMPLETED &&
-          resolvedStatus !== JobStatuses.CANCELLED
-        ) {
-          await NotificationUtils.scheduleJobReminders({
-            _id: editingJob._id,
-            applianceType: appliance,
-            serviceDate: finalDate.toISOString(),
-            customerName: selectedCustomer?.name ?? null,
-            location: selectedLocation ?? null,
-            issue: issue?.trim() ?? null,
-          });
-        }
         Alert.alert(
           "Success",
           resolvedStatus !== status
@@ -147,9 +132,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
           ],
         );
       } else {
-        const result = await createJob(payload).unwrap();
-        if (result?.data?._id)
-          await NotificationUtils.scheduleJobReminders(result.data);
+        await createJob(payload).unwrap();
         Alert.alert("Success", "Job created successfully.", [
           {
             text: "OK",

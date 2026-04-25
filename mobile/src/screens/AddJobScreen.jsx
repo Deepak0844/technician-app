@@ -67,16 +67,18 @@ export default function AddJobScreen() {
   const customerFromSearchRef = React.useRef(customerFromSearch);
   customerFromSearchRef.current = customerFromSearch;
 
+  const scrollViewRef = React.useRef(null);
+
   // -- State --
   const [selectedCustomer, setSelectedCustomer] = useState(
     customerFromSearch
       ? customerFromSearch
       : editingJob
         ? {
-            _id: editingJob.customerId?._id || editingJob.customerId,
-            name: editingJob.customerId?.name || editingJob.customerName,
-            phone: editingJob.customerId?.phone || editingJob.customerPhone,
-          }
+          _id: editingJob.customerId?._id || editingJob.customerId,
+          name: editingJob.customerId?.name || editingJob.customerName,
+          phone: editingJob.customerId?.phone || editingJob.customerPhone,
+        }
         : initialCustomer || null,
   );
 
@@ -246,9 +248,9 @@ export default function AddJobScreen() {
     setServiceDate(
       initialDate
         ? (() => {
-            const [y, m, d] = initialDate.split("-").map(Number);
-            return new Date(y, m - 1, d);
-          })()
+          const [y, m, d] = initialDate.split("-").map(Number);
+          return new Date(y, m - 1, d);
+        })()
         : new Date(),
     );
     setWarranty("No Warranty");
@@ -275,6 +277,7 @@ export default function AddJobScreen() {
     setNewLocationLat(null);
     setNewLocationLng(null);
     setSaveToProfile(true);
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   }, [initialCustomer, initialDate]);
 
   // Reset form every time this screen comes into focus (only for new jobs).
@@ -458,6 +461,7 @@ export default function AddJobScreen() {
         keyboardVerticalOffset={0}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: 16 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -532,44 +536,140 @@ export default function AddJobScreen() {
           {(parseFloat(diagnosticFee) > 0 ||
             parseFloat(amount) > 0 ||
             partsUsed.length > 0) && (
-            <View
-              style={{
-                marginBottom: 24,
-                borderRadius: 16,
-                backgroundColor: colors.bgCard,
-                borderWidth: 1,
-                borderColor: colors.primaryBorder,
-                overflow: "hidden",
-              }}
-            >
               <View
                 style={{
-                  backgroundColor: colors.primaryBg,
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.primaryBorder,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
+                  marginBottom: 24,
+                  borderRadius: 16,
+                  backgroundColor: colors.bgCard,
+                  borderWidth: 1,
+                  borderColor: colors.primaryBorder,
+                  overflow: "hidden",
                 }}
               >
-                <Text
+                <View
                   style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: colors.primary,
-                    letterSpacing: 4,
-                    textTransform: "uppercase",
+                    backgroundColor: colors.primaryBg,
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.primaryBorder,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
                   }}
                 >
-                  Invoice Summary
-                </Text>
-                <Receipt size={12} color={colors.primary} />
-              </View>
-              <View style={{ padding: 20, gap: 10 }}>
-                {parseFloat(diagnosticFee) > 0 && (
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: colors.primary,
+                      letterSpacing: 4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Invoice Summary
+                  </Text>
+                  <Receipt size={12} color={colors.primary} />
+                </View>
+                <View style={{ padding: 20, gap: 10 }}>
+                  {parseFloat(diagnosticFee) > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 13,
+                          color: colors.textMuted,
+                        }}
+                      >
+                        Diagnostic / Visit Fee
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        ₹{(parseFloat(diagnosticFee) || 0).toFixed(0)}
+                      </Text>
+                    </View>
+                  )}
+                  {parseFloat(amount) > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 13,
+                          color: colors.textMuted,
+                        }}
+                      >
+                        Service Charge
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        ₹{(parseFloat(amount) || 0).toFixed(0)}
+                      </Text>
+                    </View>
+                  )}
+                  {partsUsed.length > 0 && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 13,
+                          color: colors.textMuted,
+                        }}
+                      >
+                        Spare Parts ({partsUsed.length})
+                      </Text>
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        ₹
+                        {partsUsed
+                          .reduce((acc, p) => acc + p.price * p.quantity, 0)
+                          .toFixed(0)}
+                      </Text>
+                    </View>
+                  )}
+                  <View
+                    style={{
+                      height: 1,
+                      backgroundColor: colors.border,
+                      marginVertical: 2,
+                    }}
+                  />
                   <View
                     style={{
                       flexDirection: "row",
@@ -579,134 +679,38 @@ export default function AddJobScreen() {
                   >
                     <Text
                       style={{
-                        fontFamily: "Inter",
-                        fontSize: 13,
-                        color: colors.textMuted,
+                        fontFamily: "Space Grotesk",
+                        fontSize: 14,
+                        fontWeight: "800",
+                        color: colors.textPrimary,
+                        textTransform: "uppercase",
+                        letterSpacing: 1,
                       }}
                     >
-                      Diagnostic / Visit Fee
+                      Grand Total
                     </Text>
                     <Text
                       style={{
                         fontFamily: "Space Grotesk",
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: colors.textPrimary,
-                      }}
-                    >
-                      ₹{(parseFloat(diagnosticFee) || 0).toFixed(0)}
-                    </Text>
-                  </View>
-                )}
-                {parseFloat(amount) > 0 && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 13,
-                        color: colors.textMuted,
-                      }}
-                    >
-                      Service Charge
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Space Grotesk",
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: colors.textPrimary,
-                      }}
-                    >
-                      ₹{(parseFloat(amount) || 0).toFixed(0)}
-                    </Text>
-                  </View>
-                )}
-                {partsUsed.length > 0 && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 13,
-                        color: colors.textMuted,
-                      }}
-                    >
-                      Spare Parts ({partsUsed.length})
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Space Grotesk",
-                        fontSize: 13,
-                        fontWeight: "700",
-                        color: colors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: colors.primary,
                       }}
                     >
                       ₹
-                      {partsUsed
-                        .reduce((acc, p) => acc + p.price * p.quantity, 0)
-                        .toFixed(0)}
+                      {(
+                        (parseFloat(diagnosticFee) || 0) +
+                        (parseFloat(amount) || 0) +
+                        partsUsed.reduce(
+                          (acc, p) => acc + p.price * p.quantity,
+                          0,
+                        )
+                      ).toFixed(0)}
                     </Text>
                   </View>
-                )}
-                <View
-                  style={{
-                    height: 1,
-                    backgroundColor: colors.border,
-                    marginVertical: 2,
-                  }}
-                />
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      fontSize: 14,
-                      fontWeight: "800",
-                      color: colors.textPrimary,
-                      textTransform: "uppercase",
-                      letterSpacing: 1,
-                    }}
-                  >
-                    Grand Total
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      fontSize: 22,
-                      fontWeight: "800",
-                      color: colors.primary,
-                    }}
-                  >
-                    ₹
-                    {(
-                      (parseFloat(diagnosticFee) || 0) +
-                      (parseFloat(amount) || 0) +
-                      partsUsed.reduce(
-                        (acc, p) => acc + p.price * p.quantity,
-                        0,
-                      )
-                    ).toFixed(0)}
-                  </Text>
                 </View>
               </View>
-            </View>
-          )}
+            )}
 
           {/* Submit Action */}
           <TouchableOpacity

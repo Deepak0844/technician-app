@@ -12,10 +12,10 @@ import { useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { useGetDashboardSummaryQuery } from "@services/api/dashboardApi";
 import { RouteNames } from "@constants/routeNames";
-import { JobStatuses, PriorityLevels } from "@constants/appConstants";
 import { formatCurrency, formatDate } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
+import JobCard from "@components/JobCard";
 
 // Icons
 import {
@@ -69,39 +69,6 @@ export default function DashboardScreen() {
     setIsRefreshing(false);
   }
 
-  function getStatusBadgeStyle(status) {
-    if (status === JobStatuses.COMPLETED)
-      return {
-        bg: colors.secondaryBg,
-        border: colors.secondaryBorder,
-        text: colors.secondary,
-      };
-    if (status === JobStatuses.PENDING)
-      return {
-        bg: colors.warningBg,
-        border: colors.warningBorder,
-        text: colors.warning,
-      };
-    if (status === JobStatuses.CANCELLED)
-      return {
-        bg: colors.dangerBg,
-        border: colors.dangerBorder,
-        text: colors.danger,
-      };
-    return {
-      bg: colors.primaryBgStrong,
-      border: colors.primaryBorderStrong,
-      text: colors.primary,
-    };
-  }
-
-  function getStatusBorderColor(status) {
-    if (status === "completed") return colors.secondary;
-    if (status === "cancelled") return colors.danger;
-    if (status === "pending") return colors.warning;
-    if (status === "in_progress") return colors.primary;
-    return colors.border;
-  }
 
   return (
     <SafeAreaView
@@ -232,14 +199,11 @@ export default function DashboardScreen() {
                 This Month
               </Text>
             </View>
-            {/* Only render badge when there is something meaningful to show */}
-            {(!isNewMonth || monthlyJobs > 0) && (
+            {/* Badge Logic: Show 'New ✦' if no jobs ever, else show earnings change if available */}
+            {totalJobs === 0 ? (
               <View
                 style={{
-                  backgroundColor: isNewMonth
-                    ? colors.secondary + "15"
-                    : (earningsChange >= 0 ? colors.secondary : colors.danger) +
-                      "15",
+                  backgroundColor: colors.secondary + "15",
                   paddingHorizontal: 8,
                   paddingVertical: 3,
                   borderRadius: 6,
@@ -248,32 +212,50 @@ export default function DashboardScreen() {
                   gap: 3,
                 }}
               >
-                {!isNewMonth &&
-                  (earningsChange >= 0 ? (
-                    <TrendingUp color={colors.secondary} size={10} />
-                  ) : (
-                    <TrendingDown color={colors.danger} size={10} />
-                  ))}
                 <Text
                   style={{
                     fontFamily: "Inter",
                     fontSize: 10,
                     fontWeight: "800",
-                    color: isNewMonth
-                      ? colors.secondary
-                      : earningsChange >= 0
-                        ? colors.secondary
-                        : colors.danger,
+                    color: colors.secondary,
                   }}
                 >
-                  {isNewMonth
-                    ? "New ✦"
-                    : earningsChange >= 0
-                      ? `+${earningsChange}%`
-                      : `${earningsChange}%`}
+                  New ✦
                 </Text>
               </View>
-            )}
+            ) : !isNewMonth ? (
+              <View
+                style={{
+                  backgroundColor:
+                    (earningsChange >= 0 ? colors.secondary : colors.danger) +
+                    "15",
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 6,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                {earningsChange >= 0 ? (
+                  <TrendingUp color={colors.secondary} size={10} />
+                ) : (
+                  <TrendingDown color={colors.danger} size={10} />
+                )}
+                <Text
+                  style={{
+                    fontFamily: "Inter",
+                    fontSize: 10,
+                    fontWeight: "800",
+                    color: earningsChange >= 0 ? colors.secondary : colors.danger,
+                  }}
+                >
+                  {earningsChange >= 0
+                    ? `+${earningsChange}%`
+                    : `${earningsChange}%`}
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={{ flexDirection: "row", gap: 12 }}>
@@ -682,157 +664,16 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={{ gap: 16 }}>
-            {allJobs.map((job) => {
-              const badge = getStatusBadgeStyle(job.status);
-              return (
-                <TouchableOpacity
-                  key={job._id}
-                  activeOpacity={0.7}
-                  onPress={() =>
-                    navigation.navigate(RouteNames.JOB_DETAILS, { job })
-                  }
-                  style={{
-                    backgroundColor: colors.bgSurface,
-                    padding: 16,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    borderLeftWidth: 4,
-                    borderLeftColor: getStatusBorderColor(job.status),
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <View style={{ flex: 1, paddingRight: 16 }}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Space Grotesk",
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: colors.textPrimary,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {job.customerName || job.customerId?.name || "Unknown"}
-                      </Text>
-                      {job.priority === PriorityLevels.URGENT && (
-                        <View
-                          style={{
-                            backgroundColor: "#fee2e2",
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 4,
-                            borderWidth: 0.5,
-                            borderColor: "#ef4444",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 7,
-                              fontWeight: "800",
-                              color: "#b91c1c",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Urgent
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                        }}
-                      >
-                        ID: #{job._id?.slice(-6).toUpperCase() || "NEW"}
-                      </Text>
-                      <View
-                        style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: 2,
-                          backgroundColor: colors.textDisabled,
-                        }}
-                      />
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 12,
-                          color: colors.textSecondary,
-                          flex: 1,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {job.applianceType || "General Service"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={{ alignItems: "flex-end", gap: 8 }}>
-                    <Text
-                      style={{
-                        fontFamily: "Space Grotesk",
-                        fontWeight: "700",
-                        color: colors.primary,
-                      }}
-                    >
-                      {formatCurrency(
-                        (job.amount || 0) +
-                          (job.diagnosticFee || 0) +
-                          (job.partsUsed || []).reduce(
-                            (acc, p) =>
-                              acc + (p.price || 0) * (p.quantity || 0),
-                            0,
-                          ),
-                      )}
-                    </Text>
-                    <View
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        backgroundColor: badge.bg,
-                        borderColor: badge.border,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 8,
-                          fontWeight: "700",
-                          textTransform: "uppercase",
-                          letterSpacing: 2,
-                          paddingHorizontal: 4,
-                          color: badge.text,
-                        }}
-                      >
-                        {job.status?.replace("_", " ")}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+          <View style={{ gap: 0 }}>
+            {allJobs.map((job) => (
+              <JobCard
+                key={job._id}
+                job={job}
+                onPress={() =>
+                  navigation.navigate(RouteNames.JOB_DETAILS, { job })
+                }
+              />
+            ))}
 
             {allJobs.length === 0 ? (
               <View

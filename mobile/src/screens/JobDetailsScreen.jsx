@@ -47,7 +47,6 @@ import {
 import { RouteNames } from "@constants/routeNames";
 import { formatCurrency } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
-import NotificationUtils from "@utils/notificationUtils";
 
 export default function JobDetailsScreen() {
   const navigation = useNavigation();
@@ -128,16 +127,6 @@ export default function JobDetailsScreen() {
           onPress: async () => {
             try {
               await reopenJob(job._id).unwrap();
-              if (new Date(job.serviceDate) > new Date()) {
-                await NotificationUtils.scheduleJobReminders({
-                  _id: job._id,
-                  applianceType: job.applianceType,
-                  serviceDate: job.serviceDate,
-                  customerName: job.customerId?.name ?? null,
-                  location: job.location ?? null,
-                  issue: job.issue ?? null,
-                });
-              }
               Alert.alert(
                 "Reopened",
                 "Job is now In Progress and marked as Unpaid.",
@@ -167,16 +156,6 @@ export default function JobDetailsScreen() {
                 id: job._id,
                 status: JobStatuses.PENDING,
               }).unwrap();
-              if (new Date(job.serviceDate) > new Date()) {
-                await NotificationUtils.scheduleJobReminders({
-                  _id: job._id,
-                  applianceType: job.applianceType,
-                  serviceDate: job.serviceDate,
-                  customerName: job.customerId?.name ?? null,
-                  location: job.location ?? null,
-                  issue: job.issue ?? null,
-                });
-              }
               Alert.alert("Reactivated", "Job is now Pending.");
             } catch (err) {
               Alert.alert(
@@ -201,13 +180,14 @@ export default function JobDetailsScreen() {
         text: "Yes, Mark as Paid",
         onPress: async () => {
           try {
+            const isFuture = new Date(job.serviceDate) > new Date();
             await updateJob({
               id: job._id,
               isPaid: true,
               paymentMethod,
               status: JobStatuses.COMPLETED,
+              ...(isFuture && { serviceDate: new Date().toISOString() }),
             }).unwrap();
-            await NotificationUtils.cancelJobReminders(job._id);
             Alert.alert(
               "Success",
               isNonCompleted
@@ -227,11 +207,11 @@ export default function JobDetailsScreen() {
       { text: "Cancel", style: "cancel" },
       ...(!isLockedFinal && !isCancelledJob
         ? [
-            {
-              text: "Edit Job",
-              onPress: () => navigation.navigate(RouteNames.ADD_JOB, { job }),
-            },
-          ]
+          {
+            text: "Edit Job",
+            onPress: () => navigation.navigate(RouteNames.ADD_JOB, { job }),
+          },
+        ]
         : []),
       {
         text: "Repeat Job",
@@ -280,18 +260,17 @@ export default function JobDetailsScreen() {
   const handleUpdateStatus = (newStatus) => {
     const performUpdate = async (extraPayload = {}) => {
       try {
+        // If completing a job that was scheduled for the future,
+        // move serviceDate to today so Calendar shows it correctly.
+        const completingFuture =
+          newStatus === JobStatuses.COMPLETED &&
+          new Date(job.serviceDate) > new Date();
         await updateJob({
           id: job._id,
           status: newStatus,
+          ...(completingFuture && { serviceDate: new Date().toISOString() }),
           ...extraPayload,
         }).unwrap();
-        // Remove reminders for terminal states; no reschedule needed (no new date set here)
-        if (
-          newStatus === JobStatuses.COMPLETED ||
-          newStatus === JobStatuses.CANCELLED
-        ) {
-          await NotificationUtils.cancelJobReminders(job._id);
-        }
         Alert.alert(
           "Success",
           extraPayload.isPaid
@@ -1343,15 +1322,15 @@ export default function JobDetailsScreen() {
                       const eventDate = event.at ? new Date(event.at) : null;
                       const dateStr = eventDate
                         ? eventDate.toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                          }) +
-                          " · " +
-                          eventDate.toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          })
+                          day: "2-digit",
+                          month: "short",
+                        }) +
+                        " · " +
+                        eventDate.toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })
                         : "";
 
                       // Build a single human-readable subtitle
@@ -1630,17 +1609,50 @@ export default function JobDetailsScreen() {
             )}
             {(job.status === JobStatuses.PENDING ||
               job.status === JobStatuses.IN_PROGRESS) && (
-              <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
-                {job.status === JobStatuses.PENDING && (
+                <View style={{ flexDirection: "row", gap: 16, marginTop: 16 }}>
+                  {job.status === JobStatuses.PENDING && (
+                    <TouchableOpacity
+                      onPress={() => handleUpdateStatus(JobStatuses.IN_PROGRESS)}
+                      disabled={isSyncing}
+                      activeOpacity={0.7}
+                      style={{
+                        flex: 1,
+                        backgroundColor: colors.warningBg,
+                        borderWidth: 1,
+                        borderColor: colors.warningBorder,
+                        height: 56,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "row",
+                        gap: 8,
+                      }}
+                    >
+                      <Clock color={colors.warningIcon} size={20} />
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          color: colors.warningIcon,
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                          letterSpacing: 2,
+                          fontSize: 11,
+                        }}
+                      >
+                        Start Job
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
-                    onPress={() => handleUpdateStatus(JobStatuses.IN_PROGRESS)}
+                    onPress={() => handleUpdateStatus(JobStatuses.COMPLETED)}
                     disabled={isSyncing}
                     activeOpacity={0.7}
                     style={{
                       flex: 1,
-                      backgroundColor: colors.warningBg,
+                      backgroundColor: colors.successBg,
                       borderWidth: 1,
-                      borderColor: colors.warningBorder,
+                      borderColor: colors.successBorder,
                       height: 56,
                       borderRadius: 12,
                       alignItems: "center",
@@ -1649,165 +1661,132 @@ export default function JobDetailsScreen() {
                       gap: 8,
                     }}
                   >
-                    <Clock color={colors.warningIcon} size={20} />
+                    <CheckCircle2 color={colors.success} size={20} />
                     <Text
                       style={{
                         fontFamily: "Space Grotesk",
-                        color: colors.warningIcon,
+                        color: colors.success,
                         fontWeight: "700",
                         textTransform: "uppercase",
                         letterSpacing: 2,
                         fontSize: 11,
                       }}
                     >
-                      Start Job
+                      Complete
                     </Text>
                   </TouchableOpacity>
-                )}
+                </View>
+              )}
 
+            {/* Collect Payment shortcut for active jobs */}
+            {(job.status === JobStatuses.PENDING ||
+              job.status === JobStatuses.IN_PROGRESS) && (
                 <TouchableOpacity
-                  onPress={() => handleUpdateStatus(JobStatuses.COMPLETED)}
+                  onPress={() =>
+                    Alert.alert(
+                      "Collect Payment",
+                      "How was the payment received? This will also mark the job as Completed.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Cash",
+                          onPress: () => doMarkPaid(PaymentMethods.CASH),
+                        },
+                        {
+                          text: "UPI",
+                          onPress: () => doMarkPaid(PaymentMethods.UPI),
+                        },
+                        {
+                          text: "Online",
+                          onPress: () => doMarkPaid(PaymentMethods.ONLINE),
+                        },
+                        {
+                          text: "Cheque",
+                          onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
+                        },
+                      ],
+                    )
+                  }
                   disabled={isSyncing}
                   activeOpacity={0.7}
                   style={{
-                    flex: 1,
-                    backgroundColor: colors.successBg,
-                    borderWidth: 1,
-                    borderColor: colors.successBorder,
-                    height: 56,
-                    borderRadius: 12,
+                    flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    flexDirection: "row",
                     gap: 8,
+                    marginTop: 12,
+                    height: 52,
+                    borderRadius: 12,
+                    borderWidth: 1.5,
+                    borderColor: colors.primaryBorder,
+                    backgroundColor: colors.primaryBg,
                   }}
                 >
-                  <CheckCircle2 color={colors.success} size={20} />
+                  <CreditCard color={colors.primary} size={18} />
                   <Text
                     style={{
                       fontFamily: "Space Grotesk",
-                      color: colors.success,
+                      color: colors.primary,
                       fontWeight: "700",
                       textTransform: "uppercase",
                       letterSpacing: 2,
                       fontSize: 11,
                     }}
                   >
-                    Complete
+                    Collect Payment & Complete
                   </Text>
                 </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Collect Payment shortcut for active jobs */}
-            {(job.status === JobStatuses.PENDING ||
-              job.status === JobStatuses.IN_PROGRESS) && (
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    "Collect Payment",
-                    "How was the payment received? This will also mark the job as Completed.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Cash",
-                        onPress: () => doMarkPaid(PaymentMethods.CASH),
-                      },
-                      {
-                        text: "UPI",
-                        onPress: () => doMarkPaid(PaymentMethods.UPI),
-                      },
-                      {
-                        text: "Online",
-                        onPress: () => doMarkPaid(PaymentMethods.ONLINE),
-                      },
-                      {
-                        text: "Cheque",
-                        onPress: () => doMarkPaid(PaymentMethods.CHEQUE),
-                      },
-                    ],
-                  )
-                }
-                disabled={isSyncing}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  marginTop: 12,
-                  height: 52,
-                  borderRadius: 12,
-                  borderWidth: 1.5,
-                  borderColor: colors.primaryBorder,
-                  backgroundColor: colors.primaryBg,
-                }}
-              >
-                <CreditCard color={colors.primary} size={18} />
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    color: colors.primary,
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    letterSpacing: 2,
-                    fontSize: 11,
-                  }}
-                >
-                  Collect Payment & Complete
-                </Text>
-              </TouchableOpacity>
-            )}
+              )}
 
             {/* Cancel Job for active jobs */}
             {(job.status === JobStatuses.PENDING ||
               job.status === JobStatuses.IN_PROGRESS) && (
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    "Cancel Job?",
-                    "Are you sure you want to cancel this job? You can reactivate it later.",
-                    [
-                      { text: "No, Keep It", style: "cancel" },
-                      {
-                        text: "Yes, Cancel Job",
-                        style: "destructive",
-                        onPress: () =>
-                          handleUpdateStatus(JobStatuses.CANCELLED),
-                      },
-                    ],
-                  )
-                }
-                disabled={isSyncing}
-                activeOpacity={0.7}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  marginTop: 12,
-                  height: 52,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.dangerBorder ?? colors.danger,
-                  backgroundColor: colors.dangerBg ?? "transparent",
-                }}
-              >
-                <XCircle color={colors.danger} size={18} />
-                <Text
+                <TouchableOpacity
+                  onPress={() =>
+                    Alert.alert(
+                      "Cancel Job?",
+                      "Are you sure you want to cancel this job? You can reactivate it later.",
+                      [
+                        { text: "No, Keep It", style: "cancel" },
+                        {
+                          text: "Yes, Cancel Job",
+                          style: "destructive",
+                          onPress: () =>
+                            handleUpdateStatus(JobStatuses.CANCELLED),
+                        },
+                      ],
+                    )
+                  }
+                  disabled={isSyncing}
+                  activeOpacity={0.7}
                   style={{
-                    fontFamily: "Space Grotesk",
-                    color: colors.danger,
-                    fontWeight: "700",
-                    textTransform: "uppercase",
-                    letterSpacing: 2,
-                    fontSize: 11,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginTop: 12,
+                    height: 52,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: colors.dangerBorder ?? colors.danger,
+                    backgroundColor: colors.dangerBg ?? "transparent",
                   }}
                 >
-                  Cancel Job
-                </Text>
-              </TouchableOpacity>
-            )}
+                  <XCircle color={colors.danger} size={18} />
+                  <Text
+                    style={{
+                      fontFamily: "Space Grotesk",
+                      color: colors.danger,
+                      fontWeight: "700",
+                      textTransform: "uppercase",
+                      letterSpacing: 2,
+                      fontSize: 11,
+                    }}
+                  >
+                    Cancel Job
+                  </Text>
+                </TouchableOpacity>
+              )}
 
             {/* Reactivate for cancelled jobs */}
             {isCancelledJob && (

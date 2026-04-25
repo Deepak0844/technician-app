@@ -233,24 +233,23 @@ const PartsSection = ({ parts, setParts }) => {
       <Modal
         visible={showAddModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
+        <Pressable
+          onPress={() => {
+            setShowAddModal(false);
+            resetForm();
+          }}
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            justifyContent: "center",
+            padding: 24,
+          }}
         >
-          <Pressable
-            onPress={() => {
-              setShowAddModal(false);
-              resetForm();
-            }}
-            style={{
-              flex: 1,
-              backgroundColor: "rgba(0,0,0,0.6)",
-              justifyContent: "center",
-              padding: 24,
-            }}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
             <Pressable
               style={{
@@ -427,8 +426,8 @@ const PartsSection = ({ parts, setParts }) => {
                 </Text>
               </TouchableOpacity>
             </Pressable>
-          </Pressable>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Pressable>
       </Modal>
     </View>
   );

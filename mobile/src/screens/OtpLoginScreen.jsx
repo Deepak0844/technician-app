@@ -315,7 +315,7 @@ export default function OtpLoginScreen() {
                 marginBottom: 6,
               }}
             >
-              {step === "phone" ? "Welcome back" : "Enter your code"}
+              {step === "phone" ? "Sign In" : "Enter your code"}
             </Heading>
             <Text
               style={{

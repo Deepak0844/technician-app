@@ -57,6 +57,15 @@ async function requestPermissions() {
  * }} job
  */
 async function scheduleJobReminders(job) {
+  // Ensure we have permission — request it if not yet determined
+  const granted = await requestPermissions();
+  if (!granted) {
+    console.warn(
+      "[NotificationUtils] Permission not granted — skipping reminder scheduling.",
+    );
+    return;
+  }
+
   const serviceTime = new Date(job.serviceDate).getTime();
   const now = Date.now();
 

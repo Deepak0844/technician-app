@@ -98,15 +98,17 @@ function StatCard({ icon: Icon, label, value, colors, accentColor }) {
 }
 
 // ─── Quick Action Button ─────────────────────────────────────────────────────
-function ActionButton({ icon: Icon, label, onPress, colors, primary }) {
+function ActionButton({ icon: Icon, label, onPress, colors, primary, disabled }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.75}
+      disabled={disabled}
       style={{
         flex: 1,
         alignItems: "center",
         gap: 6,
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       <View
@@ -245,11 +247,11 @@ function JobRow({ job, colors, onPress }) {
         >
           {formatCurrency(
             (job.amount || 0) +
-              (job.diagnosticFee || 0) +
-              (job.partsUsed || []).reduce(
-                (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
-                0,
-              ),
+            (job.diagnosticFee || 0) +
+            (job.partsUsed || []).reduce(
+              (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
+              0,
+            ),
           )}
         </Text>
         <View
@@ -575,6 +577,7 @@ export default function CustomerDetailsScreen() {
               icon={NavIcon}
               label="Navigate"
               colors={colors}
+              disabled={!primaryLocation}
               onPress={() =>
                 primaryLocation &&
                 openDirections(
@@ -593,14 +596,7 @@ export default function CustomerDetailsScreen() {
                 navigation.navigate(RouteNames.ADD_JOB, { customer })
               }
             />
-            <ActionButton
-              icon={Edit3}
-              label="Edit"
-              colors={colors}
-              onPress={() =>
-                navigation.navigate(RouteNames.CREATE_CUSTOMER, { customer })
-              }
-            />
+
           </View>
 
           {/* ── Stats Row ── */}
@@ -631,7 +627,7 @@ export default function CustomerDetailsScreen() {
           {/* ── Service Locations ── */}
           {(Array.isArray(customer.locations) &&
             customer.locations.length > 0) ||
-          customer.address ? (
+            customer.address ? (
             <View style={{ marginBottom: 24 }}>
               <View
                 style={{
@@ -677,7 +673,7 @@ export default function CustomerDetailsScreen() {
               </View>
 
               {Array.isArray(customer.locations) &&
-              customer.locations.length > 0 ? (
+                customer.locations.length > 0 ? (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}

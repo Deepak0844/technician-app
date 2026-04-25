@@ -28,6 +28,21 @@ export const jobApi = api.injectEndpoints({
     }),
     createJob: builder.mutation({
       query: (body) => ({ url: ApiUrls.JOBS, method: "post", data: body }),
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          const createdJob = data?.data;
+          if (
+            createdJob?._id &&
+            createdJob.status !== "completed" &&
+            createdJob.status !== "cancelled"
+          ) {
+            await NotificationUtils.scheduleJobReminders(createdJob);
+          }
+        } catch {
+          // Notification errors must not break the create flow
+        }
+      },
       invalidatesTags: (result, error, arg) => [
         ...ApiUtils.listTags(TagTypes.JOBS),
         ...ApiUtils.listTags(TagTypes.DASHBOARD),
@@ -44,11 +59,15 @@ export const jobApi = api.injectEndpoints({
           const { data } = await queryFulfilled;
           const updatedJob = data?.data;
           if (updatedJob?._id) {
-            // Cancel ALL existing reminders for this job then reschedule
-            // based on the latest serviceDate / status so stale triggers
-            // are never left in the OS alarm queue.
+            // Always cancel stale reminders first
             await NotificationUtils.cancelJobReminders(updatedJob._id);
-            await NotificationUtils.scheduleJobReminders(updatedJob);
+            // Only reschedule for active (non-terminal) jobs
+            if (
+              updatedJob.status !== "completed" &&
+              updatedJob.status !== "cancelled"
+            ) {
+              await NotificationUtils.scheduleJobReminders(updatedJob);
+            }
           }
         } catch {
           // Notification errors must not bubble up and break the update flow
@@ -102,6 +121,17 @@ export const jobApi = api.injectEndpoints({
     }),
     reopenJob: builder.mutation({
       query: (id) => ({ url: ApiUrls.JOB_REOPEN(id), method: "post" }),
+      onQueryStarted: async (_arg, { queryFulfilled }) => {
+        try {
+          const { data } = await queryFulfilled;
+          const job = data?.data;
+          if (job?._id && new Date(job.serviceDate) > new Date()) {
+            await NotificationUtils.scheduleJobReminders(job);
+          }
+        } catch {
+          // Notification errors must not break the reopen flow
+        }
+      },
       invalidatesTags: (result, error, arg) => [
         { type: TagTypes.JOBS, id: arg },
         ...ApiUtils.listTags(TagTypes.JOBS),

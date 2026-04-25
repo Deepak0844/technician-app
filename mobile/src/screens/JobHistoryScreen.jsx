@@ -26,11 +26,11 @@ import {
 } from "lucide-react-native";
 import { useGetJobsPagedInfiniteQuery } from "@services/api/jobApi";
 import Avatar from "@components/Avatar";
-import { formatCurrency, formatDate } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import { JobCardSkeleton } from "@components/SkeletonLoaders";
 import useDebounce from "@hooks/useDebounce";
 import { ApplianceOptions as APPLIANCE_OPTIONS } from "@constants/appConstants";
+import JobCard from "@components/JobCard";
 
 // Gluestack Primitives
 import { Box } from "@components/ui/box";
@@ -95,13 +95,6 @@ export default function JobHistoryScreen() {
     () => jobsData?.pages.flatMap((p) => p.data) ?? [],
     [jobsData],
   );
-
-  function getStatusColor(status) {
-    if (status === "completed") return colors.secondary;
-    if (status === "pending") return colors.warning;
-    if (status === "cancelled") return colors.danger;
-    return colors.primary;
-  }
 
   function getStatusBorderColor(status) {
     if (status === "completed") return colors.secondary;
@@ -224,9 +217,9 @@ export default function JobHistoryScreen() {
                 borderRadius: 12,
                 backgroundColor:
                   isFilterOpen ||
-                  applianceFilter ||
-                  isPaidFilter !== undefined ||
-                  todayOnly
+                    applianceFilter ||
+                    isPaidFilter !== undefined ||
+                    todayOnly
                     ? colors.primaryBg
                     : colors.bgInput,
                 borderWidth: 1.5,
@@ -390,199 +383,12 @@ export default function JobHistoryScreen() {
               ) : null
             }
             renderItem={({ item }) => (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => navigation.navigate("JobDetails", { job: item })}
-              >
-                <View
-                  style={{
-                    backgroundColor: colors.bgCardAlt,
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 16,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: colors.borderStrong,
-                    borderLeftWidth: 4,
-                    borderLeftColor: getStatusBorderColor(item.status),
-                  }}
-                >
-                  <HStack
-                    style={{
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 12,
-                    }}
-                  >
-                    <HStack style={{ alignItems: "center", gap: 8 }}>
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 14,
-                          fontWeight: "700",
-                          color: colors.textPrimary,
-                        }}
-                        numberOfLines={1}
-                      >
-                        {item.customerId?.name ||
-                          item.customerName ||
-                          "Customer"}
-                      </Text>
-                      {item.priority === "urgent" && (
-                        <View
-                          style={{
-                            backgroundColor: "#fee2e2",
-                            paddingHorizontal: 6,
-                            paddingVertical: 1,
-                            borderRadius: 4,
-                            borderWidth: 0.5,
-                            borderColor: "#ef4444",
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 7,
-                              fontWeight: "800",
-                              color: "#b91c1c",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Urgent
-                          </Text>
-                        </View>
-                      )}
-                    </HStack>
-                    <HStack space="sm" style={{ alignItems: "center" }}>
-                      <Text
-                        style={{
-                          fontFamily: "Space Grotesk",
-                          fontSize: 10,
-                          fontWeight: "700",
-                          textTransform: "uppercase",
-                          letterSpacing: 2,
-                          color: getStatusColor(item.status),
-                        }}
-                      >
-                        {item.status?.replace("_", " ")}
-                      </Text>
-                      {item.status === "completed" && !item.isPaid && (
-                        <Text
-                          style={{
-                            fontFamily: "Space Grotesk",
-                            fontSize: 10,
-                            fontWeight: "700",
-                            textTransform: "uppercase",
-                            letterSpacing: 2,
-                            color: colors.danger,
-                          }}
-                        >
-                          · Unpaid
-                        </Text>
-                      )}
-                    </HStack>
-                  </HStack>
-
-                  <Text
-                    style={{
-                      fontFamily: "Space Grotesk",
-                      fontSize: 14,
-                      color: colors.primary,
-                      fontWeight: "700",
-                      letterSpacing: 1,
-                      marginBottom: 16,
-                    }}
-                  >
-                    {item.applianceType}
-                    {item.issue ? (
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 12,
-                          color: colors.textMuted,
-                          fontWeight: "500",
-                        }}
-                      >
-                        {" "}
-                        • {item.issue}
-                      </Text>
-                    ) : null}
-                  </Text>
-
-                  {/* Service date row */}
-                  {item.serviceDate && (
-                    <HStack
-                      style={{
-                        alignItems: "center",
-                        gap: 5,
-                        marginBottom: 10,
-                      }}
-                    >
-                      <CalendarDays size={12} color={colors.textDisabled} />
-                      <Text
-                        style={{
-                          fontFamily: "Inter",
-                          fontSize: 11,
-                          color:
-                            new Date(item.serviceDate)
-                              .toISOString()
-                              .split("T")[0] === todayStr
-                              ? colors.primary
-                              : colors.textDisabled,
-                          fontWeight:
-                            new Date(item.serviceDate)
-                              .toISOString()
-                              .split("T")[0] === todayStr
-                              ? "700"
-                              : "400",
-                        }}
-                      >
-                        {new Date(item.serviceDate)
-                          .toISOString()
-                          .split("T")[0] === todayStr
-                          ? "Today"
-                          : formatDate(item.serviceDate)}
-                      </Text>
-                    </HStack>
-                  )}
-
-                  <HStack
-                    style={{
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Space Grotesk",
-                        fontSize: 16,
-                        fontWeight: "700",
-                        color: colors.textPrimary,
-                      }}
-                    >
-                      {formatCurrency(
-                        (item.amount || 0) +
-                          (item.diagnosticFee || 0) +
-                          (item.partsUsed || []).reduce(
-                            (acc, p) =>
-                              acc + (p.price || 0) * (p.quantity || 0),
-                            0,
-                          ),
-                      )}
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 10,
-                        color: colors.textSecondary,
-                        textTransform: "uppercase",
-                        letterSpacing: 2,
-                      }}
-                    >
-                      #{item._id.substring(0, 6).toUpperCase()}
-                    </Text>
-                  </HStack>
-                </View>
-              </TouchableOpacity>
+              <JobCard
+                job={item}
+                onPress={() =>
+                  navigation.navigate("JobDetails", { job: item })
+                }
+              />
             )}
             ListEmptyComponent={
               !loadingJobs && (
