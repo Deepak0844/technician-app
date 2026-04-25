@@ -31,7 +31,7 @@ import {
 
 export default function CalendarScreen() {
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, mode, palette } = useTheme();
   const user = useSelector((state) => state.auth.user);
 
   const todayStr = getLocalDateString(new Date());
@@ -183,7 +183,9 @@ export default function CalendarScreen() {
                   fontFamily: "Space Grotesk",
                   fontSize: 28,
                   fontWeight: "700",
+                  lineHeight: 38,
                   color: colors.textPrimary,
+                  includeFontPadding: false,
                 }}
               >
                 My Schedule
@@ -212,6 +214,7 @@ export default function CalendarScreen() {
             }}
           >
             <Calendar
+              key={`${mode}-${palette}`}
               current={selectedDate}
               renderArrow={(direction) =>
                 direction === "left" ? (
@@ -229,8 +232,8 @@ export default function CalendarScreen() {
               firstDay={1}
               enableSwipeMonths={true}
               theme={{
-                backgroundColor: "transparent",
-                calendarBackground: "transparent",
+                backgroundColor: colors.bgCard,
+                calendarBackground: colors.bgCard,
                 textSectionTitleColor: colors.textMuted,
                 selectedDayBackgroundColor: colors.primary,
                 selectedDayTextColor: colors.bgPrimary,
