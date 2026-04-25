@@ -74,7 +74,19 @@ function computeLineTotal(item) {
 // ─────────────────────────────────────────────
 // PDF HTML Builder — Premium redesign
 // ─────────────────────────────────────────────
-function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
+function buildPdfHtml({
+  job,
+  invoiceNumber,
+  lineItems,
+  techInfo,
+  grandTotal,
+  themeColors,
+}) {
+  const C1 = themeColors?.gradientPrimary?.[0] || "#c899ff";
+  const C2 = themeColors?.gradientPrimary?.[1] || "#9c3dff";
+  // Derive a lighter tint for backgrounds (used in billing cards, warranty etc.)
+  const C1_bg = C1 + "22";
+  const C1_border = C1 + "44";
   const partsUsed = job.partsUsed || [];
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
   const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
@@ -186,7 +198,7 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .page{max-width:794px;margin:0 auto;background:#fff;overflow:hidden;}
 
   /* ── Header (page 1 only, never breaks) ── */
-  .header{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 55%,#9333ea 100%);padding:32px 36px 28px;position:relative;overflow:hidden;page-break-inside:avoid;break-inside:avoid;}
+  .header{background:linear-gradient(135deg,${C1} 0%,${C2} 55%,${C2} 100%);padding:32px 36px 28px;position:relative;overflow:hidden;page-break-inside:avoid;break-inside:avoid;}
   .orb1{position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.06);}
   .orb2{position:absolute;bottom:-40px;left:10px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.04);}
   .h-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;}
@@ -208,25 +220,25 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
 
   /* ── Billing grid — keep together ── */
   .billing-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
-  .billing-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:18px 20px;}
+  .billing-card{border:1.5px solid ${C1_border};border-radius:14px;padding:18px 20px;}
   .billing-tag{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
-  .billing-tag.from{color:#4f46e5;}
-  .billing-tag.to{color:#7c3aed;}
+  .billing-tag.from{color:${C1};}
+  .billing-tag.to{color:${C2};}
   .billing-tag::before{content:'';display:inline-block;width:24px;height:2px;border-radius:2px;background:currentColor;}
   .billing-name{font-size:16px;font-weight:800;color:#1a1a2e;margin-bottom:8px;line-height:1.3;}
   .billing-row{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#6b7280;margin-bottom:5px;}
-  .gst-tag{display:inline-block;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:6px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:8px;}
+  .gst-tag{display:inline-block;background:${C1_bg};color:${C1};border:1px solid ${C1_border};border-radius:6px;padding:3px 8px;font-size:9px;font-weight:800;margin-top:8px;}
 
   /* ── Section titles ── */
   .section-title{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-  .section-title::after{content:'';flex:1;height:1px;background:#f0f0f8;}
+  .section-title::after{content:'';flex:1;height:1px;background:${C1_border};}
 
   /* ── Service info card — keep together ── */
-  .service-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:20px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
+  .service-card{border:1.5px solid ${C1_border};border-radius:14px;padding:20px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
   .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
   .info-item .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-bottom:4px;}
   .info-item .val{font-size:13px;font-weight:700;color:#1a1a2e;}
-  .info-item .val.purple{color:#4f46e5;}
+  .info-item .val.purple{color:${C1};}
   .info-item .val.green{color:#059669;}
   .text-field{border-top:1px solid #f3f4f6;padding-top:14px;margin-top:0;}
   .text-field .lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#9ca3af;margin-bottom:6px;}
@@ -234,19 +246,19 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .text-field .val.green{color:#059669;font-weight:600;}
 
   /* ── Items table — header repeats on new page; rows break naturally ── */
-  .table-wrap{border:1.5px solid #e8e4f9;border-radius:14px;overflow:hidden;margin-bottom:20px;}
+  .table-wrap{border:1.5px solid ${C1_border};border-radius:14px;overflow:hidden;margin-bottom:20px;}
   table{width:100%;border-collapse:collapse;}
-  thead{background:linear-gradient(90deg,#f0eeff,#f5f3ff);display:table-header-group;}
-  th{padding:11px 14px;text-align:left;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#4f46e5;border-bottom:1.5px solid #e8e4f9;}
+  thead{background:linear-gradient(90deg,${C1_bg},${C1_bg});display:table-header-group;}
+  th{padding:11px 14px;text-align:left;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:${C1};border-bottom:1.5px solid ${C1_border};}
   th.right{text-align:right;}th.center{text-align:center;}
-  td{padding:12px 14px;font-size:12px;color:#374151;border-bottom:1px solid #f5f3ff;vertical-align:top;}
+  td{padding:12px 14px;font-size:12px;color:#374151;border-bottom:1px solid ${C1_bg};vertical-align:top;}
   td.right{text-align:right;}td.center{text-align:center;}
   td.amount{font-weight:700;color:#1a1a2e;}
   td.stripe{background:#fafafe;}
   td.desc{max-width:260px;}
   .item-name{display:block;font-weight:600;color:#1a1a2e;}
   .item-note{display:block;font-size:10px;color:#9ca3af;margin-top:2px;font-style:italic;}
-  .parts-header td{background:#fdf4ff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#7c3aed;padding:8px 14px;border-top:1.5px solid #e8e4f9;}
+  .parts-header td{background:${C1_bg};font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${C2};padding:8px 14px;border-top:1.5px solid ${C1_border};}
   /* keep each table row together and avoid orphaned rows */
   tr{page-break-inside:avoid;break-inside:avoid;}
 
@@ -256,43 +268,43 @@ function buildPdfHtml({ job, invoiceNumber, lineItems, techInfo, grandTotal }) {
   .total-row{display:flex;justify-content:space-between;padding:7px 14px;font-size:12px;}
   .total-row .lbl{color:#6b7280;}
   .total-row .val{font-weight:600;color:#1a1a2e;}
-  .total-divider{height:1px;background:#e8e4f9;margin:6px 0;}
-  .grand-row{background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+  .total-divider{height:1px;background:${C1_border};margin:6px 0;}
+  .grand-row{background:linear-gradient(135deg,${C1},${C2});border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
   .grand-row .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.8);}
   .grand-row .val{font-size:24px;font-weight:900;color:#fff;}
 
   /* ── Warranty & Reminder — keep together ── */
-  .warranty-card{border:2px dashed #c4b5fd;border-radius:14px;background:#faf5ff;padding:20px;margin-bottom:20px;display:flex;gap:14px;page-break-inside:avoid;break-inside:avoid;}
-  .warranty-icon{width:42px;height:42px;background:#7c3aed;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
-  .warranty-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#4f46e5;margin-bottom:4px;}
+  .warranty-card{border:2px dashed ${C1_border};border-radius:14px;background:${C1_bg};padding:20px;margin-bottom:20px;display:flex;gap:14px;page-break-inside:avoid;break-inside:avoid;}
+  .warranty-icon{width:42px;height:42px;background:${C2};border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .warranty-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${C1};margin-bottom:4px;}
   .warranty-text{font-size:13px;font-weight:700;color:#1e1b4b;margin-bottom:4px;}
-  .warranty-from{font-size:11px;color:#6d28d9;margin-bottom:6px;}
-  .warranty-note{font-size:10px;color:#6d28d9;line-height:1.6;}
+  .warranty-from{font-size:11px;color:${C2};margin-bottom:6px;}
+  .warranty-note{font-size:10px;color:${C2};line-height:1.6;}
   .reminder-card{border:1.5px solid #bbf7d0;border-radius:14px;background:#f0fdf4;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px;page-break-inside:avoid;break-inside:avoid;}
   .reminder-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#065f46;margin-bottom:3px;}
   .reminder-date{font-size:16px;font-weight:800;color:#059669;}
   .reminder-sub{font-size:11px;color:#065f46;margin-top:2px;}
 
   /* ── Digital stamp (replaces old dual-sig block) ── */
-  .stamp-row{display:flex;justify-content:flex-end;align-items:center;padding:16px 0;border-top:1.5px solid #e8e4f9;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
-  .stamp-box{display:flex;align-items:center;gap:14px;background:#f5f3ff;border:1.5px solid #e0e7ff;border-radius:14px;padding:14px 20px;}
-  .stamp-icon{width:44px;height:44px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+  .stamp-row{display:flex;justify-content:flex-end;align-items:center;padding:16px 0;border-top:1.5px solid ${C1_border};margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;}
+  .stamp-box{display:flex;align-items:center;gap:14px;background:${C1_bg};border:1.5px solid ${C1_border};border-radius:14px;padding:14px 20px;}
+  .stamp-icon{width:44px;height:44px;background:linear-gradient(135deg,${C1},${C2});border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
   .stamp-info{text-align:left;}
   .stamp-name{font-size:14px;font-weight:800;color:#1a1a2e;margin-bottom:2px;}
   .stamp-lbl{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;}
   .stamp-gen{font-size:9px;color:#9ca3af;}
 
   /* ── Terms — keep together if short, break-before if needed ── */
-  .terms-card{border:1.5px solid #e8e4f9;border-radius:14px;padding:18px 20px;margin-bottom:24px;page-break-inside:avoid;break-inside:avoid;}
+  .terms-card{border:1.5px solid ${C1_border};border-radius:14px;padding:18px 20px;margin-bottom:24px;page-break-inside:avoid;break-inside:avoid;}
   .terms-list{list-style:none;padding:0;margin-top:10px;}
   .terms-list li{font-size:10px;color:#9ca3af;margin-bottom:7px;padding-left:16px;position:relative;line-height:1.6;}
-  .terms-list li::before{content:"•";position:absolute;left:0;color:#c4b5fd;font-size:13px;top:-2px;}
+  .terms-list li::before{content:"•";position:absolute;left:0;color:${C1};font-size:13px;top:-2px;}
 
   /* ── Footer — sticks to bottom of last page ── */
-  .footer{background:linear-gradient(135deg,#f5f3ff,#faf5ff);padding:24px 36px;text-align:center;border-top:1.5px solid #e8e4f9;page-break-inside:avoid;break-inside:avoid;}
-  .footer-brand{font-size:17px;font-weight:900;color:#4f46e5;margin-bottom:5px;}
+  .footer{background:${C1_bg};padding:24px 36px;text-align:center;border-top:1.5px solid ${C1_border};page-break-inside:avoid;break-inside:avoid;}
+  .footer-brand{font-size:17px;font-weight:900;color:${C1};margin-bottom:5px;}
   .footer-sub{font-size:11px;color:#9ca3af;margin-bottom:12px;}
-  .footer-bar{width:48px;height:4px;background:linear-gradient(90deg,#4f46e5,#9333ea);border-radius:2px;margin:0 auto 14px;}
+  .footer-bar{width:48px;height:4px;background:linear-gradient(90deg,${C1},${C2});border-radius:2px;margin:0 auto 14px;}
   .footer-contact{font-size:11px;color:#6b7280;margin-bottom:6px;}
   .footer-ref{font-size:9px;color:#d1d5db;letter-spacing:0.5px;}
 </style>
@@ -835,6 +847,7 @@ export default function InvoicePreviewScreen() {
       techInfo: techUser,
       grandTotal,
       subtotal,
+      themeColors: colors,
     };
   }
 
