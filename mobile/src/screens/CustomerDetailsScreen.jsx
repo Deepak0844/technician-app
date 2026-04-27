@@ -16,12 +16,12 @@ import { useGetJobsByCustomerPagedInfiniteQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import { openDirections } from "@utils/locationUtils";
 import {
-  formatDate,
   formatCurrency,
   formatDateShort,
 } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
+import JobCard from "@components/JobCard";
 
 // UI Primitives
 import { Text } from "@components/ui/text";
@@ -144,141 +144,6 @@ function ActionButton({ icon: Icon, label, onPress, colors, primary, disabled })
   );
 }
 
-// ─── Job Row ─────────────────────────────────────────────────────────────────
-function JobRow({ job, colors, onPress }) {
-  const isCompleted = job.status === "completed";
-  const isPending = job.status === "pending";
-  const statusColor = isCompleted
-    ? colors.success
-    : isPending
-      ? colors.warning
-      : colors.primary;
-  const statusBg = isCompleted
-    ? colors.successBg
-    : isPending
-      ? colors.warningBg
-      : colors.primaryBg;
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.72}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: colors.bgCard,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: colors.border,
-        marginBottom: 10,
-        overflow: "hidden",
-      }}
-    >
-      {/* Status stripe */}
-      <View
-        style={{
-          width: 4,
-          alignSelf: "stretch",
-          backgroundColor: statusColor,
-          borderTopLeftRadius: 14,
-          borderBottomLeftRadius: 14,
-        }}
-      />
-      {/* Icon */}
-      <View
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          backgroundColor: statusBg,
-          alignItems: "center",
-          justifyContent: "center",
-          marginLeft: 12,
-        }}
-      >
-        <Wrench color={statusColor} size={17} />
-      </View>
-      {/* Content */}
-      <View style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 12 }}>
-        <Text
-          style={{
-            fontFamily: "Space Grotesk",
-            fontWeight: "700",
-            fontSize: 14,
-            color: colors.textPrimary,
-            marginBottom: 3,
-          }}
-          numberOfLines={1}
-        >
-          {job?.applianceType || "General Service"}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Clock color={colors.textDisabled} size={10} />
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 11,
-              color: colors.textMuted,
-            }}
-          >
-            {formatDate(job?.serviceDate)}
-          </Text>
-          <Text style={{ color: colors.textDisabled, fontSize: 11 }}>·</Text>
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 11,
-              color: colors.textDisabled,
-            }}
-          >
-            #{job?._id ? job._id.substring(0, 6).toUpperCase() : "..."}
-          </Text>
-        </View>
-      </View>
-      {/* Right */}
-      <View style={{ alignItems: "flex-end", paddingRight: 14, gap: 4 }}>
-        <Text
-          style={{
-            fontFamily: "Space Grotesk",
-            fontSize: 14,
-            fontWeight: "700",
-            color: colors.textPrimary,
-          }}
-        >
-          {formatCurrency(
-            (job.amount || 0) +
-            (job.diagnosticFee || 0) +
-            (job.partsUsed || []).reduce(
-              (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
-              0,
-            ),
-          )}
-        </Text>
-        <View
-          style={{
-            paddingHorizontal: 7,
-            paddingVertical: 2,
-            borderRadius: 6,
-            backgroundColor: statusBg,
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontSize: 9,
-              fontWeight: "700",
-              textTransform: "uppercase",
-              letterSpacing: 0.8,
-              color: statusColor,
-            }}
-          >
-            {job.status}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function CustomerDetailsScreen() {
@@ -1189,9 +1054,8 @@ export default function CustomerDetailsScreen() {
         }
         renderItem={({ item: job }) => (
           <View style={{ paddingHorizontal: 16 }}>
-            <JobRow
+            <JobCard
               job={job}
-              colors={colors}
               onPress={() =>
                 navigation.navigate(RouteNames.JOB_DETAILS, { job })
               }

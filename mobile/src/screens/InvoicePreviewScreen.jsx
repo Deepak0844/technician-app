@@ -137,8 +137,8 @@ function buildPdfHtml({
           ${item.note ? `<span class="item-note">${item.note}</span>` : ""}
         </td>
         <td class="center${i % 2 === 1 ? " stripe" : ""}">${item.qty}</td>
-        <td class="right${i % 2 === 1 ? " stripe" : ""}">₹${Number(item.rate || 0).toLocaleString("en-IN")}</td>
-        <td class="right amount${i % 2 === 1 ? " stripe" : ""}">₹${computeLineTotal(item).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        <td class="right${i % 2 === 1 ? " stripe" : ""}">${formatCurrency(item.rate || 0)}</td>
+        <td class="right amount${i % 2 === 1 ? " stripe" : ""}">${formatCurrency(computeLineTotal(item), { minimumFractionDigits: 2 })}</td>
       </tr>`,
     )
     .join("");
@@ -152,8 +152,8 @@ function buildPdfHtml({
           ${part.warranty ? `<span class="item-note">Warranty: ${part.warranty}</span>` : ""}
         </td>
         <td class="center${i % 2 === 1 ? " stripe" : ""}">${part.quantity}</td>
-        <td class="right${i % 2 === 1 ? " stripe" : ""}">₹${Number(part.price || 0).toLocaleString("en-IN")}</td>
-        <td class="right amount${i % 2 === 1 ? " stripe" : ""}">₹${(Number(part.price || 0) * Number(part.quantity || 0)).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+        <td class="right${i % 2 === 1 ? " stripe" : ""}">${formatCurrency(part.price || 0)}</td>
+        <td class="right amount${i % 2 === 1 ? " stripe" : ""}">${formatCurrency(Number(part.price || 0) * Number(part.quantity || 0), { minimumFractionDigits: 2 })}</td>
       </tr>`,
     )
     .join("");
@@ -271,7 +271,7 @@ function buildPdfHtml({
   .total-divider{height:1px;background:${C1_border};margin:6px 0;}
   .grand-row{background:linear-gradient(135deg,${C1},${C2});border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
   .grand-row .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.8);}
-  .grand-row .val{font-size:24px;font-weight:900;color:#fff;}
+  .grand-row .val{font-size:24px;font-weight:900;color:#fff;line-height:1.2;}
 
   /* ── Warranty & Reminder — keep together ── */
   .warranty-card{border:2px dashed ${C1_border};border-radius:14px;background:${C1_bg};padding:20px;margin-bottom:20px;display:flex;gap:14px;page-break-inside:avoid;break-inside:avoid;}
@@ -392,10 +392,10 @@ function buildPdfHtml({
     <!-- ═══ TOTALS (keep together) ═══ -->
     <div class="totals-section no-break">
       <div class="totals-box">
-        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Services &amp; Fees</span><span class="val">₹${subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
-        ${partsTotal > 0 ? `<div class="total-row"><span class="lbl">Parts &amp; Components</span><span class="val">₹${partsTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>` : ""}
+        ${lineItems.length > 0 ? `<div class="total-row"><span class="lbl">Services &amp; Fees</span><span class="val">${formatCurrency(subtotal, { minimumFractionDigits: 2 })}</span></div>` : ""}
+        ${partsTotal > 0 ? `<div class="total-row"><span class="lbl">Parts &amp; Components</span><span class="val">${formatCurrency(partsTotal, { minimumFractionDigits: 2 })}</span></div>` : ""}
         ${lineItems.length > 0 || partsTotal > 0 ? `<div class="total-divider"></div>` : ""}
-        <div class="grand-row"><span class="lbl">Grand Total</span><span class="val">₹${grandTotal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span></div>
+        <div class="grand-row"><span class="lbl">Grand Total</span><span class="val">${formatCurrency(grandTotal, { minimumFractionDigits: 2 })}</span></div>
       </div>
     </div>
 
@@ -1326,7 +1326,7 @@ export default function InvoicePreviewScreen() {
             <View
               style={{
                 paddingTop: 14,
-                paddingBottom: 8,
+                paddingBottom: 14,
                 borderTopWidth: 1,
                 borderTopColor: "rgba(255,255,255,0.18)",
                 flexDirection: "row",
@@ -1364,6 +1364,8 @@ export default function InvoicePreviewScreen() {
                   fontWeight: "900",
                   color: "#fff",
                   letterSpacing: -0.5,
+                  paddingBottom: 4,
+                  lineHeight: 36,
                 }}
               >
                 {formatCurrency(grandTotal)}
