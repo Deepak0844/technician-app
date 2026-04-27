@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, TextInput, TouchableOpacity, Alert } from "react-native";
+import { Modal, View, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { ExternalLink } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
 import { Text } from "@components/ui/text";
@@ -33,7 +33,10 @@ export default function MapLinkModal({ visible, mapsLink, onChangeLink, onExtrac
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", padding: 24 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        style={{ flex: 1, justifyContent: "center", padding: 24, backgroundColor: "rgba(0,0,0,0.8)" }}
+      >
         <View style={{ backgroundColor: colors.bgCard, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.border }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
             <ExternalLink size={22} color={colors.secondary} />
@@ -75,7 +78,7 @@ export default function MapLinkModal({ visible, mapsLink, onChangeLink, onExtrac
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

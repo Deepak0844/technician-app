@@ -6,6 +6,8 @@ import {
   TextInput,
   Modal,
   Pressable,
+  ScrollView,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -234,44 +236,51 @@ const PartsSection = ({ parts, setParts }) => {
         visible={showAddModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={() => {
+          setShowAddModal(false);
+          resetForm();
+        }}
       >
-        <Pressable
-          onPress={() => {
-            setShowAddModal(false);
-            resetForm();
-          }}
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.6)",
-            justifyContent: "center",
-            padding: 24,
-          }}
+        {/*
+         * Centered-dialog KAV pattern:
+         * KAV fills the screen, a Pressable backdrop covers it (absolute) for tap-to-dismiss,
+         * and the card sits in the centre. KAV shifts the card up with padding when the keyboard
+         * appears so no field is ever hidden.
+         */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "padding"}
+          style={styles.modalOverlay}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          {/* Dim backdrop — tap to dismiss */}
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setShowAddModal(false);
+              resetForm();
+            }}
+          />
+
+          {/* Card — absorbs touch so it does NOT dismiss */}
+          <Pressable
+            style={[styles.modalCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}
           >
-            <Pressable
+            <Text
               style={{
-                backgroundColor: colors.bgCard,
-                borderRadius: 24,
-                padding: 24,
-                borderWidth: 1,
-                borderColor: colors.border,
+                fontFamily: "Space Grotesk",
+                fontSize: 18,
+                fontWeight: "700",
+                color: colors.textPrimary,
+                marginBottom: 20,
               }}
             >
-              <Text
-                style={{
-                  fontFamily: "Space Grotesk",
-                  fontSize: 18,
-                  fontWeight: "700",
-                  color: colors.textPrimary,
-                  marginBottom: 24,
-                }}
-              >
-                {editingPartId ? "Edit Spare Part" : "Add Spare Part"}
-              </Text>
+              {editingPartId ? "Edit Spare Part" : "Add Spare Part"}
+            </Text>
 
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+              showsVerticalScrollIndicator={false}
+            >
               <View style={{ gap: 16 }}>
                 <View>
                   <Text
@@ -425,12 +434,28 @@ const PartsSection = ({ parts, setParts }) => {
                   {editingPartId ? "Save Changes" : "Add to Job"}
                 </Text>
               </TouchableOpacity>
-            </Pressable>
-          </KeyboardAvoidingView>
-        </Pressable>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 };
 
 export default PartsSection;
+
+const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    maxHeight: "85%",
+  },
+});
+

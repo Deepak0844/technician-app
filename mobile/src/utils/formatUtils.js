@@ -34,7 +34,7 @@ export const formatCurrency = (val, options = {}) => {
     }
 
     return result;
-  } catch (e) {
+  } catch (_e) {
     // Fallback
     const num = Number(val || 0);
     const formatted = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");

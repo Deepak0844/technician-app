@@ -54,7 +54,6 @@ export default function DashboardScreen() {
 
   const allJobs = dashboardStats.recentJobs || [];
   const monthlyTotalEarnings = Number(dashboardStats?.monthlyPaidEarnings ?? 0);
-  const monthlyJobs = Number(dashboardStats?.monthlyJobs ?? 0);
   const rawEarningsChange = dashboardStats?.earningsChange;
   const isNewMonth = rawEarningsChange === null;
   const earningsChange = isNewMonth ? 0 : Number(rawEarningsChange ?? 0);

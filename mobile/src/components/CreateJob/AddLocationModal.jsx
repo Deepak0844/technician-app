@@ -2,6 +2,7 @@ import React from "react";
 import {
   Modal,
   Pressable,
+  ScrollView,
   View,
   Text,
   TouchableOpacity,
@@ -41,28 +42,37 @@ const AddLocationModal = ({
       animationType="slide"
       onRequestClose={onClose}
     >
+      {/*
+       * Robust bottom-sheet KAV pattern:
+       * KAV (flex:1) → dim backdrop (flex:1, dismiss on tap) + sheet (fixed height, bottom)
+       * KAV adds bottom padding = keyboard height, which pushes the sheet up automatically.
+       */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, justifyContent: "flex-end" }}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        style={{ flex: 1 }}
       >
+        {/* Dim backdrop — tap to dismiss */}
         <Pressable
           onPress={onClose}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }}
+        />
+
+        {/* Bottom sheet */}
+        <View
           style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.6)",
+            backgroundColor: colors.bgPrimary,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            borderTopWidth: 1,
+            borderTopColor: colors.borderLight,
+            maxHeight: "90%",
           }}
         >
-          <Pressable
-            style={{
-              backgroundColor: colors.bgPrimary,
-              padding: 24,
-              paddingBottom: 48,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              borderTopWidth: 1,
-              borderTopColor: colors.borderLight,
-            }}
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 24, paddingBottom: 48 }}
           >
             <View
               style={{
@@ -416,8 +426,8 @@ const AddLocationModal = ({
                 </Text>
               )}
             </TouchableOpacity>
-          </Pressable>
-        </Pressable>
+          </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );

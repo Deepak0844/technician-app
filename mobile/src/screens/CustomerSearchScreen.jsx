@@ -229,7 +229,7 @@ export default function CustomerSearchScreen() {
       </Modal>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
       >
         <SafeAreaView
           style={{ flex: 1, backgroundColor: colors.bgPrimary }}
@@ -371,6 +371,8 @@ export default function CustomerSearchScreen() {
               data={[...localCustomers, ...deviceContacts]}
               keyExtractor={(item) => item._id || item.id}
               showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   onPress={() =>

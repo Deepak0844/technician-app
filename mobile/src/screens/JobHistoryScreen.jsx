@@ -9,6 +9,8 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -96,14 +98,6 @@ export default function JobHistoryScreen() {
     [jobsData],
   );
 
-  function getStatusBorderColor(status) {
-    if (status === "completed") return colors.secondary;
-    if (status === "cancelled") return colors.danger;
-    if (status === "pending") return colors.warning;
-    if (status === "in_progress") return colors.primary;
-    return colors.border;
-  }
-
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.bgPrimary }}
@@ -152,6 +146,11 @@ export default function JobHistoryScreen() {
           </TouchableOpacity>
         </LinearGradient>
 
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "padding"}
+          keyboardVerticalOffset={64}
+        >
         <Box style={{ flex: 1, padding: 16, paddingBottom: 0 }}>
           <View style={{ marginBottom: 16 }}>
             <Text
@@ -344,6 +343,8 @@ export default function JobHistoryScreen() {
             data={jobs}
             keyExtractor={(item) => item._id}
             showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingBottom: 150 }}
             onScrollBeginDrag={() => {
               hasScrolledRef.current = true;
@@ -416,6 +417,7 @@ export default function JobHistoryScreen() {
             }
           />
         </Box>
+        </KeyboardAvoidingView>
 
         {/* Filter Modal — plain Modal gives a real measured height so flex:1 works */}
         <Modal

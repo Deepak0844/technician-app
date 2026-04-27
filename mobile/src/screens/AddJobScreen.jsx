@@ -457,14 +457,15 @@ export default function AddJobScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={64}
       >
         <ScrollView
           ref={scrollViewRef}
           style={{ flex: 1, paddingHorizontal: 16 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         >
           <View style={{ height: 16 }} />
 
