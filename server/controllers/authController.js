@@ -131,17 +131,13 @@ export const uploadLogo = asyncHandler(async (req, res) => {
     );
   }
 
-  // Build public URL for the uploaded file
-  const logoUrl = `${req.protocol}://${req.get("host")}/uploads/logos/${req.file.filename}`;
-
-  // Extract old logo filename from current user's companyLogo URL (if any)
-  const oldLogoUrl = req.user?.companyLogo || "";
-  const oldLogoFilename = oldLogoUrl ? oldLogoUrl.split("/").pop() : null;
+  // Convert buffer to base64 Data URI
+  const base64Image = req.file.buffer.toString("base64");
+  const logoUrl = `data:${req.file.mimetype};base64,${base64Image}`;
 
   const user = await AuthService.saveLogoUrl(
     req.user.id,
-    logoUrl,
-    oldLogoFilename,
+    logoUrl
   );
 
   return ResponseUtils.success(

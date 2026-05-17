@@ -96,9 +96,6 @@ app.use(`${BASE_URL}/customers`, customerRoutes);
 app.use(`${BASE_URL}/jobs`, jobRoutes);
 app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 
-// Serve uploaded files as static assets
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
 // Base route — health check
 app.get("/", (_req, res) => {
   ResponseUtils.success(res, {
@@ -141,10 +138,10 @@ app.use((err, req, res, _next) => {
   // MongoDB CastError — invalid ObjectId or other types
   if (err.name === "CastError") {
     const isObjectId = err.kind === "ObjectId";
-    const message = isObjectId 
-      ? "Invalid ID format" 
+    const message = isObjectId
+      ? "Invalid ID format"
       : `Invalid format for field '${err.path}'`;
-      
+
     return ResponseUtils.error(
       res,
       message,
