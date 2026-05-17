@@ -1,6 +1,10 @@
 // Config
 import Env from "#config/env.js";
 
+// Node built-ins
+import fs from "fs";
+import path from "path";
+
 // Constants
 import { ErrorMessages, TwoFactor } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
@@ -79,11 +83,38 @@ async function updateProfile(userId, fields) {
   return user;
 }
 
+/**
+ * Save a new logo URL to the user document.
+ * Deletes the old logo file from disk if one exists.
+ */
+async function saveLogoUrl(userId, logoUrl, oldLogoFilename) {
+  // Delete old logo file from disk (fire-and-forget, non-fatal)
+  if (oldLogoFilename) {
+    const oldFilePath = path.join(
+      process.cwd(),
+      "uploads",
+      "logos",
+      path.basename(oldLogoFilename),
+    );
+    fs.unlink(oldFilePath, () => {});
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set: { companyLogo: logoUrl } },
+    { new: true, runValidators: true },
+  );
+  if (!user)
+    throw new AppError(ErrorMessages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+  return user;
+}
+
 const AuthService = {
   sendOtp,
   verifyOtp,
   getProfile,
   updateProfile,
+  saveLogoUrl,
 };
 
 export default AuthService;

@@ -41,7 +41,9 @@
         "POST_NOTIFICATIONS",
         "SCHEDULE_EXACT_ALARM",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "READ_MEDIA_IMAGES",
+        "CAMERA"
       ]
     },
     "plugins": [
@@ -52,6 +54,13 @@
           "imageWidth": 400,
           "resizeMode": "cover",
           "backgroundColor": "#0f0f1a"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Technician App to access your photo library to upload a company logo.",
+          "cameraPermission": "Allow Technician App to use the camera to take a photo for your company logo."
         }
       ],
       [

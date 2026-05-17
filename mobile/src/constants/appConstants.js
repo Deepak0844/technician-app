@@ -14,6 +14,7 @@ export const ApiUrls = {
   AUTH_LOGOUT: "/auth/logout",
   AUTH_ME: "/auth/me",
   AUTH_UPDATE_ME: "/auth/me",
+  AUTH_UPLOAD_LOGO: "/auth/me/logo",
 
   // Customers
   CUSTOMERS_SEARCH: "/customers/search",

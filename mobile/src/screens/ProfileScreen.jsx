@@ -13,6 +13,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -42,11 +43,13 @@ import {
   Calendar,
   ChevronRight,
   Palette,
+  Camera
 } from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
 import { formatDate } from "@utils/formatUtils";
 import { useNavigation } from "@react-navigation/native";
 import useTheme from "@hooks/useTheme";
+import useLogoUpload from "@hooks/useLogoUpload";
 import ThemeToggle from "../components/ThemeToggle";
 import Avatar from "../components/Avatar";
 import { PALETTE_META } from "@constants/colors";
@@ -75,6 +78,7 @@ export default function ProfileScreen() {
   );
 
   const [isEditing, setIsEditing] = React.useState(false);
+  const { pickAndUpload, isUploading: isLogoUploading } = useLogoUpload();
   const [editedName, setEditedName] = React.useState("");
   const [editedCompanyName, setEditedCompanyName] = React.useState("");
   const [editedEmail, setEditedEmail] = React.useState("");
@@ -120,7 +124,7 @@ export default function ProfileScreen() {
   }
 
   async function handleLogout() {
-    await logout().catch(() => {});
+    await logout().catch(() => { });
     await StorageUtils.clearToken();
     dispatch(clearCredentials());
   }
@@ -223,12 +227,26 @@ export default function ProfileScreen() {
             ]}
           />
 
-          <Avatar
-            name={user.name || user.phone}
-            uri={user.avatar}
-            size={80}
-            style={{ borderWidth: 3, borderColor: "rgba(255,255,255,0.25)" }}
-          />
+          {user.companyLogo ? (
+            <Image
+              source={{ uri: user.companyLogo }}
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                borderWidth: 3,
+                borderColor: "rgba(255,255,255,0.35)",
+                marginBottom: 2,
+              }}
+            />
+          ) : (
+            <Avatar
+              name={user.name || user.phone}
+              uri={user.avatar}
+              size={80}
+              style={{ borderWidth: 3, borderColor: "rgba(255,255,255,0.25)" }}
+            />
+          )}
           <Text style={s.heroName}>{user.name || "Technician"}</Text>
           <View style={s.heroPill}>
             <Phone size={11} color="rgba(255,255,255,0.9)" />
@@ -563,7 +581,7 @@ export default function ProfileScreen() {
               </Text>
               <TouchableOpacity
                 onPress={handleSave}
-                disabled={isUpdating}
+                disabled={isUpdating || isLogoUploading}
                 style={[s.modalSaveBtn, { backgroundColor: colors.primary }]}
                 activeOpacity={0.8}
               >
@@ -580,17 +598,71 @@ export default function ProfileScreen() {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
             >
-              {/* Avatar preview */}
+              {/* Logo picker section */}
               <View style={{ alignItems: "center", marginBottom: 24 }}>
-                <Avatar
-                  name={editedName || user.phone}
-                  uri={user.avatar}
-                  size={72}
-                  style={{
-                    borderWidth: 3,
-                    borderColor: colors.primary + "44",
-                  }}
-                />
+                <Text style={[s.editLabel, { color: colors.textMuted, marginBottom: 10 }]}>
+                  Company Logo
+                </Text>
+                {isLogoUploading ? (
+                  <View
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 36,
+                      backgroundColor: colors.bgSurface,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 2,
+                      borderColor: colors.primary + "44",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  </View>
+                ) : user.companyLogo ? (
+                  <Image
+                    source={{ uri: user.companyLogo }}
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 36,
+                      borderWidth: 3,
+                      borderColor: colors.primary + "44",
+                      marginBottom: 12,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 36,
+                      backgroundColor: colors.bgSurface,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: 2,
+                      borderStyle: "dashed",
+                      borderColor: colors.borderStrong,
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Building2 size={28} color={colors.textDisabled} />
+                  </View>
+                )}
+                <TouchableOpacity
+                  onPress={pickAndUpload}
+                  disabled={isLogoUploading}
+                  activeOpacity={0.75}
+                  style={[
+                    s.logoPickerBtn,
+                    { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder },
+                  ]}
+                >
+                  <Camera size={14} color={colors.primary} />
+                  <Text style={[s.logoPickerBtnText, { color: colors.primary }]}>
+                    {user.companyLogo ? "Change Logo" : "Add Logo"}
+                  </Text>
+                </TouchableOpacity>
               </View>
 
               <EditField
@@ -632,7 +704,7 @@ export default function ProfileScreen() {
               {/* Save button inside scroll */}
               <TouchableOpacity
                 onPress={handleSave}
-                disabled={isUpdating}
+                disabled={isUpdating || isLogoUploading}
                 activeOpacity={0.85}
                 style={[
                   s.modalFullSaveBtn,
@@ -1081,5 +1153,19 @@ const s = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Space Grotesk",
     letterSpacing: 0.5,
+  },
+  logoPickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  logoPickerBtnText: {
+    fontFamily: "Inter",
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

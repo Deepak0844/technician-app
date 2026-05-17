@@ -10,6 +10,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -81,6 +82,7 @@ function buildPdfHtml({
   techInfo,
   grandTotal,
   themeColors,
+  companyLogo,
 }) {
   const C1 = themeColors?.gradientPrimary?.[0] || "#c899ff";
   const C2 = themeColors?.gradientPrimary?.[1] || "#9c3dff";
@@ -203,6 +205,7 @@ function buildPdfHtml({
   .orb2{position:absolute;bottom:-40px;left:10px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.04);}
   .h-top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;}
   .brand-icon{width:48px;height:48px;background:rgba(255,255,255,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.2);}
+  .brand-logo{width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,0.3);margin-bottom:10px;}
   .brand-name{font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1.2;}
   .brand-sub{font-size:11px;color:rgba(255,255,255,0.65);margin-top:3px;}
   .inv-meta{text-align:right;}
@@ -317,7 +320,10 @@ function buildPdfHtml({
     <div class="orb1"></div><div class="orb2"></div>
     <div class="h-top">
       <div>
-        <div class="brand-icon">🔧</div>
+        ${companyLogo
+          ? `<img src="${companyLogo}" class="brand-logo" alt="Company Logo" />`
+          : `<div class="brand-icon">🔧</div>`
+        }
         <div class="brand-name">${techName}</div>
         <div class="brand-sub">Professional Appliance Repair &amp; Maintenance</div>
       </div>
@@ -444,9 +450,9 @@ function buildPdfHtml({
     <div class="terms-card no-break">
       <div class="section-title">Terms &amp; Conditions</div>
       <ul class="terms-list">
-        <li>Warranty is valid only for the specific fault repaired and parts replaced as listed above.</li>
-        <li>Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.</li>
-        <li>This is a computer-generated invoice.</li>
+        <li>Warranty covers only the parts we changed and the work we did. It gets cancelled if anyone else opens the machine.</li>
+        <li>New electronic parts cannot be returned or refunded once installed.</li>
+        <li>This invoice is computer-generated and does not need a signature.</li>
       </ul>
     </div>
 
@@ -723,9 +729,10 @@ export default function InvoicePreviewScreen() {
   const [showWarrantyDatePicker, setShowWarrantyDatePicker] = useState(false);
 
   // Lock all editing once job is both completed AND paid.
-  // Use local `isPaid` state (not the static route-param job.isPaid) so the lock
-  // engages immediately when the user toggles paid, and persists after saving.
-  const isLocked = job?.status === JobStatuses.COMPLETED && isPaid;
+  // We MUST use the server-side `job.isPaid` state. If we use the local `isPaid` state, 
+  // the screen locks instantly when they toggle it, hiding the Save button before they can save!
+  const isContentLocked = job?.status === JobStatuses.COMPLETED;
+  const isFullyLocked = job?.status === JobStatuses.COMPLETED && job?.isPaid;
 
   if (!job) {
     return (
@@ -836,8 +843,16 @@ export default function InvoicePreviewScreen() {
 
       await updateJob({
         id: job._id,
-        lineItems,
-        partsUsed,
+        lineItems: lineItems.map((item) => ({
+          ...item,
+          qty: Number(item.qty) || 0,
+          rate: Number(item.rate) || 0,
+        })),
+        partsUsed: partsUsed.map((part) => ({
+          ...part,
+          quantity: Number(part.quantity) || 0,
+          price: Number(part.price) || 0,
+        })),
         amount: serviceSubtotal,
         isPaid,
         paymentMethod,
@@ -864,6 +879,7 @@ export default function InvoicePreviewScreen() {
       grandTotal,
       subtotal,
       themeColors: colors,
+      companyLogo: techUser?.companyLogo || "",
     };
   }
 
@@ -1004,7 +1020,7 @@ export default function InvoicePreviewScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* ══ LOCKED BANNER ══ */}
-          {isLocked && (
+          {isFullyLocked && (
             <View
               style={{
                 flexDirection: "row",
@@ -1089,21 +1105,35 @@ export default function InvoicePreviewScreen() {
                 marginBottom: 16,
               }}
             >
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  backgroundColor: "rgba(255,255,255,0.18)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 12,
-                  borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.25)",
-                }}
-              >
-                <Wrench color="#fff" size={19} />
-              </View>
+              {techUser?.companyLogo ? (
+                <Image
+                  source={{ uri: techUser.companyLogo }}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    marginRight: 12,
+                    borderWidth: 2,
+                    borderColor: "rgba(255,255,255,0.35)",
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 14,
+                    backgroundColor: "rgba(255,255,255,0.18)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.25)",
+                  }}
+                >
+                  <Wrench color="#fff" size={19} />
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -1710,7 +1740,7 @@ export default function InvoicePreviewScreen() {
               title="Service Breakdown"
               colors={colors}
               action={
-                isLocked ? null : (
+                isContentLocked ? null : (
                   <TouchableOpacity
                     onPress={handleAddRow}
                     style={{
@@ -1811,7 +1841,7 @@ export default function InvoicePreviewScreen() {
                     placeholder="Description"
                     placeholderTextColor={colors.textDisabled}
                     multiline
-                    editable={!isLocked}
+                    editable={!isContentLocked}
                   />
                   <TextInput
                     style={{
@@ -1827,7 +1857,7 @@ export default function InvoicePreviewScreen() {
                     keyboardType="numeric"
                     placeholder="1"
                     placeholderTextColor={colors.textDisabled}
-                    editable={!isLocked}
+                    editable={!isContentLocked}
                   />
                   <TextInput
                     style={{
@@ -1843,7 +1873,7 @@ export default function InvoicePreviewScreen() {
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.textDisabled}
-                    editable={!isLocked}
+                    editable={!isContentLocked}
                   />
                   <Text
                     style={{
@@ -1858,7 +1888,7 @@ export default function InvoicePreviewScreen() {
                   >
                     {lineTotal.toFixed(0)}
                   </Text>
-                  {!isLocked && (
+                  {!isContentLocked && (
                     <TouchableOpacity
                       onPress={() => handleDeleteRow(item.id)}
                       style={{
@@ -1871,7 +1901,7 @@ export default function InvoicePreviewScreen() {
                       <Trash2 size={13} color={colors.danger} />
                     </TouchableOpacity>
                   )}
-                  {isLocked && <View style={{ width: 28 }} />}
+                  {isContentLocked && <View style={{ width: 28 }} />}
                 </View>
               );
             })}
@@ -1905,7 +1935,7 @@ export default function InvoicePreviewScreen() {
                 >
                   Replaced Parts / Spares
                 </Text>
-                {!isLocked && (
+                {!isContentLocked && (
                   <TouchableOpacity onPress={handleAddPart} activeOpacity={0.7}>
                     <Text
                       style={{
@@ -1937,23 +1967,35 @@ export default function InvoicePreviewScreen() {
                         idx % 2 === 1 ? colors.bgSurface : "transparent",
                     }}
                   >
-                    <TextInput
-                      style={{
-                        fontFamily: "Inter",
-                        fontSize: 11,
-                        color: colors.textPrimary,
-                        flex: 1,
-                        paddingVertical: 4,
-                        paddingHorizontal: 2,
-                        minHeight: 32,
-                      }}
-                      value={part.name}
-                      onChangeText={(v) => handleChangePart(idx, "name", v)}
-                      placeholder="Part name"
-                      placeholderTextColor={colors.textDisabled}
-                      multiline
-                      editable={!isLocked}
-                    />
+                    <View style={{ flex: 1, paddingHorizontal: 2, paddingVertical: 4 }}>
+                      <TextInput
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 11,
+                          color: colors.textPrimary,
+                          minHeight: 20,
+                        }}
+                        value={part.name}
+                        onChangeText={(v) => handleChangePart(idx, "name", v)}
+                        placeholder="Part name"
+                        placeholderTextColor={colors.textDisabled}
+                        multiline
+                        editable={!isContentLocked}
+                      />
+                      <TextInput
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: 9,
+                          color: colors.textMuted,
+                          marginTop: 2,
+                        }}
+                        value={part.warranty || ""}
+                        onChangeText={(v) => handleChangePart(idx, "warranty", v)}
+                        placeholder="Warranty (e.g. 6 Months)"
+                        placeholderTextColor={colors.textDisabled}
+                        editable={!isContentLocked}
+                      />
+                    </View>
                     <TextInput
                       style={{
                         fontFamily: "Inter",
@@ -1968,7 +2010,7 @@ export default function InvoicePreviewScreen() {
                       keyboardType="numeric"
                       placeholder="1"
                       placeholderTextColor={colors.textDisabled}
-                      editable={!isLocked}
+                      editable={!isContentLocked}
                     />
                     <TextInput
                       style={{
@@ -1984,7 +2026,7 @@ export default function InvoicePreviewScreen() {
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor={colors.textDisabled}
-                      editable={!isLocked}
+                      editable={!isContentLocked}
                     />
                     <Text
                       style={{
@@ -1999,7 +2041,7 @@ export default function InvoicePreviewScreen() {
                     >
                       {partTotal.toFixed(0)}
                     </Text>
-                    {!isLocked && (
+                    {!isContentLocked && (
                       <TouchableOpacity
                         onPress={() => handleDeletePart(idx)}
                         style={{
@@ -2012,7 +2054,7 @@ export default function InvoicePreviewScreen() {
                         <Trash2 size={13} color={colors.danger} />
                       </TouchableOpacity>
                     )}
-                    {isLocked && <View style={{ width: 28 }} />}
+                    {isContentLocked && <View style={{ width: 28 }} />}
                   </View>
                 );
               })}
@@ -2177,8 +2219,8 @@ export default function InvoicePreviewScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => !isLocked && setIsPaid(!isPaid)}
-                  disabled={isLocked}
+                  onPress={() => !isFullyLocked && setIsPaid(!isPaid)}
+                  disabled={isFullyLocked}
                   style={{
                     backgroundColor: isPaid
                       ? colors.successBg
@@ -2241,9 +2283,9 @@ export default function InvoicePreviewScreen() {
                         <TouchableOpacity
                           key={method.id}
                           onPress={() =>
-                            !isLocked && setPaymentMethod(method.id)
+                            !isFullyLocked && setPaymentMethod(method.id)
                           }
-                          disabled={isLocked}
+                          disabled={isFullyLocked}
                           style={{
                             flex: 1,
                             alignItems: "center",
@@ -2257,7 +2299,7 @@ export default function InvoicePreviewScreen() {
                               ? colors.primaryBg
                               : colors.bgSurface,
                             gap: 4,
-                            opacity: isLocked ? 0.5 : 1,
+                            opacity: isFullyLocked ? 0.5 : 1,
                           }}
                         >
                           <method.icon
@@ -2340,17 +2382,17 @@ export default function InvoicePreviewScreen() {
 
                 {/* Warranty start date — tappable to edit */}
                 <TouchableOpacity
-                  onPress={() => !isLocked && setShowWarrantyDatePicker(true)}
-                  activeOpacity={isLocked ? 1 : 0.7}
+                  onPress={() => !isContentLocked && setShowWarrantyDatePicker(true)}
+                  activeOpacity={isContentLocked ? 1 : 0.7}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 6,
-                    backgroundColor: isLocked
+                    backgroundColor: isContentLocked
                       ? colors.bgSurface
                       : colors.bgCard,
                     borderWidth: 1,
-                    borderColor: isLocked
+                    borderColor: isContentLocked
                       ? colors.border
                       : colors.primaryBorder,
                     borderRadius: 8,
@@ -2362,19 +2404,19 @@ export default function InvoicePreviewScreen() {
                 >
                   <CalendarIcon
                     size={11}
-                    color={isLocked ? colors.textDisabled : colors.primary}
+                    color={isContentLocked ? colors.textDisabled : colors.primary}
                   />
                   <Text
                     style={{
                       fontFamily: "Inter",
                       fontSize: 11,
                       fontWeight: "600",
-                      color: isLocked ? colors.textDisabled : colors.primary,
+                      color: isContentLocked ? colors.textDisabled : colors.primary,
                     }}
                   >
                     Starts: {formatDate(warrantyStartDate)}
                   </Text>
-                  {!isLocked && <Edit3 size={10} color={colors.primary} />}
+                  {!isContentLocked && <Edit3 size={10} color={colors.primary} />}
                 </TouchableOpacity>
 
                 <Text
@@ -2516,9 +2558,9 @@ export default function InvoicePreviewScreen() {
             {showTerms && (
               <View style={{ marginTop: 14, gap: 8 }}>
                 {[
-                  "Warranty is valid only for the specific fault repaired and parts replaced as listed in this invoice.",
-                  "Parts once fitted are non-returnable. Charges apply for re-visits not covered under warranty.",
-                  "This is a computer-generated invoice.",
+                  "Warranty covers only the parts we changed and the work we did. It gets cancelled if anyone else opens the machine.",
+                  "New electronic parts cannot be returned or refunded once installed.",
+                  "This invoice is computer-generated and does not need a signature.",
                 ].map((term, i) => (
                   <View key={i} style={{ flexDirection: "row", gap: 8 }}>
                     <View
@@ -2606,7 +2648,7 @@ export default function InvoicePreviewScreen() {
           }}
         >
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {isLocked ? (
+            {isFullyLocked ? (
               <View
                 style={{
                   flex: 1,
