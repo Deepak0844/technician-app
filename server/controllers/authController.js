@@ -1,6 +1,7 @@
 // Constants
 import {
   AUTH_COOKIE_NAME,
+  ErrorMessages,
   SuccessMessages,
 } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
@@ -114,5 +115,39 @@ export const updateProfile = asyncHandler(async (req, res) => {
     user,
     HttpStatus.OK,
     SuccessMessages.PROFILE_UPDATED,
+  );
+});
+/**
+ * @desc    Upload company logo
+ * @route   POST /api/v1/auth/me/logo
+ * @access  Private
+ */
+export const uploadLogo = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    return ResponseUtils.error(
+      res,
+      ErrorMessages.LOGO_MISSING,
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+
+  // Build public URL for the uploaded file
+  const logoUrl = `${req.protocol}://${req.get("host")}/uploads/logos/${req.file.filename}`;
+
+  // Extract old logo filename from current user's companyLogo URL (if any)
+  const oldLogoUrl = req.user?.companyLogo || "";
+  const oldLogoFilename = oldLogoUrl ? oldLogoUrl.split("/").pop() : null;
+
+  const user = await AuthService.saveLogoUrl(
+    req.user.id,
+    logoUrl,
+    oldLogoFilename,
+  );
+
+  return ResponseUtils.success(
+    res,
+    user,
+    HttpStatus.OK,
+    SuccessMessages.LOGO_UPLOADED,
   );
 });

@@ -4,6 +4,8 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import createError from "http-errors";
+import multer from "multer";
+import path from "path";
 
 // Database connection
 import connectToDatabase from "#config/db.js";
@@ -94,6 +96,9 @@ app.use(`${BASE_URL}/customers`, customerRoutes);
 app.use(`${BASE_URL}/jobs`, jobRoutes);
 app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 
+// Serve uploaded files as static assets
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
 // Base route — health check
 app.get("/", (_req, res) => {
   ResponseUtils.success(res, {
@@ -118,6 +123,21 @@ app.use((_req, _res, next) => {
 
 // Global error handler
 app.use((err, req, res, _next) => {
+  // Multer file size / type errors
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? ErrorMessages.LOGO_TOO_LARGE
+        : "File upload error.";
+    return ResponseUtils.error(
+      res,
+      message,
+      err.code === "LIMIT_FILE_SIZE"
+        ? HttpStatus.PAYLOAD_TOO_LARGE
+        : HttpStatus.BAD_REQUEST,
+    );
+  }
+
   // MongoDB CastError — invalid ObjectId or other types
   if (err.name === "CastError") {
     const isObjectId = err.kind === "ObjectId";

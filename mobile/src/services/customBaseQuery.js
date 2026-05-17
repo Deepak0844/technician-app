@@ -4,10 +4,15 @@ import StorageUtils from "@utils/storageUtils";
 
 const customBaseQuery = () => async (rawArgs, api) => {
   const args = typeof rawArgs === "string" ? { url: rawArgs } : rawArgs;
-  const { url = "", method = "get", params, data } = args;
+  const { url = "", method = "get", params, data, headers: callerHeaders } = args;
 
   const token = await StorageUtils.getToken();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Axios 1.x has a known bug with React Native FormData causing NETWORK_ERROR.
+  // The fix requires setting transformRequest to bypass Axios's default serializer 
+  // ONLY for FormData, while letting it naturally set the multipart boundary.
+  const isFormData = data != null && typeof data.append === "function";
 
   try {
     const response = await axios({
@@ -18,7 +23,10 @@ const customBaseQuery = () => async (rawArgs, api) => {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         "X-Timezone": timezone,
+        ...callerHeaders,
+        ...(isFormData ? { "Content-Type": "multipart/form-data" } : {}),
       },
+      ...(isFormData ? { transformRequest: (d) => d } : {}),
       signal: api.signal,
     });
     return { data: response.data };
@@ -26,9 +34,12 @@ const customBaseQuery = () => async (rawArgs, api) => {
     if (isCancel(error)) throw error;
 
     const status = error.response?.status;
+    console.error("[customBaseQuery] error", {
+      status,
+      message: error.message,
+      isAxiosError: error.isAxiosError,
+    });
 
-    // Token expired or revoked — clear credentials and redirect to login
-    // Only do this for explicit 401s, NOT for network errors (offline)
     if (status === 401) {
       await StorageUtils.clearToken();
       api.dispatch({ type: "auth/clearCredentials" });

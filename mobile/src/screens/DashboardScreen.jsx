@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Text,
   RefreshControl,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -108,7 +109,20 @@ export default function DashboardScreen() {
           activeOpacity={0.7}
           onPress={() => navigation.navigate(RouteNames.PROFILE)}
         >
-          <Avatar name={user?.name} uri={user?.avatar} size={32} />
+          {user?.companyLogo ? (
+            <Image
+              source={{ uri: user.companyLogo }}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                borderWidth: 1.5,
+                borderColor: colors.primaryBorder,
+              }}
+            />
+          ) : (
+            <Avatar name={user?.name} uri={user?.avatar} size={32} />
+          )}
         </TouchableOpacity>
       </LinearGradient>
 

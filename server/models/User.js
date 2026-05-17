@@ -29,6 +29,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    companyLogo: {
+      type: String,
+      trim: true,
+      default: "",
+    },
   },
   { timestamps: true }
 );

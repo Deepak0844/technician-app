@@ -10,6 +10,7 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useDispatch } from "react-redux";
 import { LinearGradient } from "expo-linear-gradient";
@@ -22,8 +23,11 @@ import {
   Sun,
   Check,
   Palette,
+  Building2,
+  Camera,
 } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
+import useLogoUpload from "@hooks/useLogoUpload";
 import { setTheme, setPalette } from "@store/slices/themeSlice";
 import StorageUtils from "@utils/storageUtils";
 import { PALETTE_META } from "@constants/colors";
@@ -52,6 +56,7 @@ export default function SetupProfileScreen() {
 
   const { data: meResponse } = useGetMeQuery();
   const [updateMe, { isLoading }] = useUpdateMeMutation();
+  const { pickAndUpload, isUploading: isLogoUploading } = useLogoUpload();
 
   useEffect(() => {
     if (meResponse?.data) {
@@ -379,6 +384,140 @@ export default function SetupProfileScreen() {
             </Text>
           </View>
 
+          {/* ── Company Logo Card (Optional) ── */}
+          <View
+            style={{
+              backgroundColor: colors.bgCard,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 24,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 16,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    backgroundColor: colors.primaryBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Building2 color={colors.primary} size={16} />
+                </View>
+                <Text
+                  style={{
+                    color: colors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: "700",
+                    fontFamily: "Inter",
+                  }}
+                >
+                  Company Logo
+                </Text>
+              </View>
+              <Text
+                style={{
+                  color: colors.textFaint,
+                  fontSize: 10,
+                  fontFamily: "Inter",
+                  fontWeight: "600",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Optional
+              </Text>
+            </View>
+
+            <View style={{ alignItems: "center" }}>
+              {isLogoUploading ? (
+                <View
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: colors.bgInputDeep,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 14,
+                  }}
+                >
+                  <ActivityIndicator color={colors.primary} />
+                </View>
+              ) : meResponse?.data?.companyLogo ? (
+                <Image
+                  source={{ uri: meResponse.data.companyLogo }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    borderWidth: 2,
+                    borderColor: colors.primaryBorder,
+                    marginBottom: 14,
+                  }}
+                />
+              ) : (
+                <View
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: colors.bgInputDeep,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 2,
+                    borderStyle: "dashed",
+                    borderColor: colors.border,
+                    marginBottom: 14,
+                  }}
+                >
+                  <Building2 color={colors.textFaint} size={28} />
+                </View>
+              )}
+
+              <TouchableOpacity
+                onPress={pickAndUpload}
+                disabled={isLogoUploading}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: colors.primaryBg,
+                  borderWidth: 1,
+                  borderColor: colors.primaryBorder,
+                }}
+              >
+                <Camera color={colors.primary} size={15} />
+                <Text
+                  style={{
+                    color: colors.primary,
+                    fontFamily: "Inter",
+                    fontSize: 13,
+                    fontWeight: "600",
+                  }}
+                >
+                  {meResponse?.data?.companyLogo ? "Change Logo" : "Add Logo"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* ── Theme Picker ── */}
           <View
             style={{
@@ -573,7 +712,7 @@ export default function SetupProfileScreen() {
           {/* Continue Button */}
           <TouchableOpacity
             onPress={handleContinue}
-            disabled={isLoading}
+            disabled={isLoading || isLogoUploading}
             activeOpacity={0.85}
             style={{ borderRadius: 12, overflow: "hidden", marginBottom: 16 }}
           >

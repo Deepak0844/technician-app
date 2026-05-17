@@ -7,6 +7,7 @@ import * as authController from "#controllers/authController.js";
 // Middlewares
 import { protect } from "#middlewares/authMiddleware.js";
 import { validateBody } from "#middlewares/validateMiddleware.js";
+import { uploadLogoMiddleware } from "#middlewares/uploadMiddleware.js";
 
 // Schemas
 import {
@@ -56,5 +57,6 @@ router.put(
   validateBody(updateProfileSchema),
   authController.updateProfile,
 );
+router.post("/me/logo", protect, uploadLogoMiddleware, authController.uploadLogo);
 
 export default router;

@@ -26,6 +26,9 @@ export const ErrorMessages = {
     `Cannot delete customer with ${count} associated job(s).`,
   /** @param {string} field */
   DUPLICATE_FIELD: (field) => `A record with that ${field} already exists.`,
+  LOGO_TOO_LARGE: "Logo image must be 5 MB or smaller.",
+  LOGO_INVALID_TYPE: "Only JPEG, PNG, or WebP images are allowed.",
+  LOGO_MISSING: "No image file was provided.",
 };
 
 /**
@@ -49,6 +52,7 @@ export const SuccessMessages = {
   JOB_UPDATED: "Job updated successfully",
   JOB_REOPENED: "Job reopened successfully.",
   JOB_DELETED: "Job deleted successfully",
+  LOGO_UPLOADED: "Company logo uploaded successfully.",
   DASHBOARD_LOADED: "Dashboard summary loaded successfully",
   SERVER_HEALTHY: "Server is healthy",
 };
@@ -131,4 +135,12 @@ export const JobStatus = {
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",
   CANCELLED: "cancelled",
+};
+
+/**
+ * Upload Limits
+ */
+export const UploadLimits = {
+  LOGO_MAX_BYTES: 5 * 1024 * 1024, // 5 MB
+  ALLOWED_LOGO_MIME_TYPES: ["image/jpeg", "image/png", "image/webp"],
 };

@@ -39,6 +39,15 @@ const authEndpoints = {
       }),
       invalidatesTags: () => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
     }),
+  uploadLogo: (builder) =>
+    builder.mutation({
+      query: (formData) => ({
+        url: ApiUrls.AUTH_UPLOAD_LOGO,
+        method: "post",
+        data: formData,
+      }),
+      invalidatesTags: () => ApiUtils.listTags(TagTypes.AUTH, TagIds.ME),
+    }),
 };
 
 export const authApi = api.injectEndpoints({
@@ -48,6 +57,7 @@ export const authApi = api.injectEndpoints({
     logout: authEndpoints.logout(builder),
     getMe: authEndpoints.getMe(builder),
     updateMe: authEndpoints.updateMe(builder),
+    uploadLogo: authEndpoints.uploadLogo(builder),
   }),
   overrideExisting: false,
 });
@@ -58,4 +68,5 @@ export const {
   useLogoutMutation,
   useGetMeQuery,
   useUpdateMeMutation,
+  useUploadLogoMutation,
 } = authApi;
