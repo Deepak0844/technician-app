@@ -1,10 +1,6 @@
 // Config
 import Env from "#config/env.js";
 
-// Node built-ins
-import fs from "fs";
-import path from "path";
-
 // Constants
 import { ErrorMessages, TwoFactor } from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
@@ -85,19 +81,8 @@ async function updateProfile(userId, fields) {
 
 /**
  * Save a new logo URL to the user document.
- * Deletes the old logo file from disk if one exists.
  */
-async function saveLogoUrl(userId, logoUrl, oldLogoFilename) {
-  // Delete old logo file from disk (fire-and-forget, non-fatal)
-  if (oldLogoFilename) {
-    const oldFilePath = path.join(
-      process.cwd(),
-      "uploads",
-      "logos",
-      path.basename(oldLogoFilename),
-    );
-    fs.unlink(oldFilePath, () => {});
-  }
+async function saveLogoUrl(userId, logoUrl) {
 
   const user = await User.findByIdAndUpdate(
     userId,
