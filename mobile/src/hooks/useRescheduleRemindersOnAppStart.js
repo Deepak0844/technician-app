@@ -26,7 +26,10 @@ export default function useRescheduleRemindersOnAppStart() {
     // Guard: only run once, and only when we have real data
     if (hasRescheduled.current || !isSuccess) return;
 
-    const jobs = data?.data ?? data?.jobs ?? [];
+    const now = new Date();
+    const jobs = (data?.data ?? data?.jobs ?? []).filter(
+      (j) => j.serviceDate && new Date(j.serviceDate) > now,
+    );
     if (jobs.length === 0) return;
 
     hasRescheduled.current = true;

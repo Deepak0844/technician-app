@@ -35,7 +35,8 @@ export const jobApi = api.injectEndpoints({
           if (
             createdJob?._id &&
             createdJob.status !== "completed" &&
-            createdJob.status !== "cancelled"
+            createdJob.status !== "cancelled" &&
+            new Date(createdJob.serviceDate) > new Date()
           ) {
             await NotificationUtils.scheduleJobReminders(createdJob);
           }
@@ -61,10 +62,11 @@ export const jobApi = api.injectEndpoints({
           if (updatedJob?._id) {
             // Always cancel stale reminders first
             await NotificationUtils.cancelJobReminders(updatedJob._id);
-            // Only reschedule for active (non-terminal) jobs
+            // Only reschedule for active (non-terminal) future jobs
             if (
               updatedJob.status !== "completed" &&
-              updatedJob.status !== "cancelled"
+              updatedJob.status !== "cancelled" &&
+              new Date(updatedJob.serviceDate) > new Date()
             ) {
               await NotificationUtils.scheduleJobReminders(updatedJob);
             }

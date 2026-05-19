@@ -320,9 +320,10 @@ function buildPdfHtml({
     <div class="orb1"></div><div class="orb2"></div>
     <div class="h-top">
       <div>
-        ${companyLogo
-          ? `<img src="${companyLogo}" class="brand-logo" alt="Company Logo" />`
-          : `<div class="brand-icon">🔧</div>`
+        ${
+          companyLogo
+            ? `<img src="${companyLogo}" class="brand-logo" alt="Company Logo" />`
+            : `<div class="brand-icon">🔧</div>`
         }
         <div class="brand-name">${techName}</div>
         <div class="brand-sub">Professional Appliance Repair &amp; Maintenance</div>
@@ -406,8 +407,9 @@ function buildPdfHtml({
     </div>
 
     <!-- ═══ WARRANTY (keep together) ═══ -->
-    ${job.warranty && job.warranty !== "No Warranty"
-      ? `
+    ${
+      job.warranty && job.warranty !== "No Warranty"
+        ? `
     <div class="warranty-card no-break">
       <div class="warranty-icon">🛡️</div>
       <div>
@@ -417,12 +419,13 @@ function buildPdfHtml({
         <div class="warranty-note">Covers labour and replaced parts listed above. Void if physically damaged, tampered with, or exposed to power surges after service.</div>
       </div>
     </div>`
-      : ""
+        : ""
     }
 
     <!-- ═══ NEXT SERVICE REMINDER (keep together) ═══ -->
-    ${job.nextReminderDate
-      ? `
+    ${
+      job.nextReminderDate
+        ? `
     <div class="reminder-card no-break">
       <div style="font-size:22px;">🔔</div>
       <div>
@@ -431,7 +434,7 @@ function buildPdfHtml({
         <div class="reminder-sub">We recommend scheduling your next service on or before this date.</div>
       </div>
     </div>`
-      : ""
+        : ""
     }
 
     <!-- ═══ DIGITAL STAMP (no customer signature on digital invoice) ═══ -->
@@ -640,17 +643,17 @@ export default function InvoicePreviewScreen() {
       case JobStatuses.COMPLETED:
         return paid
           ? {
-            label: "PAID",
-            color: colors.success,
-            bg: colors.successBg,
-            border: colors.successBorder,
-          }
+              label: "PAID",
+              color: colors.success,
+              bg: colors.successBg,
+              border: colors.successBorder,
+            }
           : {
-            label: "COMPLETED",
-            color: colors.warningIcon,
-            bg: colors.warningBg,
-            border: colors.warningBorder,
-          };
+              label: "COMPLETED",
+              color: colors.warningIcon,
+              bg: colors.warningBg,
+              border: colors.warningBorder,
+            };
       case "paid":
         return {
           label: "PAID",
@@ -718,18 +721,16 @@ export default function InvoicePreviewScreen() {
   );
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
-  // Warranty start date — editable, defaults to completion date or service date
+  // Warranty start date — editable, defaults to service date
   const defaultWarrantyStart = job?.warrantyStartDate
     ? new Date(job.warrantyStartDate)
-    : job?.status === JobStatuses.COMPLETED && job?.updatedAt
-      ? new Date(job.updatedAt)
-      : new Date(job?.serviceDate);
+    : new Date(job?.serviceDate);
   const [warrantyStartDate, setWarrantyStartDate] =
     useState(defaultWarrantyStart);
   const [showWarrantyDatePicker, setShowWarrantyDatePicker] = useState(false);
 
   // Lock all editing once job is both completed AND paid.
-  // We MUST use the server-side `job.isPaid` state. If we use the local `isPaid` state, 
+  // We MUST use the server-side `job.isPaid` state. If we use the local `isPaid` state,
   // the screen locks instantly when they toggle it, hiding the Save button before they can save!
   const isContentLocked = job?.status === JobStatuses.COMPLETED;
   const isFullyLocked = job?.status === JobStatuses.COMPLETED && job?.isPaid;
@@ -858,7 +859,8 @@ export default function InvoicePreviewScreen() {
         paymentMethod,
         warrantyStartDate: warrantyStartDate.toISOString(),
         status: newStatus,
-        ...(newStatus === JobStatuses.COMPLETED && isFuture && { serviceDate: new Date().toISOString() }),
+        ...(newStatus === JobStatuses.COMPLETED &&
+          isFuture && { serviceDate: new Date().toISOString() }),
       }).unwrap();
       Alert.alert("Saved", "Invoice details saved successfully.");
     } catch {
@@ -1967,7 +1969,13 @@ export default function InvoicePreviewScreen() {
                         idx % 2 === 1 ? colors.bgSurface : "transparent",
                     }}
                   >
-                    <View style={{ flex: 1, paddingHorizontal: 2, paddingVertical: 4 }}>
+                    <View
+                      style={{
+                        flex: 1,
+                        paddingHorizontal: 2,
+                        paddingVertical: 4,
+                      }}
+                    >
                       <TextInput
                         style={{
                           fontFamily: "Inter",
@@ -1990,7 +1998,9 @@ export default function InvoicePreviewScreen() {
                           marginTop: 2,
                         }}
                         value={part.warranty || ""}
-                        onChangeText={(v) => handleChangePart(idx, "warranty", v)}
+                        onChangeText={(v) =>
+                          handleChangePart(idx, "warranty", v)
+                        }
                         placeholder="Warranty (e.g. 6 Months)"
                         placeholderTextColor={colors.textDisabled}
                         editable={!isContentLocked}
@@ -2382,7 +2392,9 @@ export default function InvoicePreviewScreen() {
 
                 {/* Warranty start date — tappable to edit */}
                 <TouchableOpacity
-                  onPress={() => !isContentLocked && setShowWarrantyDatePicker(true)}
+                  onPress={() =>
+                    !isContentLocked && setShowWarrantyDatePicker(true)
+                  }
                   activeOpacity={isContentLocked ? 1 : 0.7}
                   style={{
                     flexDirection: "row",
@@ -2404,19 +2416,25 @@ export default function InvoicePreviewScreen() {
                 >
                   <CalendarIcon
                     size={11}
-                    color={isContentLocked ? colors.textDisabled : colors.primary}
+                    color={
+                      isContentLocked ? colors.textDisabled : colors.primary
+                    }
                   />
                   <Text
                     style={{
                       fontFamily: "Inter",
                       fontSize: 11,
                       fontWeight: "600",
-                      color: isContentLocked ? colors.textDisabled : colors.primary,
+                      color: isContentLocked
+                        ? colors.textDisabled
+                        : colors.primary,
                     }}
                   >
                     Starts: {formatDate(warrantyStartDate)}
                   </Text>
-                  {!isContentLocked && <Edit3 size={10} color={colors.primary} />}
+                  {!isContentLocked && (
+                    <Edit3 size={10} color={colors.primary} />
+                  )}
                 </TouchableOpacity>
 
                 <Text

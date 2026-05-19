@@ -12,7 +12,6 @@ import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
 import { AppError } from "#utils/errorUtils.js";
-import { startOfTodayUTC } from "#utils/dateUtils.js";
 
 /**
  * Create a new job
@@ -26,17 +25,7 @@ async function createJob(userId, jobData) {
   if (!customer)
     throw new AppError(ErrorMessages.CUSTOMER_NOT_FOUND, HttpStatus.NOT_FOUND);
 
-  // Server-side past-date guard for new jobs (using mobile's timezone)
   const serviceDate = new Date(jobData.serviceDate);
-  const today = startOfTodayUTC(jobData.timezone);
-  const targetDay = new Date(serviceDate);
-  targetDay.setHours(0, 0, 0, 0, 0);
-  if (targetDay < today) {
-    throw new AppError(
-      ErrorMessages.SERVICE_DATE_IN_PAST,
-      HttpStatus.BAD_REQUEST,
-    );
-  }
 
   const job = await Job.create({
     userId,
