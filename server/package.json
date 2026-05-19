@@ -1,6 +1,6 @@
 {
   "name": "technician-app-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Technician Service Tracking App — Backend API",
   "main": "app.js",
