@@ -1,5 +1,5 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 // Controllers
 import * as authController from "#controllers/authController.js";
@@ -24,7 +24,7 @@ const sendOtpLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `phone:${req.body?.phone ?? req.ip}`,
+  keyGenerator: (req) => `phone:${req.body?.phone ?? ipKeyGenerator(req.ip)}`,
   message: "Too many OTP requests for this number. Please wait 10 minutes.",
 });
 
@@ -34,7 +34,7 @@ const verifyOtpLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `phone:${req.body?.phone ?? req.ip}`,
+  keyGenerator: (req) => `phone:${req.body?.phone ?? ipKeyGenerator(req.ip)}`,
   message:
     "Too many verification attempts for this number. Please wait 10 minutes.",
 });
