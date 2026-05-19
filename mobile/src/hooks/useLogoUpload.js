@@ -14,7 +14,10 @@ export default function useLogoUpload() {
   async function requestCameraPermission() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission Required", "Camera access is needed to take a photo.");
+      Alert.alert(
+        "Permission Required",
+        "Camera access is needed to take a photo.",
+      );
       return false;
     }
     return true;
@@ -22,9 +25,13 @@ export default function useLogoUpload() {
 
   async function requestGalleryPermission() {
     if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Photo library access is needed to pick an image.");
+        Alert.alert(
+          "Permission Required",
+          "Photo library access is needed to pick an image.",
+        );
         return false;
       }
     }
@@ -34,7 +41,10 @@ export default function useLogoUpload() {
   async function launchPicker(source) {
     const options = { allowsEditing: true, aspect: [1, 1], quality: 0.9 };
     if (source === "camera") return ImagePicker.launchCameraAsync(options);
-    return ImagePicker.launchImageLibraryAsync({ ...options, mediaTypes: "images" });
+    return ImagePicker.launchImageLibraryAsync({
+      ...options,
+      mediaTypes: "images",
+    });
   }
 
   function pickAndUpload() {
@@ -47,9 +57,10 @@ export default function useLogoUpload() {
 
   async function handleSource(source) {
     try {
-      const hasPermission = source === "camera"
-        ? await requestCameraPermission()
-        : await requestGalleryPermission();
+      const hasPermission =
+        source === "camera"
+          ? await requestCameraPermission()
+          : await requestGalleryPermission();
       if (!hasPermission) return;
 
       const result = await launchPicker(source);
@@ -69,23 +80,37 @@ export default function useLogoUpload() {
         const context = ImageManipulator.manipulate(asset.uri);
         context.resize({ width: 800 });
         const image = await context.renderAsync();
-        const saved = await image.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
+        const saved = await image.saveAsync({
+          compress: 0.85,
+          format: SaveFormat.JPEG,
+        });
         uploadUri = saved.uri;
       } catch (manipErr) {
-        console.warn("[useLogoUpload] resize failed, using original:", manipErr);
+        if (__DEV__)
+          console.warn(
+            "[useLogoUpload] resize failed, using original:",
+            manipErr,
+          );
       }
 
       const formData = new FormData();
-      formData.append("logo", { uri: uploadUri, name: "logo.jpg", type: "image/jpeg" });
+      formData.append("logo", {
+        uri: uploadUri,
+        name: "logo.jpg",
+        type: "image/jpeg",
+      });
 
       await uploadLogo(formData).unwrap();
     } catch (err) {
-      console.error("[useLogoUpload] error:", JSON.stringify(err));
+      if (__DEV__) console.error("[useLogoUpload] error:", JSON.stringify(err));
       const status = Number(err?.status ?? err?.data?.status);
       if (status === 413) {
         Alert.alert("Upload Failed", "Image must be 5 MB or smaller.");
       } else {
-        Alert.alert("Upload Failed", err?.data?.message ?? err?.message ?? "Could not upload logo.");
+        Alert.alert(
+          "Upload Failed",
+          err?.data?.message ?? err?.message ?? "Could not upload logo.",
+        );
       }
     } finally {
       setIsUploading(false);

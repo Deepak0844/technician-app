@@ -60,9 +60,10 @@ async function scheduleJobReminders(job) {
   // Ensure we have permission — request it if not yet determined
   const granted = await requestPermissions();
   if (!granted) {
-    console.warn(
-      "[NotificationUtils] Permission not granted — skipping reminder scheduling.",
-    );
+    if (__DEV__)
+      console.warn(
+        "[NotificationUtils] Permission not granted — skipping reminder scheduling.",
+      );
     return;
   }
 
@@ -152,10 +153,11 @@ async function rescheduleAllReminders(jobs) {
       await cancelJobReminders(job._id);
       await scheduleJobReminders(job);
     } catch (err) {
-      console.warn(
-        `[NotificationUtils] Failed to reschedule job ${job._id}:`,
-        err,
-      );
+      if (__DEV__)
+        console.warn(
+          `[NotificationUtils] Failed to reschedule job ${job._id}:`,
+          err,
+        );
     }
   }
 }

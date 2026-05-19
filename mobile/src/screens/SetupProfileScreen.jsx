@@ -94,7 +94,7 @@ export default function SetupProfileScreen() {
 
       dispatch(completeFirstLoginSetup());
     } catch (err) {
-      console.error("Update profile error:", err);
+      if (__DEV__) console.error("Update profile error:", err);
       Alert.alert(
         "Oops!",
         "Could not save your details. You can update them later from Profile.",
@@ -403,7 +403,9 @@ export default function SetupProfileScreen() {
                 marginBottom: 16,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
                 <View
                   style={{
                     width: 32,

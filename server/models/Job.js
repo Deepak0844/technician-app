@@ -14,7 +14,6 @@ const jobSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User ID is required"],
-      index: true,
     },
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -146,5 +145,14 @@ const jobSchema = new mongoose.Schema(
 
 // Index for date-range queries (calendar view)
 jobSchema.index({ userId: 1, serviceDate: 1 });
+// Index for status-based filtering (dashboard, list)
+jobSchema.index({ userId: 1, status: 1 });
+// Index for payment status queries
+jobSchema.index({ userId: 1, isPaid: 1 });
+// Text index for full-text search scoped to a user
+jobSchema.index(
+  { userId: 1, applianceType: "text", issue: "text", serviceDone: "text" },
+  { name: "job_text_search" },
+);
 
 export default mongoose.model("Job", jobSchema);

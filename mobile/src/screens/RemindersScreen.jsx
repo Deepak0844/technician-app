@@ -50,7 +50,7 @@ export default function RemindersScreen() {
       });
       setScheduledNotifications(sorted);
     } catch (err) {
-      console.warn("Failed to fetch notifications:", err);
+      if (__DEV__) console.warn("Failed to fetch notifications:", err);
     }
   };
 
