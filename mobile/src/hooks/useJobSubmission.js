@@ -71,21 +71,6 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
 
     if (isNaN(finalDate.getTime())) finalDate = new Date();
 
-    // Past date check for NEW jobs
-    if (!editingJob) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const targetDate = new Date(finalDate);
-      targetDate.setHours(0, 0, 0, 0);
-      if (targetDate < today) {
-        Alert.alert(
-          "Invalid Date",
-          "New jobs cannot be scheduled for past dates.",
-        );
-        return;
-      }
-    }
-
     // Force COMPLETED status when user marks a job as paid
     const resolvedStatus =
       isPaid && status !== JobStatuses.COMPLETED
