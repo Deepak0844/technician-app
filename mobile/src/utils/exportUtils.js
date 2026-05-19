@@ -95,7 +95,7 @@ export async function exportJobsToCSV(jobs) {
       UTI: "public.comma-separated-values-text", // for iOS
     });
   } catch (error) {
-    console.error("Export Error:", error);
+    if (__DEV__) console.error("Export Error:", error);
     Alert.alert(
       "Export Failed",
       "An error occurred while generating the CSV file.",

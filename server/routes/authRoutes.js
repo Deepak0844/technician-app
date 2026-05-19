@@ -18,23 +18,25 @@ import {
 
 const router = express.Router();
 
-// Stricter rate limits on OTP endpoints
-// Send OTP: max 5 requests per 10 minutes per IP (prevents OTP bombing)
+// Send OTP: max 5 per 10 minutes per phone number (prevents OTP bombing)
 const sendOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: "Too many OTP requests. Please wait 10 minutes before trying again.",
+  keyGenerator: (req) => `phone:${req.body?.phone ?? req.ip}`,
+  message: "Too many OTP requests for this number. Please wait 10 minutes.",
 });
 
-// Verify OTP: max 10 attempts per 10 minutes per IP (prevents brute force)
+// Verify OTP: max 10 attempts per 10 minutes per phone (prevents brute force)
 const verifyOtpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: "Too many OTP verification attempts. Please wait 10 minutes.",
+  keyGenerator: (req) => `phone:${req.body?.phone ?? req.ip}`,
+  message:
+    "Too many verification attempts for this number. Please wait 10 minutes.",
 });
 
 router.post(
@@ -57,6 +59,11 @@ router.put(
   validateBody(updateProfileSchema),
   authController.updateProfile,
 );
-router.post("/me/logo", protect, uploadLogoMiddleware, authController.uploadLogo);
+router.post(
+  "/me/logo",
+  protect,
+  uploadLogoMiddleware,
+  authController.uploadLogo,
+);
 
 export default router;

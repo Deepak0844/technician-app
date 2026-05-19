@@ -35,7 +35,8 @@ export default function useRescheduleRemindersOnAppStart() {
     hasRescheduled.current = true;
 
     NotificationUtils.rescheduleAllReminders(jobs).catch((err) => {
-      console.warn("[useRescheduleRemindersOnAppStart] Error:", err);
+      if (__DEV__)
+        console.warn("[useRescheduleRemindersOnAppStart] Error:", err);
     });
   }, [isSuccess, data]);
 }

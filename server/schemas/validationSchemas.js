@@ -173,7 +173,9 @@ export const customerSearchSchema = z.object({
     .string()
     .optional()
     .default("20")
-    .transform((v) => String(Math.min(Number(v) || 20, MAX_PAGE_SIZE))),
+    .transform((v) =>
+      String(Math.max(1, Math.min(Number(v) || 20, MAX_PAGE_SIZE))),
+    ),
 });
 
 /**
@@ -262,5 +264,7 @@ export const jobListQuerySchema = z.object({
     .string()
     .optional()
     .default("20")
-    .transform((v) => String(Math.min(Number(v) || 20, MAX_PAGE_SIZE))),
+    .transform((v) =>
+      String(Math.max(1, Math.min(Number(v) || 20, MAX_PAGE_SIZE))),
+    ),
 });

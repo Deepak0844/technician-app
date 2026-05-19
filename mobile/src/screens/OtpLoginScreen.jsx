@@ -59,7 +59,7 @@ export default function OtpLoginScreen() {
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.08,
@@ -74,8 +74,10 @@ export default function OtpLoginScreen() {
           useNativeDriver: true,
         }),
       ]),
-    ).start();
+    );
+    loop.start();
     return () => {
+      loop.stop();
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

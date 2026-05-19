@@ -4,13 +4,19 @@ import StorageUtils from "@utils/storageUtils";
 
 const customBaseQuery = () => async (rawArgs, api) => {
   const args = typeof rawArgs === "string" ? { url: rawArgs } : rawArgs;
-  const { url = "", method = "get", params, data, headers: callerHeaders } = args;
+  const {
+    url = "",
+    method = "get",
+    params,
+    data,
+    headers: callerHeaders,
+  } = args;
 
   const token = await StorageUtils.getToken();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   // Axios 1.x has a known bug with React Native FormData causing NETWORK_ERROR.
-  // The fix requires setting transformRequest to bypass Axios's default serializer 
+  // The fix requires setting transformRequest to bypass Axios's default serializer
   // ONLY for FormData, while letting it naturally set the multipart boundary.
   const isFormData = data != null && typeof data.append === "function";
 
@@ -34,11 +40,13 @@ const customBaseQuery = () => async (rawArgs, api) => {
     if (isCancel(error)) throw error;
 
     const status = error.response?.status;
-    console.error("[customBaseQuery] error", {
-      status,
-      message: error.message,
-      isAxiosError: error.isAxiosError,
-    });
+    if (__DEV__) {
+      console.error("[customBaseQuery] error", {
+        status,
+        message: error.message,
+        isAxiosError: error.isAxiosError,
+      });
+    }
 
     if (status === 401) {
       await StorageUtils.clearToken();
