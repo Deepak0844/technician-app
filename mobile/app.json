@@ -32,7 +32,6 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.technicianapp.mobile",
-      "googleServicesFile": "./google-services.json",
       "permissions": [
         "READ_CONTACTS",
         "WRITE_CONTACTS",
