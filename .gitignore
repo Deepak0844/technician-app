@@ -1,9 +1,12 @@
 **/node_modules/
 .env
 .agent/
+.agents/
+.claude/
 .github/
 package-lock.json
 /mobile/android/
 /mobile/ios/
 /mobile/.expo/
 /mobile/dist
+skills-lock.json
