@@ -19,20 +19,24 @@ import User from "#models/User.js";
 import TokenBlocklist from "#models/TokenBlocklist.js";
 
 /**
+ * Read the access token from the Authorization header or auth cookie.
+ * Header wins over cookie: native clients may hold a stale cookie from
+ * login while sending a freshly refreshed bearer token.
+ */
+function extractToken(req) {
+  if (req.headers.authorization?.startsWith("Bearer")) {
+    return req.headers.authorization.split(" ")[1];
+  }
+  return req.cookies?.[AUTH_COOKIE_NAME];
+}
+
+/**
  * Protect routes — validates JWT from Authorization header or cookie.
  * Also rejects tokens that have been explicitly revoked via logout.
  */
 export const protect = async (req, res, next) => {
-  let token;
-
   try {
-    // Header wins over cookie: native clients may hold a stale cookie from
-    // login while sending a freshly refreshed bearer token.
-    if (req.headers.authorization?.startsWith("Bearer")) {
-      token = req.headers.authorization.split(" ")[1];
-    } else if (req.cookies?.[AUTH_COOKIE_NAME]) {
-      token = req.cookies[AUTH_COOKIE_NAME];
-    }
+    const token = extractToken(req);
 
     if (!token) {
       return ResponseUtils.error(
@@ -83,4 +87,23 @@ export const protect = async (req, res, next) => {
       HttpStatus.UNAUTHORIZED,
     );
   }
+};
+
+/**
+ * Attach req.token / req.tokenExp when a still-valid access token is sent,
+ * but never reject. For endpoints (logout) that must work with an expired
+ * or missing access token.
+ */
+export const identifyToken = (req, res, next) => {
+  const token = extractToken(req);
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, Env.JWT_SECRET);
+      req.token = token;
+      req.tokenExp = decoded.exp;
+    } catch {
+      // Expired or malformed: nothing to blocklist
+    }
+  }
+  next();
 };

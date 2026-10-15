@@ -44,8 +44,10 @@ export const sendOtp = asyncHandler(async (req, res) => {
 export const verifyOtp = asyncHandler(async (req, res) => {
   const { phone, otp, sessionId, name } = req.body;
   const user = await AuthService.verifyOtp(phone, otp, sessionId, name);
+  const refreshToken = await AuthService.issueRefreshToken(user._id);
   return TokenUtils.sendTokenResponse(
     user,
+    refreshToken,
     HttpStatus.OK,
     res,
     SuccessMessages.LOGIN_SUCCESS,
@@ -68,13 +70,14 @@ export const refresh = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Logout — revokes the current JWT and the session's refresh token so
- *          neither can be reused even if the client still holds them.
+ * @desc    Logout — revokes the session's refresh token and, if a valid one was
+ *          sent, the current JWT. Works with an expired access token, since
+ *          holding the refresh token is proof of the session.
  * @route   POST /api/v1/auth/logout
- * @access  Private
+ * @access  Public (identifyToken attaches the access token when valid)
  */
 export const logout = asyncHandler(async (req, res) => {
-  // req.token and req.tokenExp are attached by the protect middleware
+  // req.token and req.tokenExp are attached by identifyToken when valid
   if (req.token && req.tokenExp) {
     await TokenBlocklist.findOneAndUpdate(
       { token: req.token },
@@ -87,7 +90,7 @@ export const logout = asyncHandler(async (req, res) => {
   }
 
   // Also kill the refresh token so this device can't mint new access tokens
-  await AuthService.revokeSession(req.body?.refreshToken).catch((err) => {
+  await AuthService.revokeSession(req.body.refreshToken).catch((err) => {
     logger.error({ err }, "Refresh token revocation failed during logout");
   });
 

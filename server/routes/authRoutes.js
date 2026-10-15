@@ -1,11 +1,14 @@
 import express from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
+// Constants
+import { AuthRoutes } from "#constants/generalConstants.js";
+
 // Controllers
 import * as authController from "#controllers/authController.js";
 
 // Middlewares
-import { protect } from "#middlewares/authMiddleware.js";
+import { protect, identifyToken } from "#middlewares/authMiddleware.js";
 import { validateBody } from "#middlewares/validateMiddleware.js";
 import { uploadLogoMiddleware } from "#middlewares/uploadMiddleware.js";
 
@@ -15,6 +18,7 @@ import {
   verifyOtpSchema,
   updateProfileSchema,
   refreshTokenSchema,
+  logoutSchema,
 } from "#schemas/validationSchemas.js";
 
 const router = express.Router();
@@ -40,12 +44,6 @@ const verifyOtpLimiter = rateLimit({
     "Too many verification attempts for this number. Please wait 10 minutes.",
 });
 
-router.post(
-  "/send-otp",
-  sendOtpLimiter,
-  validateBody(sendOtpSchema),
-  authController.sendOtp,
-);
 // Refresh: generous per-IP cap, tokens are high-entropy so brute force is moot
 const refreshLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -57,27 +55,39 @@ const refreshLimiter = rateLimit({
 });
 
 router.post(
-  "/verify-otp",
+  AuthRoutes.SEND_OTP,
+  sendOtpLimiter,
+  validateBody(sendOtpSchema),
+  authController.sendOtp,
+);
+router.post(
+  AuthRoutes.VERIFY_OTP,
   verifyOtpLimiter,
   validateBody(verifyOtpSchema),
   authController.verifyOtp,
 );
 router.post(
-  "/refresh",
+  AuthRoutes.REFRESH,
   refreshLimiter,
   validateBody(refreshTokenSchema),
   authController.refresh,
 );
-router.post("/logout", protect, authController.logout);
-router.get("/me", protect, authController.getMe);
+router.post(
+  AuthRoutes.LOGOUT,
+  refreshLimiter,
+  identifyToken,
+  validateBody(logoutSchema),
+  authController.logout,
+);
+router.get(AuthRoutes.ME, protect, authController.getMe);
 router.put(
-  "/me",
+  AuthRoutes.ME,
   protect,
   validateBody(updateProfileSchema),
   authController.updateProfile,
 );
 router.post(
-  "/me/logo",
+  AuthRoutes.ME_LOGO,
   protect,
   uploadLogoMiddleware,
   authController.uploadLogo,

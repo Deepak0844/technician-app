@@ -1,14 +1,19 @@
+// Node
+import crypto from "crypto";
+
 // Config
 import Env from "#config/env.js";
 
 // Constants
-import { ErrorMessages, TwoFactor } from "#constants/generalConstants.js";
+import {
+  ErrorMessages,
+  REFRESH_REUSE_GRACE_MS,
+  TwoFactor,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
 import { AppError } from "#utils/errorUtils.js";
-
-// Utils (token)
 import TokenUtils from "#utils/tokenUtils.js";
 
 // Models
@@ -97,63 +102,95 @@ async function saveLogoUrl(userId, logoUrl) {
   return user;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Create and persist a refresh token. Pass an existing `familyId` when
+ * rotating so the session lineage is preserved.
+ */
+async function issueRefreshToken(userId, familyId = crypto.randomUUID()) {
+  const token = TokenUtils.generateRefreshToken();
+  await RefreshToken.create({
+    tokenHash: TokenUtils.hashToken(token),
+    userId,
+    familyId,
+    expiresAt: new Date(Date.now() + Env.REFRESH_TOKEN_EXPIRES_DAYS * DAY_MS),
+  });
+  return token;
+}
+
+/**
+ * Revoke every refresh token of one login session.
+ */
+async function revokeFamily(familyId) {
+  await RefreshToken.deleteMany({ familyId });
+}
+
 /**
  * Exchange a refresh token for a new access token + rotated refresh token.
- * Replaying an already-used token revokes the whole session family.
+ * Replaying a used token revokes the whole session family, unless it was
+ * used moments ago — then it is a client retry after a lost response and
+ * gets a fresh pair in the same family.
  */
 async function refreshSession(rawToken) {
-  const invalid = () =>
+  const invalidRefreshError = () =>
     new AppError(ErrorMessages.REFRESH_TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
 
   const tokenHash = TokenUtils.hashToken(rawToken);
+  const now = new Date();
 
   // Atomically claim the token so two concurrent refreshes can't both succeed
-  const claimed = await RefreshToken.findOneAndUpdate(
-    { tokenHash, usedAt: null, expiresAt: { $gt: new Date() } },
-    { $set: { usedAt: new Date() } },
+  let claimed = await RefreshToken.findOneAndUpdate(
+    { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+    { $set: { usedAt: now } },
   );
 
   if (!claimed) {
-    // Known token that was already used → reuse detected, kill the session
     const existing = await RefreshToken.findOne({ tokenHash });
-    if (existing)
-      await RefreshToken.deleteMany({ familyId: existing.familyId });
-    throw invalid();
+    const isRecentRetry =
+      existing?.usedAt &&
+      existing.expiresAt > now &&
+      now - existing.usedAt < REFRESH_REUSE_GRACE_MS;
+
+    if (!isRecentRetry) {
+      if (existing) await revokeFamily(existing.familyId);
+      throw invalidRefreshError();
+    }
+    claimed = existing;
   }
 
   const user = await User.findById(claimed.userId);
   if (!user) {
-    await RefreshToken.deleteMany({ familyId: claimed.familyId });
-    throw invalid();
+    await revokeFamily(claimed.familyId);
+    throw invalidRefreshError();
   }
 
   const token = TokenUtils.signToken(user._id);
-  const refreshToken = await TokenUtils.createRefreshToken(
-    user._id,
-    claimed.familyId,
-  );
+  const refreshToken = await issueRefreshToken(user._id, claimed.familyId);
   return { token, refreshToken };
 }
 
 /**
- * Revoke the whole session (family) a refresh token belongs to.
+ * Revoke the session (family) a refresh token belongs to. Possession of the
+ * token is the proof of ownership, so no user check is needed.
  */
 async function revokeSession(rawToken) {
   if (!rawToken) return;
   const existing = await RefreshToken.findOne({
     tokenHash: TokenUtils.hashToken(rawToken),
   });
-  if (existing) await RefreshToken.deleteMany({ familyId: existing.familyId });
+  if (existing) await revokeFamily(existing.familyId);
 }
 
 const AuthService = {
-  refreshSession,
-  revokeSession,
   sendOtp,
   verifyOtp,
   getProfile,
   updateProfile,
   saveLogoUrl,
+  issueRefreshToken,
+  refreshSession,
+  revokeSession,
 };
 
 export default AuthService;

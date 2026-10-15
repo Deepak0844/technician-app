@@ -126,7 +126,7 @@ export default function ProfileScreen() {
   async function handleLogout() {
     const refreshToken = await StorageUtils.getRefreshToken();
     await logout({ refreshToken }).catch(() => {});
-    await StorageUtils.clearToken();
+    await StorageUtils.clearTokens();
     dispatch(clearCredentials());
   }
 

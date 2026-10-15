@@ -3,11 +3,13 @@ import { API_BASE_URL } from "@config/apiConfig";
 import { ApiUrls } from "@constants/appConstants";
 import StorageUtils from "@utils/storageUtils";
 
-// Endpoints whose 401 means "bad credentials", not "access token expired".
+// Endpoints whose 401 means "bad credentials" or "session already over", not
+// "access token expired" — refreshing for them would only rotate the token.
 const NO_REFRESH_URLS = [
   ApiUrls.AUTH_SEND_OTP,
   ApiUrls.AUTH_VERIFY_OTP,
   ApiUrls.AUTH_REFRESH,
+  ApiUrls.AUTH_LOGOUT,
 ];
 
 // Single in-flight refresh shared by every request that hits a 401 at once,
@@ -17,8 +19,8 @@ let refreshPromise = null;
 /**
  * Exchange the stored refresh token for a new token pair and persist it.
  * Resolves to the new access token, or null if the session can't be renewed.
- * Only an explicit rejection from the server ends the session; a network
- * failure rejects so the caller can keep the user logged in (offline use).
+ * Only an explicit rejection (400/401) ends the session; any other failure
+ * rejects so the caller can keep the user logged in (offline, rate limit, 5xx).
  */
 function refreshAccessToken() {
   if (!refreshPromise) {
@@ -30,12 +32,19 @@ function refreshAccessToken() {
           refreshToken,
         });
         const { token, refreshToken: newRefreshToken } = response.data.data;
-        await StorageUtils.saveToken(token);
-        await StorageUtils.saveRefreshToken(newRefreshToken);
+        // The old refresh token is spent, so persist the new pair first. A
+        // storage failure must not drop this request; the server's short
+        // reuse grace window only covers an immediate retry.
+        await Promise.all([
+          StorageUtils.saveToken(token),
+          StorageUtils.saveRefreshToken(newRefreshToken),
+        ]).catch(() => {});
         return token;
       } catch (error) {
-        if (error.response) return null; // server rejected the refresh token
-        throw error; // network error
+        // Only an explicit rejection ends the session; 429/5xx/network
+        // errors are transient, so keep the user signed in.
+        if ([400, 401].includes(error.response?.status)) return null;
+        throw error;
       }
     })().finally(() => {
       refreshPromise = null;
@@ -61,7 +70,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
   // ONLY for FormData, while letting it naturally set the multipart boundary.
   const isFormData = data != null && typeof data.append === "function";
 
-  const send = (token) =>
+  const sendWithToken = (token) =>
     axios({
       url: API_BASE_URL + url,
       method,
@@ -80,7 +89,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
   try {
     let response;
     try {
-      response = await send(await StorageUtils.getToken());
+      response = await sendWithToken(await StorageUtils.getToken());
     } catch (error) {
       const canRefresh =
         error.response?.status === 401 && !NO_REFRESH_URLS.includes(url);
@@ -89,7 +98,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
       // Access token expired/revoked: renew once and retry the request.
       const newToken = await refreshAccessToken();
       if (!newToken) throw error;
-      response = await send(newToken);
+      response = await sendWithToken(newToken);
     }
     return { data: response.data };
   } catch (error) {
@@ -105,7 +114,7 @@ const customBaseQuery = () => async (rawArgs, api) => {
     }
 
     if (status === 401) {
-      await StorageUtils.clearToken();
+      await StorageUtils.clearTokens();
       api.dispatch({ type: "auth/clearCredentials" });
     }
 

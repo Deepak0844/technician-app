@@ -24,12 +24,15 @@ async function getToken() {
 }
 
 /**
- * Refresh token, used to obtain a new access token when it expires.
+ * Save the refresh token used to obtain a new access token when it expires.
  */
 async function saveRefreshToken(token) {
   await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
 }
 
+/**
+ * Read the stored refresh token (null if missing or unreadable).
+ */
 async function getRefreshToken() {
   try {
     return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
@@ -41,7 +44,7 @@ async function getRefreshToken() {
 /**
  * Delete stored access + refresh tokens (on logout / failed refresh).
  */
-async function clearToken() {
+async function clearTokens() {
   await Promise.all([
     SecureStore.deleteItemAsync(TOKEN_KEY),
     SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
@@ -80,7 +83,7 @@ const StorageUtils = {
   getToken,
   saveRefreshToken,
   getRefreshToken,
-  clearToken,
+  clearTokens,
   saveTheme,
   getTheme,
   savePalette,
