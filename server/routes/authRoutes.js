@@ -14,6 +14,7 @@ import {
   sendOtpSchema,
   verifyOtpSchema,
   updateProfileSchema,
+  refreshTokenSchema,
 } from "#schemas/validationSchemas.js";
 
 const router = express.Router();
@@ -45,11 +46,27 @@ router.post(
   validateBody(sendOtpSchema),
   authController.sendOtp,
 );
+// Refresh: generous per-IP cap, tokens are high-entropy so brute force is moot
+const refreshLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => ipKeyGenerator(req.ip),
+  message: "Too many refresh attempts. Please wait a few minutes.",
+});
+
 router.post(
   "/verify-otp",
   verifyOtpLimiter,
   validateBody(verifyOtpSchema),
   authController.verifyOtp,
+);
+router.post(
+  "/refresh",
+  refreshLimiter,
+  validateBody(refreshTokenSchema),
+  authController.refresh,
 );
 router.post("/logout", protect, authController.logout);
 router.get("/me", protect, authController.getMe);

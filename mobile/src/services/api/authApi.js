@@ -22,7 +22,11 @@ const authEndpoints = {
     }),
   logout: (builder) =>
     builder.mutation({
-      query: () => ({ url: ApiUrls.AUTH_LOGOUT, method: "post" }),
+      query: (body) => ({
+        url: ApiUrls.AUTH_LOGOUT,
+        method: "post",
+        data: body,
+      }),
     }),
   getMe: (builder) =>
     builder.query({

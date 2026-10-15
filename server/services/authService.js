@@ -8,8 +8,12 @@ import { HttpStatus } from "#constants/httpConstants.js";
 // Utils
 import { AppError } from "#utils/errorUtils.js";
 
+// Utils (token)
+import TokenUtils from "#utils/tokenUtils.js";
+
 // Models
 import User from "#models/User.js";
+import RefreshToken from "#models/RefreshToken.js";
 
 /**
  * Send OTP via 2factor.in
@@ -83,7 +87,6 @@ async function updateProfile(userId, fields) {
  * Save a new logo URL to the user document.
  */
 async function saveLogoUrl(userId, logoUrl) {
-
   const user = await User.findByIdAndUpdate(
     userId,
     { $set: { companyLogo: logoUrl } },
@@ -94,7 +97,58 @@ async function saveLogoUrl(userId, logoUrl) {
   return user;
 }
 
+/**
+ * Exchange a refresh token for a new access token + rotated refresh token.
+ * Replaying an already-used token revokes the whole session family.
+ */
+async function refreshSession(rawToken) {
+  const invalid = () =>
+    new AppError(ErrorMessages.REFRESH_TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
+
+  const tokenHash = TokenUtils.hashToken(rawToken);
+
+  // Atomically claim the token so two concurrent refreshes can't both succeed
+  const claimed = await RefreshToken.findOneAndUpdate(
+    { tokenHash, usedAt: null, expiresAt: { $gt: new Date() } },
+    { $set: { usedAt: new Date() } },
+  );
+
+  if (!claimed) {
+    // Known token that was already used → reuse detected, kill the session
+    const existing = await RefreshToken.findOne({ tokenHash });
+    if (existing)
+      await RefreshToken.deleteMany({ familyId: existing.familyId });
+    throw invalid();
+  }
+
+  const user = await User.findById(claimed.userId);
+  if (!user) {
+    await RefreshToken.deleteMany({ familyId: claimed.familyId });
+    throw invalid();
+  }
+
+  const token = TokenUtils.signToken(user._id);
+  const refreshToken = await TokenUtils.createRefreshToken(
+    user._id,
+    claimed.familyId,
+  );
+  return { token, refreshToken };
+}
+
+/**
+ * Revoke the whole session (family) a refresh token belongs to.
+ */
+async function revokeSession(rawToken) {
+  if (!rawToken) return;
+  const existing = await RefreshToken.findOne({
+    tokenHash: TokenUtils.hashToken(rawToken),
+  });
+  if (existing) await RefreshToken.deleteMany({ familyId: existing.familyId });
+}
+
 const AuthService = {
+  refreshSession,
+  revokeSession,
   sendOtp,
   verifyOtp,
   getProfile,

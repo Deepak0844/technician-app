@@ -12,6 +12,7 @@ export const ApiUrls = {
   AUTH_SEND_OTP: "/auth/send-otp",
   AUTH_VERIFY_OTP: "/auth/verify-otp",
   AUTH_LOGOUT: "/auth/logout",
+  AUTH_REFRESH: "/auth/refresh",
   AUTH_ME: "/auth/me",
   AUTH_UPDATE_ME: "/auth/me",
   AUTH_UPLOAD_LOGO: "/auth/me/logo",

@@ -52,6 +52,13 @@ export const verifyOtpSchema = z.object({
 });
 
 /**
+ * Auth: Refresh / Logout (refresh token in body)
+ */
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token is required").max(256),
+});
+
+/**
  * Auth: Update Profile
  */
 export const updateProfileSchema = z.object({

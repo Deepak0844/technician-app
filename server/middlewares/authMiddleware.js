@@ -5,7 +5,10 @@ import jwt from "jsonwebtoken";
 import Env from "#config/env.js";
 
 // Constants
-import { AUTH_COOKIE_NAME, ErrorMessages } from "#constants/generalConstants.js";
+import {
+  AUTH_COOKIE_NAME,
+  ErrorMessages,
+} from "#constants/generalConstants.js";
 import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
@@ -16,17 +19,19 @@ import User from "#models/User.js";
 import TokenBlocklist from "#models/TokenBlocklist.js";
 
 /**
- * Protect routes — validates JWT from cookie or Authorization header.
+ * Protect routes — validates JWT from Authorization header or cookie.
  * Also rejects tokens that have been explicitly revoked via logout.
  */
 export const protect = async (req, res, next) => {
   let token;
 
   try {
-    if (req.cookies?.[AUTH_COOKIE_NAME]) {
-      token = req.cookies[AUTH_COOKIE_NAME];
-    } else if (req.headers.authorization?.startsWith("Bearer")) {
+    // Header wins over cookie: native clients may hold a stale cookie from
+    // login while sending a freshly refreshed bearer token.
+    if (req.headers.authorization?.startsWith("Bearer")) {
       token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies?.[AUTH_COOKIE_NAME]) {
+      token = req.cookies[AUTH_COOKIE_NAME];
     }
 
     if (!token) {

@@ -166,8 +166,9 @@ export default function OtpLoginScreen() {
         otp: otp.trim(),
         sessionId,
       }).unwrap();
-      const { token, isFirstLogin, ...user } = result?.data ?? {};
+      const { token, refreshToken, isFirstLogin, ...user } = result?.data ?? {};
       await StorageUtils.saveToken(token);
+      await StorageUtils.saveRefreshToken(refreshToken);
       dispatch(setCredentials({ token, user, isFirstLogin: !!isFirstLogin }));
       if (isFirstLogin) navigation.navigate(RouteNames.SETUP_PROFILE);
     } catch (error) {
