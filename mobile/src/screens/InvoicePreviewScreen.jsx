@@ -21,7 +21,12 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSelector } from "react-redux";
 import { useUpdateJobMutation } from "@services/api/jobApi";
 import { JobStatuses, PaymentMethods } from "@constants/appConstants";
-import { formatDate, formatCurrency } from "@utils/formatUtils";
+import {
+  formatDate,
+  formatCurrency,
+  buildBillToLines,
+  escapeHtml,
+} from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import { Text } from "@components/ui/text";
 
@@ -90,9 +95,21 @@ function buildPdfHtml({
   const C1_bg = C1 + "22";
   const C1_border = C1 + "44";
   const partsUsed = job.partsUsed || [];
-  const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
-  const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
-  const customerAddress = job.location?.address || "";
+  // Only the Bill To lines the technician chose to show (display-only)
+  const billToLines = buildBillToLines(job);
+  const billToIcons = { phone: "📞 ", address: "📍 " };
+  const billToHtml = billToLines.length
+    ? `<div class="billing-card">
+        <div class="billing-tag to">Bill To</div>
+        ${billToLines
+          .map((l, i) =>
+            i === 0 && (l.kind === "organization" || l.kind === "name")
+              ? `<div class="billing-name">${escapeHtml(l.text)}</div>`
+              : `<div class="billing-row">${billToIcons[l.kind] || ""}${escapeHtml(l.text)}</div>`,
+          )
+          .join("")}
+      </div>`
+    : "";
 
   const techName = techInfo?.companyName || techInfo?.name || "TechServ Pro";
   const techPersonName = techInfo?.name || "";
@@ -347,7 +364,7 @@ function buildPdfHtml({
   <div class="body">
 
     <!-- ═══ BILLING (keep together) ═══ -->
-    <div class="billing-grid no-break">
+    <div class="billing-grid no-break"${billToLines.length ? "" : ' style="grid-template-columns:1fr;"'}>
       <div class="billing-card">
         <div class="billing-tag from">Service Provider</div>
         <div class="billing-name">${techName}</div>
@@ -357,12 +374,7 @@ function buildPdfHtml({
         ${techAddress ? `<div class="billing-row">📍 ${techAddress}</div>` : ""}
         ${gstNumber ? `<div class="gst-tag">GSTIN: ${gstNumber}</div>` : ""}
       </div>
-      <div class="billing-card">
-        <div class="billing-tag to">Bill To</div>
-        <div class="billing-name">${customerName}</div>
-        <div class="billing-row">📞 ${customerPhone}</div>
-        ${customerAddress ? `<div class="billing-row">📍 ${customerAddress}</div>` : ""}
-      </div>
+      ${billToHtml}
     </div>
 
     <!-- ═══ SERVICE INFO (keep together) ═══ -->
@@ -788,7 +800,13 @@ export default function InvoicePreviewScreen() {
   const invoiceNumber = generateInvoiceNumber(job._id);
   const statusConfig = getStatusConfig(job.status, isPaid);
   const customerName = job.customerId?.name ?? job.customerName ?? "N/A";
-  const customerPhone = job.customerId?.phone ?? job.customerPhone ?? "N/A";
+  // Real customer name is kept for non-invoice uses (WhatsApp greeting).
+  // What the invoice displays comes from billToLines.
+  const billToLines = buildBillToLines(job);
+  const headerLine = billToLines.find(
+    (l) => l.kind === "organization" || l.kind === "name",
+  );
+  const showsCustomerName = billToLines.some((l) => l.kind === "name");
   const partsTotal = partsUsed.reduce(
     (acc, p) => acc + (Number(p.price) || 0) * (Number(p.quantity) || 0),
     0,
@@ -1281,7 +1299,8 @@ export default function InvoicePreviewScreen() {
             </View>
 
             <View style={{ flexDirection: "row", gap: 10, marginBottom: 16 }}>
-              {/* Customer */}
+              {/* Customer / organization (hidden when neither is chosen) */}
+              {headerLine ? (
               <View
                 style={{
                   flex: 1,
@@ -1302,7 +1321,7 @@ export default function InvoicePreviewScreen() {
                     marginBottom: 5,
                   }}
                 >
-                  Customer
+                  {headerLine.kind === "organization" ? "Bill To" : "Customer"}
                 </Text>
                 <Text
                   style={{
@@ -1313,9 +1332,10 @@ export default function InvoicePreviewScreen() {
                   }}
                   numberOfLines={1}
                 >
-                  {customerName}
+                  {headerLine.text}
                 </Text>
               </View>
+              ) : null}
 
               {/* Job Ref */}
               <View
@@ -1562,7 +1582,8 @@ export default function InvoicePreviewScreen() {
               ) : null}
             </Card>
 
-            {/* BILL TO card */}
+            {/* BILL TO card (only the lines the technician chose to show) */}
+            {billToLines.length > 0 ? (
             <Card colors={colors} style={{ flex: 1, margin: 0, padding: 14 }}>
               <Text
                 style={{
@@ -1577,87 +1598,88 @@ export default function InvoicePreviewScreen() {
               >
                 BILL TO
               </Text>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  marginBottom: 6,
-                }}
-              >
-                <View
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 8,
-                    backgroundColor: colors.secondaryBg,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <User size={13} color={colors.secondary} />
-                </View>
-                <Text
-                  style={{
-                    fontFamily: "Space Grotesk",
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: colors.textPrimary,
-                    flex: 1,
-                  }}
-                  numberOfLines={2}
-                >
-                  {customerName}
-                </Text>
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 5,
-                  marginBottom: 3,
-                }}
-              >
-                <Phone size={10} color={colors.textMuted} />
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 10,
-                    color: colors.textMuted,
-                  }}
-                >
-                  {customerPhone}
-                </Text>
-              </View>
-              {job?.location?.address ? (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "flex-start",
-                    gap: 5,
-                    marginTop: 2,
-                  }}
-                >
-                  <MapPin
-                    size={10}
-                    color={colors.textMuted}
-                    style={{ marginTop: 1 }}
-                  />
-                  <Text
+              {billToLines.map((line, idx) => {
+                const isHeader =
+                  idx === 0 &&
+                  (line.kind === "organization" || line.kind === "name");
+                if (isHeader) {
+                  const HeaderIcon =
+                    line.kind === "organization" ? Building2 : User;
+                  return (
+                    <View
+                      key={line.kind}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 8,
+                          backgroundColor: colors.secondaryBg,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <HeaderIcon size={13} color={colors.secondary} />
+                      </View>
+                      <Text
+                        style={{
+                          fontFamily: "Space Grotesk",
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: colors.textPrimary,
+                          flex: 1,
+                        }}
+                        numberOfLines={2}
+                      >
+                        {line.text}
+                      </Text>
+                    </View>
+                  );
+                }
+                const RowIcon =
+                  line.kind === "phone"
+                    ? Phone
+                    : line.kind === "address"
+                      ? MapPin
+                      : User;
+                return (
+                  <View
+                    key={line.kind}
                     style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      color: colors.textMuted,
-                      flex: 1,
-                      lineHeight: 14,
+                      flexDirection: "row",
+                      alignItems: "flex-start",
+                      gap: 5,
+                      marginBottom: 3,
                     }}
-                    numberOfLines={3}
                   >
-                    {job.location.address}
-                  </Text>
-                </View>
-              ) : null}
+                    <RowIcon
+                      size={10}
+                      color={colors.textMuted}
+                      style={{ marginTop: 1 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        color: colors.textMuted,
+                        flex: 1,
+                        lineHeight: 14,
+                      }}
+                      numberOfLines={3}
+                    >
+                      {line.text}
+                    </Text>
+                  </View>
+                );
+              })}
             </Card>
+            ) : null}
           </View>
 
           {/* ══ SERVICE DETAILS ══ */}
@@ -2631,7 +2653,9 @@ export default function InvoicePreviewScreen() {
                 marginBottom: 4,
               }}
             >
-              Thank you, {customerName.split(" ")[0]}!
+              {showsCustomerName
+                ? `Thank you, ${customerName.split(" ")[0]}!`
+                : "Thank you!"}
             </Text>
             <Text
               style={{

@@ -79,3 +79,58 @@ export const formatDateShort = (dateStr) => {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   return `${day}/${month}`;
 };
+
+/**
+ * Defaults for which Bill To details the invoice shows. Jobs fetched with
+ * .lean() (and jobs created before this feature) have no invoiceDisplay, so
+ * callers must never rely on the server to fill these in.
+ */
+export const DEFAULT_INVOICE_DISPLAY = {
+  showCustomerName: true,
+  showCustomerPhone: true,
+  showOrganization: false,
+  showAddress: true,
+};
+
+/**
+ * Escapes user-entered text for safe interpolation into invoice HTML.
+ */
+export const escapeHtml = (val) =>
+  String(val ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/**
+ * Returns the Bill To lines the invoice should print, in order:
+ * organization, customer name, phone, address.
+ *
+ * A line is included only when its checkbox is on AND it has a value, so
+ * nothing unchecked leaves an empty row or a stray icon. Display-only: the
+ * job and customer data are never modified.
+ */
+export const buildBillToLines = (job) => {
+  const display = {
+    ...DEFAULT_INVOICE_DISPLAY,
+    ...(job?.invoiceDisplay || {}),
+  };
+  const clean = (v) => (typeof v === "string" ? v.trim() : "");
+
+  const organization = clean(job?.organization?.name);
+  const name = clean(job?.customerId?.name ?? job?.customerName);
+  const phone = clean(job?.customerId?.phone ?? job?.customerPhone);
+  // A different address typed for the invoice wins over the service location
+  const address = clean(job?.invoiceAddress) || clean(job?.location?.address);
+
+  const lines = [];
+  if (display.showOrganization && organization)
+    lines.push({ kind: "organization", text: organization });
+  if (display.showCustomerName && name)
+    lines.push({ kind: "name", text: name });
+  if (display.showCustomerPhone && phone)
+    lines.push({ kind: "phone", text: phone });
+  if (display.showAddress && address)
+    lines.push({ kind: "address", text: address });
+  return lines;
+};

@@ -1,4 +1,7 @@
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   FlatList,
@@ -14,6 +17,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { RouteNames } from "@constants/routeNames";
 import { useSelector } from "react-redux";
 import {
   ArrowLeft,
@@ -41,6 +45,8 @@ import { Text } from "@components/ui/text";
 import { Input, InputField } from "@components/ui/input";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
+// The tab bar floats over content (90px tall), so tab screens leave room for it
+const TAB_BAR_CLEARANCE = 150;
 
 const PAYMENT_OPTIONS = [
   { id: undefined, label: "All", Icon: LayoutList },
@@ -51,6 +57,9 @@ const PAYMENT_OPTIONS = [
 export default function JobHistoryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
+  // Opened from a customer (stack screen, no tab bar) vs. the History tab
+  const isStackScreen = route.name === RouteNames.CUSTOMER_JOB_HISTORY;
   const { colors } = useTheme();
   const user = useSelector((state) => state.auth.user);
   const [search, setSearch] = useState("");
@@ -345,7 +354,11 @@ export default function JobHistoryScreen() {
             showsVerticalScrollIndicator={false}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 150 }}
+            contentContainerStyle={{
+              paddingBottom: isStackScreen
+                ? insets.bottom + 24
+                : TAB_BAR_CLEARANCE,
+            }}
             onScrollBeginDrag={() => {
               hasScrolledRef.current = true;
             }}

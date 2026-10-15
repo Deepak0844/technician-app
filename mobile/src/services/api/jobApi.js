@@ -85,6 +85,14 @@ export const jobApi = api.injectEndpoints({
       query: (id) => ({ url: ApiUrls.JOB_BY_ID(id) }),
       providesTags: ApiUtils.entityTags(TagTypes.JOBS),
     }),
+    getRecentOrganizations: builder.query({
+      query: (q) => ({
+        url: ApiUrls.JOBS_RECENT_ORGANIZATIONS,
+        params: q ? { q } : undefined,
+      }),
+      // Refetch whenever jobs change (a new job may add an organization)
+      providesTags: ApiUtils.listTags(TagTypes.JOBS),
+    }),
     getJobsByCustomer: builder.query({
       query: (customerId) => ({ url: ApiUrls.JOBS_BY_CUSTOMER(customerId) }),
       providesTags: ApiUtils.paginatedTags(TagTypes.JOBS),
@@ -151,6 +159,7 @@ export const {
   useCreateJobMutation,
   useUpdateJobMutation,
   useGetJobByIdQuery,
+  useGetRecentOrganizationsQuery,
   useGetJobsByCustomerQuery,
   useGetJobsByCustomerPagedInfiniteQuery,
   useRepeatJobMutation,

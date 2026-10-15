@@ -18,6 +18,10 @@ export const ErrorMessages = {
     "Only jobs that are completed and paid can be reopened.",
   CANCELLED_JOB_TRANSITION:
     "A cancelled job can only be reactivated to Pending.",
+  ORGANIZATION_NAME_REQUIRED:
+    "Organisation name is required to show it on the invoice.",
+  BILL_TO_NAME_REQUIRED:
+    "Show either the customer name or the organisation name on the invoice.",
   VALIDATION_FAILED: "Validation failed",
   RATE_LIMIT_EXCEEDED:
     "Too many requests from this IP, please try again after 15 minutes",
