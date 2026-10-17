@@ -1,6 +1,7 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
+import { getApplianceLabel } from "@utils/formatUtils";
 
 // Reminder windows in minutes before the service date
 const REMINDER_MINUTES = [60, 30, 15];
@@ -91,7 +92,7 @@ async function scheduleJobReminders(job) {
     if (customerName) titleParts.push(`– ${customerName}`);
     const title = titleParts.join(" ");
 
-    const bodyParts = [`${job.applianceType} service in ${label}.`];
+    const bodyParts = [`${getApplianceLabel(job)} service in ${label}.`];
     if (job.issue) bodyParts.push(`Issue: ${job.issue}`);
     if (address) bodyParts.push(`📍 ${address}`);
     const body = bodyParts.join(" ");

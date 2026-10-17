@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 // Constants
 import {
-  ApplianceTypes,
+  ApplianceLimits,
   JobStatus,
   PriorityLevels,
   PaymentMethods,
@@ -21,9 +21,25 @@ const jobSchema = new mongoose.Schema(
       required: [true, "Customer ID is required"],
       index: true,
     },
+    // The appliances serviced on this job (preset or technician-typed names).
+    appliances: [
+      {
+        _id: false,
+        type: {
+          type: String,
+          trim: true,
+          required: true,
+          maxlength: ApplianceLimits.MAX_NAME_LENGTH,
+        },
+        isCustom: { type: Boolean, default: false },
+        brand: { type: String, trim: true, default: "" },
+      },
+    ],
+    // Summary of `appliances` ("AC, Refrigerator"). Jobs saved before
+    // multi-appliance support only have this field.
     applianceType: {
       type: String,
-      enum: Object.values(ApplianceTypes),
+      trim: true,
       required: [true, "Appliance type is required"],
     },
     issue: {

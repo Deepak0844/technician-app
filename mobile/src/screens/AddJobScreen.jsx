@@ -22,7 +22,6 @@ import {
   useGetCustomersQuery,
 } from "@services/api/customerApi";
 import {
-  ApplianceTypes,
   PriorityLevels,
   JobStatuses,
   PaymentMethods,
@@ -31,6 +30,7 @@ import { RouteNames } from "@constants/routeNames";
 import {
   DEFAULT_INVOICE_DISPLAY,
   PAST_JOB_DEFAULT_TIME,
+  getJobAppliances,
   isBeforeToday,
 } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
@@ -98,7 +98,7 @@ export default function AddJobScreen() {
 
   React.useEffect(() => {
     if (editingJob) {
-      setAppliance(editingJob.applianceType || ApplianceTypes[0]);
+      setAppliances(getJobAppliances(editingJob));
       setIssue(editingJob.issue || "");
 
       const baseAmount = parseFloat(editingJob.amount) || 0;
@@ -167,8 +167,8 @@ export default function AddJobScreen() {
     }
   }, [customerDetailsResponse, selectedCustomer]);
 
-  const [appliance, setAppliance] = useState(
-    editingJob?.applianceType ?? ApplianceTypes[0],
+  const [appliances, setAppliances] = useState(() =>
+    editingJob ? getJobAppliances(editingJob) : [],
   );
   const [issue, setIssue] = useState(editingJob?.issue ?? "");
   const [serviceDone, setServiceDone] = useState(editingJob?.serviceDone ?? "");
@@ -308,7 +308,7 @@ export default function AddJobScreen() {
     suggestedStatusRef.current = false;
     suggestedTimeRef.current = false;
     setSelectedCustomer(initialCustomer || null);
-    setAppliance(ApplianceTypes[0]);
+    setAppliances([]);
     setIssue("");
     setServiceDone("");
     setDiagnosticFee("");
@@ -460,7 +460,7 @@ export default function AddJobScreen() {
   async function handleSubmit() {
     await submitJob({
       selectedCustomer,
-      appliance,
+      appliances,
       issue,
       serviceDone,
       diagnosticFee,
@@ -590,8 +590,8 @@ export default function AddJobScreen() {
           />
 
           <JobDetailsForm
-            appliance={appliance}
-            setAppliance={setAppliance}
+            appliances={appliances}
+            setAppliances={setAppliances}
             issue={issue}
             setIssue={setIssue}
             serviceDone={serviceDone}

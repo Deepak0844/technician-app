@@ -23,6 +23,10 @@ import {
   isSameMinute,
   movedWarrantyStart,
 } from "#utils/jobDateUtils.js";
+import { getJobAppliances } from "#utils/applianceUtils.js";
+
+// Escape regex special characters to prevent SyntaxError and ReDoS
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * Create a new job
@@ -99,7 +103,16 @@ async function getJobs(
 
   if (customerId) query.customerId = customerId;
   if (status) query.status = status;
-  if (applianceType) query.applianceType = applianceType;
+  if (applianceType) {
+    // Matches any appliance on the job. Jobs saved before multi-appliance
+    // support only have `applianceType`.
+    const exactName = new RegExp(`^${escapeRegex(applianceType)}$`, "i");
+    query.$or = [
+      { "appliances.type": { $regex: exactName } },
+      // LEGACY: remove after the data migration
+      { applianceType: { $regex: exactName } },
+    ];
+  }
   if (isPaid !== undefined) query.isPaid = isPaid;
 
   if (startDate || endDate) {
@@ -119,8 +132,6 @@ async function getJobs(
       .slice(0, MAX_KEYWORDS)
       .map((kw) => kw.slice(0, MAX_KEYWORD_LENGTH));
 
-    // Escape regex special characters to prevent SyntaxError and ReDoS
-    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regexps = keywords.map((kw) => new RegExp(escapeRegex(kw), "i"));
 
     query.$and = regexps.map((regex) => ({
@@ -200,6 +211,7 @@ async function repeatJob(userId, jobId) {
   const repeated = await Job.create({
     userId: original.userId,
     customerId: original.customerId,
+    appliances: getJobAppliances(original),
     applianceType: original.applianceType,
     issue: original.issue,
     serviceDone: "",
@@ -492,6 +504,50 @@ async function getRecentOrganizations(userId, { q = "", limit = 10 } = {}) {
   return rows;
 }
 
+/**
+ * Get the appliance names the user has used on past jobs (distinct,
+ * newest first), optionally narrowed to names starting with `q`.
+ */
+async function getRecentAppliances(userId, { q = "", limit = 10 } = {}) {
+  const pipeline = [
+    { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+    { $sort: { createdAt: -1 } },
+    {
+      $project: {
+        createdAt: 1,
+        // LEGACY: jobs without `appliances` fall back to applianceType
+        names: {
+          $cond: [
+            { $gt: [{ $size: { $ifNull: ["$appliances", []] } }, 0] },
+            "$appliances.type",
+            [{ $ifNull: ["$applianceType", ""] }],
+          ],
+        },
+      },
+    },
+    { $unwind: "$names" },
+    { $match: { names: { $nin: [null, ""] } } },
+  ];
+  if (q) {
+    pipeline.push({
+      $match: { names: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
+    });
+  }
+  pipeline.push(
+    {
+      $group: {
+        _id: { $toLower: "$names" },
+        name: { $first: "$names" },
+        lastUsed: { $first: "$createdAt" },
+      },
+    },
+    { $sort: { lastUsed: -1 } },
+    { $limit: limit },
+    { $project: { _id: 0, name: 1 } },
+  );
+  return Job.aggregate(pipeline);
+}
+
 async function getJobById(userId, jobId) {
   const job = await Job.findOne({ _id: jobId, userId })
     .populate("customerId", "name phone address")
@@ -556,6 +612,7 @@ const JobService = {
   getJobsByCustomer,
   changeServiceDate,
   getRecentOrganizations,
+  getRecentAppliances,
   getJobById,
   repeatJob,
   updateJob,

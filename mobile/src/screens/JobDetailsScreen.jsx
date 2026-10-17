@@ -50,7 +50,7 @@ import {
   PriorityLevels,
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
-import { formatCurrency } from "@utils/formatUtils";
+import { formatCurrency, getApplianceLabel } from "@utils/formatUtils";
 import ChangeServiceDateModal from "@components/ChangeServiceDateModal";
 import useTheme from "@hooks/useTheme";
 
@@ -590,7 +590,7 @@ export default function JobDetailsScreen() {
               marginBottom: 8,
             }}
           >
-            {job?.applianceType || "General Service"}
+            {getApplianceLabel(job) || "General Service"}
           </Text>
 
           <View

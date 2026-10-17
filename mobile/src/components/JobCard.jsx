@@ -3,7 +3,11 @@ import { View, TouchableOpacity } from "react-native";
 import { CalendarDays } from "lucide-react-native";
 import { HStack } from "@components/ui/hstack";
 import { Text } from "@components/ui/text";
-import { formatCurrency, formatDate } from "@utils/formatUtils";
+import {
+  formatCurrency,
+  formatDate,
+  getApplianceLabel,
+} from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 
 const TODAY_STR = new Date().toISOString().split("T")[0];
@@ -160,7 +164,7 @@ export default function JobCard({ job, onPress }) {
             marginBottom: 10,
           }}
         >
-          {job.applianceType}
+          {getApplianceLabel(job, { max: 2 })}
           {job.issue ? (
             <Text
               style={{
