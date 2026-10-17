@@ -16,6 +16,7 @@ import {
   createJobSchema,
   updateJobSchema,
   jobListQuerySchema,
+  changeServiceDateSchema,
   recentOrganizationsQuerySchema,
 } from "#schemas/validationSchemas.js";
 
@@ -47,6 +48,12 @@ router.put(
   validateObjectId("jobId"),
   validateBody(updateJobSchema),
   jobController.updateJob,
+);
+router.patch(
+  "/:jobId/service-date",
+  validateObjectId("jobId"),
+  validateBody(changeServiceDateSchema),
+  jobController.changeServiceDate,
 );
 router.delete("/:jobId", validateObjectId("jobId"), jobController.deleteJob);
 router.post(

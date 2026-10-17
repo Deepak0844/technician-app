@@ -4,13 +4,14 @@ import {
   Activity,
   Calendar as CalendarIcon,
   Clock,
+  History,
   ChevronRight,
   CreditCard,
   CheckCircle2,
   XCircle,
 } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
-import { formatDate } from "@utils/formatUtils";
+import { formatDate, isBeforeToday } from "@utils/formatUtils";
 
 const TimelineSection = ({
   serviceDate,
@@ -129,6 +130,39 @@ const TimelineSection = ({
             </View>
             <ChevronRight size={16} color={colors.textDisabled} />
           </TouchableOpacity>
+
+          {/* Back-dated job notice */}
+          {isBeforeToday(serviceDate) && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                borderRadius: 12,
+                backgroundColor: colors.warningBg,
+                borderWidth: 1,
+                borderColor: colors.warningBorder,
+              }}
+            >
+              <History size={16} color={colors.warningIcon} />
+              <Text
+                style={{
+                  flex: 1,
+                  fontFamily: "Inter",
+                  fontSize: 12,
+                  lineHeight: 17,
+                  fontWeight: "600",
+                  color: colors.warningIcon,
+                }}
+              >
+                {status === "completed"
+                  ? `Past job: will be recorded as completed on ${formatDate(serviceDate)}.`
+                  : `Past job: dated ${formatDate(serviceDate)}.`}
+              </Text>
+            </View>
+          )}
 
           {/* Service Time Row */}
           <TouchableOpacity

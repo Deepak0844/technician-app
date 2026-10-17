@@ -15,6 +15,14 @@ import { HttpStatus } from "#constants/httpConstants.js";
 // Utils
 import { AppError } from "#utils/errorUtils.js";
 import { getBillToError } from "#utils/invoiceUtils.js";
+import {
+  assertCompletableDate,
+  completedAtFromServiceDate,
+  formatDay,
+  isBackdated,
+  isSameMinute,
+  movedWarrantyStart,
+} from "#utils/jobDateUtils.js";
 
 /**
  * Create a new job
@@ -30,9 +38,23 @@ async function createJob(userId, jobData) {
 
   const serviceDate = new Date(jobData.serviceDate);
 
+  // A paid job is always completed. A job saved as completed gets its
+  // completed date now, so earnings land in the right period: the service
+  // date for a back-dated job, never a future date.
+  const status = jobData.isPaid
+    ? JobStatus.COMPLETED
+    : jobData.status || JobStatus.PENDING;
+  let completedAt = null;
+  if (status === JobStatus.COMPLETED) {
+    assertCompletableDate(serviceDate);
+    completedAt = completedAtFromServiceDate(serviceDate);
+  }
+
   const job = await Job.create({
     userId,
     ...jobData,
+    status,
+    completedAt,
     serviceDate,
     nextReminderDate: jobData.nextReminderDate
       ? new Date(jobData.nextReminderDate)
@@ -40,9 +62,11 @@ async function createJob(userId, jobData) {
     events: [
       {
         action: "created",
-        to: jobData.status || JobStatus.PENDING,
+        to: status,
         isPaid: jobData.isPaid || false,
-        note: "Job created.",
+        note: isBackdated(serviceDate)
+          ? `Job created (back-dated to ${formatDay(serviceDate)}).`
+          : "Job created.",
         at: new Date(),
       },
     ],
@@ -294,13 +318,44 @@ async function updateJob(userId, jobId, updateData) {
     });
   }
 
-  // Record the exact timestamp when a job transitions to COMPLETED so the
-  // dashboard can group earnings by actual completion date (not updatedAt).
+  // Completed date, so the dashboard can group earnings by when the job was
+  // actually done (not updatedAt):
+  // - finishing a job without touching its date: now
+  // - saved as completed with a changed service date (back-dating): that date
+  // - leaving completed: no completed date until it is completed again
+  const finalStatus = updateData.status ?? job.status;
+  const newServiceDate = updateData.serviceDate
+    ? new Date(updateData.serviceDate)
+    : null;
+  const serviceDateChanged =
+    !!newServiceDate && !isSameMinute(newServiceDate, new Date(job.serviceDate));
   const completingNow =
-    updateData.status === JobStatus.COMPLETED &&
-    job.status !== JobStatus.COMPLETED;
-  if (completingNow && !updateData.completedAt) {
-    updateData.completedAt = new Date();
+    finalStatus === JobStatus.COMPLETED && job.status !== JobStatus.COMPLETED;
+
+  if (finalStatus === JobStatus.COMPLETED && serviceDateChanged) {
+    assertCompletableDate(newServiceDate);
+  }
+  if (finalStatus === JobStatus.COMPLETED) {
+    if (serviceDateChanged) {
+      updateData.completedAt = completedAtFromServiceDate(newServiceDate);
+      if (!completingNow && updateData.warrantyStartDate === undefined) {
+        const moved = movedWarrantyStart(job, updateData.completedAt);
+        if (moved) updateData.warrantyStartDate = moved;
+      }
+    } else if (completingNow) {
+      updateData.completedAt = new Date();
+    }
+  } else if (job.status === JobStatus.COMPLETED) {
+    updateData.completedAt = null;
+  }
+  if (serviceDateChanged) {
+    newEvents.push({
+      action: "edited",
+      from: formatDay(new Date(job.serviceDate)),
+      to: formatDay(newServiceDate),
+      note: `Service date changed from ${formatDay(new Date(job.serviceDate))} to ${formatDay(newServiceDate)}.`,
+      at: new Date(),
+    });
   }
 
   const { invoiceDisplay, organization, ...rest } = updateData;
@@ -355,6 +410,57 @@ async function updateJob(userId, jobId, updateData) {
     .lean();
 
   return updated;
+}
+
+/**
+ * Change only the service date of a job, including a completed + paid one
+ * (no reopen, status and payment untouched). A completed job's completed
+ * date follows the new date, so it moves to the right day, week and month.
+ */
+async function changeServiceDate(userId, jobId, serviceDateInput) {
+  const job = await Job.findOne({ _id: jobId, userId });
+  if (!job)
+    throw new AppError(ErrorMessages.JOB_NOT_FOUND, HttpStatus.NOT_FOUND);
+  if (job.status === JobStatus.CANCELLED)
+    throw new AppError(
+      ErrorMessages.CANCELLED_JOB_DATE_LOCKED,
+      HttpStatus.BAD_REQUEST,
+    );
+
+  const newServiceDate = new Date(serviceDateInput);
+  const oldServiceDate = new Date(job.serviceDate);
+  const isCompleted = job.status === JobStatus.COMPLETED;
+  if (isCompleted) assertCompletableDate(newServiceDate);
+
+  const set = { serviceDate: newServiceDate };
+  if (isCompleted) {
+    set.completedAt = completedAtFromServiceDate(newServiceDate);
+    const moved = movedWarrantyStart(job, set.completedAt);
+    if (moved) set.warrantyStartDate = moved;
+  }
+
+  if (isSameMinute(newServiceDate, oldServiceDate)) {
+    return Job.findById(jobId).populate("customerId", "name phone address").lean();
+  }
+
+  return Job.findByIdAndUpdate(
+    jobId,
+    {
+      $set: set,
+      $push: {
+        events: {
+          action: "edited",
+          from: formatDay(oldServiceDate),
+          to: formatDay(newServiceDate),
+          note: `Service date changed from ${formatDay(oldServiceDate)} to ${formatDay(newServiceDate)}.`,
+          at: new Date(),
+        },
+      },
+    },
+    { new: true, runValidators: true },
+  )
+    .populate("customerId", "name phone address")
+    .lean();
 }
 
 /**
@@ -423,7 +529,8 @@ async function reopenJob(userId, jobId) {
   const updated = await Job.findByIdAndUpdate(
     jobId,
     {
-      $set: { status: JobStatus.IN_PROGRESS, isPaid: false },
+      // A reopened job has no completed date until it is completed again
+      $set: { status: JobStatus.IN_PROGRESS, isPaid: false, completedAt: null },
       $push: {
         events: {
           action: "reopened",
@@ -447,6 +554,7 @@ const JobService = {
   createJob,
   getJobs,
   getJobsByCustomer,
+  changeServiceDate,
   getRecentOrganizations,
   getJobById,
   repeatJob,

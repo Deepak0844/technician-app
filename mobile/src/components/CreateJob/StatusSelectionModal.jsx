@@ -17,12 +17,18 @@ const StatusSelectionModal = ({
   status,
   onSelectStatus,
   isNewJob,
+  allowCompletedForNew = false,
 }) => {
   const { colors } = useTheme();
 
-  // New jobs can only be PENDING or IN_PROGRESS
+  // New jobs can only be PENDING or IN_PROGRESS, plus COMPLETED when the job
+  // is back-dated (its service date is in the past).
   const allowedStatuses = isNewJob
-    ? [JobStatuses.PENDING, JobStatuses.IN_PROGRESS]
+    ? [
+        JobStatuses.PENDING,
+        JobStatuses.IN_PROGRESS,
+        ...(allowCompletedForNew ? [JobStatuses.COMPLETED] : []),
+      ]
     : Object.values(JobStatuses);
 
   return (

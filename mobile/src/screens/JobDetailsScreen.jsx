@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Info,
   RotateCcw,
+  CalendarClock,
   XCircle,
   RotateCw,
   CreditCard,
@@ -41,6 +42,7 @@ import {
   useRepeatJobMutation,
   useUpdateJobMutation,
   useReopenJobMutation,
+  useChangeServiceDateMutation,
 } from "@services/api/jobApi";
 import {
   JobStatuses,
@@ -49,6 +51,7 @@ import {
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
 import { formatCurrency } from "@utils/formatUtils";
+import ChangeServiceDateModal from "@components/ChangeServiceDateModal";
 import useTheme from "@hooks/useTheme";
 
 export default function JobDetailsScreen() {
@@ -71,9 +74,13 @@ export default function JobDetailsScreen() {
   const [repeatJob, { isLoading: isRepeating }] = useRepeatJobMutation();
   const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
   const [reopenJob, { isLoading: isReopening }] = useReopenJobMutation();
+  const [changeServiceDate, { isLoading: isChangingDate }] =
+    useChangeServiceDateMutation();
+  const [showChangeDate, setShowChangeDate] = React.useState(false);
   const [activityOpen, setActivityOpen] = React.useState(false);
 
-  const isSyncing = isDeleting || isRepeating || isUpdating || isReopening;
+  const isSyncing =
+    isDeleting || isRepeating || isUpdating || isReopening || isChangingDate;
 
   const job = jobResponse?.data ?? initialJob;
 
@@ -118,6 +125,18 @@ export default function JobDetailsScreen() {
 
   // Job is scheduled for a future date
   const isFutureJob = new Date(job.serviceDate) > new Date();
+
+  // Completed + paid jobs are locked; this changes only the date and time
+  // (no reopen, status and payment untouched).
+  const handleChangeDate = async (serviceDate) => {
+    try {
+      await changeServiceDate({ id: job._id, serviceDate }).unwrap();
+      setShowChangeDate(false);
+      Alert.alert("Date changed", "The job date has been updated.");
+    } catch (err) {
+      Alert.alert("Error", err?.data?.message || "Failed to change the date.");
+    }
+  };
 
   const handleReopen = () => {
     Alert.alert(
@@ -1524,6 +1543,38 @@ export default function JobDetailsScreen() {
 
         {/* Quick Status Change Actions */}
         {isLockedFinal ? (
+          <>
+          <TouchableOpacity
+            onPress={() => setShowChangeDate(true)}
+            disabled={isSyncing}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              marginTop: 16,
+              height: 56,
+              borderRadius: 12,
+              borderWidth: 1.5,
+              borderColor: colors.border,
+              backgroundColor: colors.bgCard,
+            }}
+          >
+            <CalendarClock color={colors.secondary} size={18} />
+            <Text
+              style={{
+                fontFamily: "Space Grotesk",
+                color: colors.secondary,
+                fontWeight: "700",
+                textTransform: "uppercase",
+                letterSpacing: 2,
+                fontSize: 11,
+              }}
+            >
+              Change Date
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleReopen}
             disabled={isSyncing}
@@ -1555,6 +1606,15 @@ export default function JobDetailsScreen() {
               Reopen Job
             </Text>
           </TouchableOpacity>
+          <ChangeServiceDateModal
+            visible={showChangeDate}
+            onClose={() => setShowChangeDate(false)}
+            serviceDate={job.serviceDate}
+            isCompleted={isCompleted}
+            saving={isChangingDate}
+            onSave={handleChangeDate}
+          />
+          </>
         ) : (
           <>
             {job.status === JobStatuses.COMPLETED && !job.isPaid && (

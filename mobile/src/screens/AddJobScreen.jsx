@@ -28,7 +28,11 @@ import {
   PaymentMethods,
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
-import { DEFAULT_INVOICE_DISPLAY } from "@utils/formatUtils";
+import {
+  DEFAULT_INVOICE_DISPLAY,
+  PAST_JOB_DEFAULT_TIME,
+  isBeforeToday,
+} from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
 import useJobSubmission from "@hooks/useJobSubmission";
@@ -240,6 +244,17 @@ export default function AddJobScreen() {
   }
   const [selectedTime, setSelectedTime] = useState(initialTime);
 
+  // Back-dating a new job: picking a past date suggests Completed and a 12:00 PM
+  // start, unless the technician already chose a status / time themselves.
+  const statusTouchedRef = React.useRef(false);
+  const timeTouchedRef = React.useRef(false);
+  const suggestedStatusRef = React.useRef(false);
+  const suggestedTimeRef = React.useRef(false);
+  const handleTimeChange = useCallback((time) => {
+    timeTouchedRef.current = true;
+    setSelectedTime(time);
+  }, []);
+
   // Modal Visibility
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -257,7 +272,41 @@ export default function AddJobScreen() {
   const [updateCustomer, { isLoading: isUpdatingCustomer }] =
     useUpdateCustomerMutation();
 
+  React.useEffect(() => {
+    if (editingJob) return;
+    if (isBeforeToday(serviceDate)) {
+      if (!statusTouchedRef.current && !suggestedStatusRef.current) {
+        setStatus(JobStatuses.COMPLETED);
+        suggestedStatusRef.current = true;
+      }
+      if (!timeTouchedRef.current && !suggestedTimeRef.current) {
+        setSelectedTime(PAST_JOB_DEFAULT_TIME);
+        suggestedTimeRef.current = true;
+      }
+    } else {
+      // Back to today or later: undo only what was suggested
+      if (suggestedStatusRef.current && !statusTouchedRef.current) {
+        setStatus(JobStatuses.PENDING);
+      }
+      if (suggestedTimeRef.current && !timeTouchedRef.current) {
+        setSelectedTime(
+          new Date().toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+        );
+      }
+      suggestedStatusRef.current = false;
+      suggestedTimeRef.current = false;
+    }
+  }, [serviceDate]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resetForm = useCallback(() => {
+    statusTouchedRef.current = false;
+    timeTouchedRef.current = false;
+    suggestedStatusRef.current = false;
+    suggestedTimeRef.current = false;
     setSelectedCustomer(initialCustomer || null);
     setAppliance(ApplianceTypes[0]);
     setIssue("");
@@ -806,7 +855,7 @@ export default function AddJobScreen() {
         showTimePicker={showTimePicker}
         setShowTimePicker={setShowTimePicker}
         selectedTime={selectedTime}
-        setSelectedTime={setSelectedTime}
+        setSelectedTime={handleTimeChange}
         showReminderCalendar={showReminderCalendar}
         setShowReminderCalendar={setShowReminderCalendar}
         nextReminderDate={nextReminderDate}
@@ -836,10 +885,12 @@ export default function AddJobScreen() {
         onClose={() => setShowStatusModal(false)}
         status={status}
         onSelectStatus={(s) => {
+          statusTouchedRef.current = true;
           setStatus(s);
           setShowStatusModal(false);
         }}
         isNewJob={!editingJob}
+        allowCompletedForNew={isBeforeToday(serviceDate)}
       />
     </SafeAreaView>
   );

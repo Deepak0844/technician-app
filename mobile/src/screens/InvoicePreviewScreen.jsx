@@ -186,9 +186,11 @@ function buildPdfHtml({
   const warrantyStartDisplay = formatDate(
     job.warrantyStartDate
       ? job.warrantyStartDate
-      : job.status === "completed" && job.updatedAt
-        ? job.updatedAt
-        : job.serviceDate,
+      : job.completedAt
+        ? job.completedAt
+        : job.status === "completed" && job.updatedAt
+          ? job.updatedAt
+          : job.serviceDate,
   );
 
   return `<!DOCTYPE html>
@@ -733,10 +735,16 @@ export default function InvoicePreviewScreen() {
   );
   const [updateJob, { isLoading: isSaving }] = useUpdateJobMutation();
 
-  // Warranty start date — editable, defaults to service date
+  // Warranty starts on the completed date. Only a job that already has a
+  // stored start date (saved before this rule) keeps it editable; for any
+  // other job nothing is stored, so it follows the completed date.
+  // LEGACY: drop the stored-date branch after the data migration
+  const hasStoredWarrantyStart = !!job?.warrantyStartDate;
   const defaultWarrantyStart = job?.warrantyStartDate
     ? new Date(job.warrantyStartDate)
-    : new Date(job?.serviceDate);
+    : job?.completedAt
+      ? new Date(job.completedAt)
+      : new Date(job?.serviceDate);
   const [warrantyStartDate, setWarrantyStartDate] =
     useState(defaultWarrantyStart);
   const [showWarrantyDatePicker, setShowWarrantyDatePicker] = useState(false);
@@ -745,6 +753,8 @@ export default function InvoicePreviewScreen() {
   // We MUST use the server-side `job.isPaid` state. If we use the local `isPaid` state,
   // the screen locks instantly when they toggle it, hiding the Save button before they can save!
   const isContentLocked = job?.status === JobStatuses.COMPLETED;
+  // The warranty start is only editable for jobs that already store one
+  const warrantyLocked = isContentLocked || !hasStoredWarrantyStart;
   const isFullyLocked = job?.status === JobStatuses.COMPLETED && job?.isPaid;
 
   if (!job) {
@@ -875,7 +885,9 @@ export default function InvoicePreviewScreen() {
         amount: serviceSubtotal,
         isPaid,
         paymentMethod,
-        warrantyStartDate: warrantyStartDate.toISOString(),
+        ...(hasStoredWarrantyStart && {
+          warrantyStartDate: warrantyStartDate.toISOString(),
+        }),
         status: newStatus,
         ...(newStatus === JobStatuses.COMPLETED &&
           isFuture && { serviceDate: new Date().toISOString() }),
@@ -2412,21 +2424,21 @@ export default function InvoicePreviewScreen() {
                   {job.warranty} Coverage
                 </Text>
 
-                {/* Warranty start date — tappable to edit */}
+                {/* Warranty start date — tappable to edit only for jobs with a stored start date */}
                 <TouchableOpacity
                   onPress={() =>
-                    !isContentLocked && setShowWarrantyDatePicker(true)
+                    !warrantyLocked && setShowWarrantyDatePicker(true)
                   }
-                  activeOpacity={isContentLocked ? 1 : 0.7}
+                  activeOpacity={warrantyLocked ? 1 : 0.7}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 6,
-                    backgroundColor: isContentLocked
+                    backgroundColor: warrantyLocked
                       ? colors.bgSurface
                       : colors.bgCard,
                     borderWidth: 1,
-                    borderColor: isContentLocked
+                    borderColor: warrantyLocked
                       ? colors.border
                       : colors.primaryBorder,
                     borderRadius: 8,
@@ -2439,7 +2451,7 @@ export default function InvoicePreviewScreen() {
                   <CalendarIcon
                     size={11}
                     color={
-                      isContentLocked ? colors.textDisabled : colors.primary
+                      warrantyLocked ? colors.textDisabled : colors.primary
                     }
                   />
                   <Text
@@ -2447,14 +2459,14 @@ export default function InvoicePreviewScreen() {
                       fontFamily: "Inter",
                       fontSize: 11,
                       fontWeight: "600",
-                      color: isContentLocked
+                      color: warrantyLocked
                         ? colors.textDisabled
                         : colors.primary,
                     }}
                   >
                     Starts: {formatDate(warrantyStartDate)}
                   </Text>
-                  {!isContentLocked && (
+                  {!warrantyLocked && (
                     <Edit3 size={10} color={colors.primary} />
                   )}
                 </TouchableOpacity>

@@ -15,7 +15,11 @@ export const ErrorMessages = {
   USER_NOT_FOUND: "User not found",
   CUSTOMER_NOT_FOUND: "Customer not found",
   JOB_NOT_FOUND: "Job not found",
-  SERVICE_DATE_IN_PAST: "Service date cannot be in the past for new jobs.",
+  SERVICE_DATE_INVALID: "Service date is not a valid date.",
+  COMPLETED_JOB_FUTURE_DATE:
+    "A completed job can't have a service date in the future.",
+  CANCELLED_JOB_DATE_LOCKED:
+    "A cancelled job's date can't be changed. Reactivate it first.",
   JOB_REOPEN_FORBIDDEN:
     "Only jobs that are completed and paid can be reopened.",
   CANCELLED_JOB_TRANSITION:
@@ -57,6 +61,7 @@ export const SuccessMessages = {
   JOBS_LOADED: "Jobs loaded successfully",
   JOB_REPEATED: "Job repeated successfully",
   JOB_UPDATED: "Job updated successfully",
+  JOB_DATE_CHANGED: "Job date changed successfully",
   JOB_REOPENED: "Job reopened successfully.",
   JOB_DELETED: "Job deleted successfully",
   LOGO_UPLOADED: "Company logo uploaded successfully.",

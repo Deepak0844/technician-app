@@ -4,6 +4,10 @@ import {
   useUpdateJobMutation,
 } from "@services/api/jobApi";
 import { JobStatuses } from "@constants/appConstants";
+import { combineDateAndTime } from "@utils/formatUtils";
+
+// Same allowance as the server for a device clock running slightly ahead
+const FUTURE_TOLERANCE_MS = 15 * 60 * 1000;
 
 export default function useJobSubmission({ userId, editingJob, onSuccess }) {
   const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
@@ -67,33 +71,35 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
     const parsedFee = parseFloat(diagnosticFee) || 0;
     const parsedAmount = parseFloat(amount) || 0;
 
-    // Parse time into date
-    let finalDate = new Date(serviceDate);
-    const timeMatch = selectedTime.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)/i);
-    if (timeMatch) {
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = parseInt(timeMatch[2], 10);
-      const modifier = timeMatch[3].toUpperCase();
-      if (modifier === "PM" && hours < 12) hours += 12;
-      if (modifier === "AM" && hours === 12) hours = 0;
-      finalDate = new Date(
-        serviceDate.getFullYear(),
-        serviceDate.getMonth(),
-        serviceDate.getDate(),
-        hours,
-        minutes,
-        0,
-        0,
-      );
+    const finalDate = combineDateAndTime(serviceDate, selectedTime);
+    if (!finalDate) {
+      Alert.alert("Error", "Select a valid service date.");
+      return;
     }
-
-    if (isNaN(finalDate.getTime())) finalDate = new Date();
 
     // Force COMPLETED status when user marks a job as paid
     const resolvedStatus =
       isPaid && status !== JobStatuses.COMPLETED
         ? JobStatuses.COMPLETED
         : status;
+
+    // A job can't be completed before its service date. Not checked when an
+    // existing job is saved without changing its date.
+    const dateChanged =
+      !editingJob ||
+      Math.floor(finalDate.getTime() / 60000) !==
+        Math.floor(new Date(editingJob.serviceDate).getTime() / 60000);
+    if (
+      resolvedStatus === JobStatuses.COMPLETED &&
+      dateChanged &&
+      finalDate.getTime() > Date.now() + FUTURE_TOLERANCE_MS
+    ) {
+      Alert.alert(
+        "Error",
+        "A completed job can't have a service date in the future.",
+      );
+      return;
+    }
 
     const payload = {
       customerId: selectedCustomer._id || selectedCustomer.serverId,

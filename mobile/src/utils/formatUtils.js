@@ -134,3 +134,46 @@ export const buildBillToLines = (job) => {
     lines.push({ kind: "address", text: address });
   return lines;
 };
+
+/** Time of day a back-dated job starts at until the technician picks one. */
+export const PAST_JOB_DEFAULT_TIME = "12:00 PM";
+
+/**
+ * True when the date falls on an earlier calendar day than today.
+ * @param {Date} date
+ */
+export const isBeforeToday = (date) => {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return date.getTime() < startOfToday.getTime();
+};
+
+/**
+ * Combine a picked day with a "h:mm AM/PM" time string into one local Date.
+ * Without a parsable time the day is returned as is. Returns null when the
+ * day is not a valid date.
+ *
+ * @param {Date | string} date
+ * @param {string} timeStr
+ * @returns {Date | null}
+ */
+export const combineDateAndTime = (date, timeStr) => {
+  const day = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(day.getTime())) return null;
+  const match = String(timeStr || "").match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)/i);
+  if (!match) return day;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const modifier = match[3].toUpperCase();
+  if (modifier === "PM" && hours < 12) hours += 12;
+  if (modifier === "AM" && hours === 12) hours = 0;
+  return new Date(
+    day.getFullYear(),
+    day.getMonth(),
+    day.getDate(),
+    hours,
+    minutes,
+    0,
+    0,
+  );
+};
