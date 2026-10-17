@@ -28,6 +28,7 @@ import {
   PaymentMethods,
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
+import { DEFAULT_INVOICE_DISPLAY } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
 import useJobSubmission from "@hooks/useJobSubmission";
@@ -38,6 +39,7 @@ import JobDetailsForm from "@components/CreateJob/JobDetailsForm";
 import WarrantySection from "@components/CreateJob/WarrantySection";
 import TimelineSection from "@components/CreateJob/TimelineSection";
 import PartsSection from "@components/CreateJob/PartsSection";
+import InvoiceDisplaySection from "@components/CreateJob/InvoiceDisplaySection";
 import AddJobModals from "@components/CreateJob/AddJobModals";
 import StatusSelectionModal from "@components/CreateJob/StatusSelectionModal";
 // Gluestack Primitives
@@ -118,6 +120,12 @@ export default function AddJobScreen() {
       setSelectedLocation(editingJob.location || null);
       setPriority(editingJob.priority || PriorityLevels.NORMAL);
       setInternalNotes(editingJob.internalNotes || "");
+      setInvoiceDisplay({
+        ...DEFAULT_INVOICE_DISPLAY,
+        ...(editingJob.invoiceDisplay ?? {}),
+      });
+      setOrganization({ name: editingJob.organization?.name ?? "" });
+      setInvoiceAddress(editingJob.invoiceAddress ?? "");
 
       if (editingJob.serviceDate) {
         const d = new Date(editingJob.serviceDate);
@@ -203,6 +211,16 @@ export default function AddJobScreen() {
   const [paymentMethod, setPaymentMethod] = useState(
     editingJob?.paymentMethod ?? PaymentMethods.CASH,
   );
+  const [invoiceDisplay, setInvoiceDisplay] = useState({
+    ...DEFAULT_INVOICE_DISPLAY,
+    ...(editingJob?.invoiceDisplay ?? {}),
+  });
+  const [invoiceAddress, setInvoiceAddress] = useState(
+    editingJob?.invoiceAddress ?? "",
+  );
+  const [organization, setOrganization] = useState({
+    name: editingJob?.organization?.name ?? "",
+  });
   const [showStatusModal, setShowStatusModal] = useState(false);
   // Time Sync
   let initialTime = new Date().toLocaleTimeString("en-US", {
@@ -265,6 +283,9 @@ export default function AddJobScreen() {
     setStatus(JobStatuses.PENDING);
     setIsPaid(false);
     setPaymentMethod(PaymentMethods.CASH);
+    setInvoiceDisplay({ ...DEFAULT_INVOICE_DISPLAY });
+    setOrganization({ name: "" });
+    setInvoiceAddress("");
     setSelectedTime(
       new Date().toLocaleTimeString("en-US", {
         hour: "2-digit",
@@ -408,6 +429,9 @@ export default function AddJobScreen() {
       internalNotes,
       isPaid,
       paymentMethod,
+      invoiceDisplay,
+      organization,
+      invoiceAddress,
     });
   }
 
@@ -487,6 +511,17 @@ export default function AddJobScreen() {
             selectedLocation={selectedLocation}
             onSelectLocation={setSelectedLocation}
             onAddLocationPress={() => setShowAddLocationModal(true)}
+          />
+
+          <InvoiceDisplaySection
+            invoiceDisplay={invoiceDisplay}
+            setInvoiceDisplay={setInvoiceDisplay}
+            organization={organization}
+            setOrganization={setOrganization}
+            invoiceAddress={invoiceAddress}
+            setInvoiceAddress={setInvoiceAddress}
+            selectedCustomer={selectedCustomer}
+            selectedLocation={selectedLocation}
           />
 
           <TimelineSection

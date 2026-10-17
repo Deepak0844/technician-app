@@ -7,6 +7,9 @@ import {
   PaymentMethods,
 } from "#constants/generalConstants.js";
 
+// Utils
+import { getBillToError } from "#utils/invoiceUtils.js";
+
 // Shared max constraints
 const MAX_TEXT_LENGTH = 2000;
 const MAX_SHORT_TEXT = 255;
@@ -179,6 +182,43 @@ export const customerSearchSchema = z.object({
 });
 
 /**
+ * Create: apply the Bill To rules to the payload (absent fields take their
+ * defaults). Updates are checked in JobService against the merged job, since
+ * a partial payload can't be judged on its own.
+ */
+function requireBillTo(data, ctx) {
+  const message = getBillToError({
+    showCustomerName: data.invoiceDisplay?.showCustomerName,
+    showOrganization: data.invoiceDisplay?.showOrganization,
+    organizationName: data.organization?.name,
+  });
+  if (message) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["invoiceDisplay"],
+      message,
+    });
+  }
+}
+
+/**
+ * Job: Invoice display options (which Bill To details the invoice shows)
+ */
+const invoiceDisplaySchema = z.object({
+  showCustomerName: z.boolean().optional(),
+  showCustomerPhone: z.boolean().optional(),
+  showOrganization: z.boolean().optional(),
+  showAddress: z.boolean().optional(),
+});
+
+/**
+ * Job: Organization (company / school / hotel) the invoice can be addressed to
+ */
+const organizationSchema = z.object({
+  name: z.string().trim().max(MAX_SHORT_TEXT).optional().default(""),
+});
+
+/**
  * Job: Shared fields (used by create and update)
  */
 const jobSharedFields = {
@@ -219,15 +259,20 @@ const jobSharedFields = {
     .optional()
     .default(PaymentMethods.CASH),
   location: jobLocationSchema,
+  invoiceDisplay: invoiceDisplaySchema.optional(),
+  invoiceAddress: z.string().trim().max(MAX_TEXT_LENGTH).optional(),
+  organization: organizationSchema.optional(),
 };
 
 /**
  * Job: Create
  */
-export const createJobSchema = z.object({
-  customerId: z.string().min(1, "Customer ID is required").max(64),
-  ...jobSharedFields,
-});
+export const createJobSchema = z
+  .object({
+    customerId: z.string().min(1, "Customer ID is required").max(64),
+    ...jobSharedFields,
+  })
+  .superRefine(requireBillTo);
 
 /**
  * Job: Update (all fields optional, customerId can be changed)
@@ -243,6 +288,13 @@ export const updateJobSchema = z.object({
       return [k, unwrapped.optional()];
     }),
   ),
+});
+
+/**
+ * Job: Recent organizations query
+ */
+export const recentOrganizationsQuerySchema = z.object({
+  q: z.string().max(MAX_SHORT_TEXT).optional().default(""),
 });
 
 /**

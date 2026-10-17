@@ -1033,7 +1033,8 @@ export default function CustomerDetailsScreen() {
         data={filteredJobs}
         keyExtractor={(item) => item._id || Math.random().toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 }}
+        // Footer spacer (40) + this clears the floating Add Job button
+        contentContainerStyle={{ paddingBottom: 60 }}
         ListHeaderComponent={renderHeader}
         onScrollBeginDrag={() => {
           hasScrolledRef.current = true;
