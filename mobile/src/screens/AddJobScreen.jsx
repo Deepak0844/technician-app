@@ -22,13 +22,12 @@ import {
   useGetCustomersQuery,
 } from "@services/api/customerApi";
 import {
-  ApplianceTypes,
   PriorityLevels,
   JobStatuses,
   PaymentMethods,
 } from "@constants/appConstants";
 import { RouteNames } from "@constants/routeNames";
-import { DEFAULT_INVOICE_DISPLAY } from "@utils/formatUtils";
+import { DEFAULT_INVOICE_DISPLAY, getJobAppliances } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import useLocationCapture from "@hooks/useLocationCapture";
 import useJobSubmission from "@hooks/useJobSubmission";
@@ -94,7 +93,7 @@ export default function AddJobScreen() {
 
   React.useEffect(() => {
     if (editingJob) {
-      setAppliance(editingJob.applianceType || ApplianceTypes[0]);
+      setAppliances(getJobAppliances(editingJob));
       setIssue(editingJob.issue || "");
 
       const baseAmount = parseFloat(editingJob.amount) || 0;
@@ -163,8 +162,8 @@ export default function AddJobScreen() {
     }
   }, [customerDetailsResponse, selectedCustomer]);
 
-  const [appliance, setAppliance] = useState(
-    editingJob?.applianceType ?? ApplianceTypes[0],
+  const [appliances, setAppliances] = useState(() =>
+    editingJob ? getJobAppliances(editingJob) : [],
   );
   const [issue, setIssue] = useState(editingJob?.issue ?? "");
   const [serviceDone, setServiceDone] = useState(editingJob?.serviceDone ?? "");
@@ -259,7 +258,7 @@ export default function AddJobScreen() {
 
   const resetForm = useCallback(() => {
     setSelectedCustomer(initialCustomer || null);
-    setAppliance(ApplianceTypes[0]);
+    setAppliances([]);
     setIssue("");
     setServiceDone("");
     setDiagnosticFee("");
@@ -411,7 +410,7 @@ export default function AddJobScreen() {
   async function handleSubmit() {
     await submitJob({
       selectedCustomer,
-      appliance,
+      appliances,
       issue,
       serviceDone,
       diagnosticFee,
@@ -541,8 +540,8 @@ export default function AddJobScreen() {
           />
 
           <JobDetailsForm
-            appliance={appliance}
-            setAppliance={setAppliance}
+            appliances={appliances}
+            setAppliances={setAppliances}
             issue={issue}
             setIssue={setIssue}
             serviceDone={serviceDone}

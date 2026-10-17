@@ -26,6 +26,7 @@ import {
   formatCurrency,
   buildBillToLines,
   escapeHtml,
+  getApplianceLabel,
 } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import { Text } from "@components/ui/text";
@@ -381,7 +382,7 @@ function buildPdfHtml({
     <div class="service-card no-break">
       <div class="section-title">Service Information</div>
       <div class="info-grid">
-        <div class="info-item"><div class="lbl">Appliance Type</div><div class="val purple">${job.applianceType || "—"}</div></div>
+        <div class="info-item"><div class="lbl">Appliance Type</div><div class="val purple">${escapeHtml(getApplianceLabel(job)) || "—"}</div></div>
         <div class="info-item"><div class="lbl">Service Date</div><div class="val">${formatDate(job.serviceDate)}</div></div>
         <div class="info-item"><div class="lbl">Status</div><div class="val" style="color:${sc.text}">${sc.label}</div></div>
         <div class="info-item"><div class="lbl">Warranty</div><div class="val">${job.warranty || "No Warranty"}</div></div>
@@ -706,7 +707,7 @@ export default function InvoicePreviewScreen() {
     if (laborAmt > 0) {
       items.push({
         id: "1",
-        description: `Service Charge — ${job?.applianceType || "Appliance Repair"}`,
+        description: `Service Charge — ${getApplianceLabel(job) || "Appliance Repair"}`,
         qty: "1",
         rate: String(laborAmt),
         note: job?.serviceDone || "",
@@ -937,7 +938,7 @@ export default function InvoicePreviewScreen() {
     const message =
       `*INVOICE: ${invoiceNumber}*\n\n` +
       `Hi ${customerName},\n` +
-      `This is ${techName}. Here is your invoice for the *${job.applianceType}* service on ${formatDate(job.serviceDate)}.\n\n` +
+      `This is ${techName}. Here is your invoice for the *${getApplianceLabel(job)}* service on ${formatDate(job.serviceDate)}.\n\n` +
       `*Total Amount:* ${formatCurrency(grandTotal)}\n` +
       `*Warranty:* ${job.warranty || "No Warranty"}\n\n` +
       `Thank you for your business! 🙏`;
@@ -1406,7 +1407,7 @@ export default function InvoicePreviewScreen() {
                     color: "rgba(255,255,255,0.45)",
                   }}
                 >
-                  {job.applianceType || "Appliance Repair"}
+                  {getApplianceLabel(job) || "Appliance Repair"}
                 </Text>
               </View>
               <Text
@@ -1693,7 +1694,7 @@ export default function InvoicePreviewScreen() {
               <InfoPill
                 icon={Wrench}
                 label="Appliance"
-                value={job.applianceType}
+                value={getApplianceLabel(job)}
                 colors={colors}
                 accent={colors.primary}
               />

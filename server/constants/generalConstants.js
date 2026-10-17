@@ -20,6 +20,9 @@ export const ErrorMessages = {
     "Only jobs that are completed and paid can be reopened.",
   CANCELLED_JOB_TRANSITION:
     "A cancelled job can only be reactivated to Pending.",
+  APPLIANCE_REQUIRED: "Select at least one appliance.",
+  /** @param {number} max */
+  APPLIANCE_LIMIT: (max) => `You can add up to ${max} appliances to a job.`,
   ORGANIZATION_NAME_REQUIRED:
     "Organisation name is required to show it on the invoice.",
   BILL_TO_NAME_REQUIRED:
@@ -148,6 +151,14 @@ export const ApplianceTypes = {
   GEYSER: "Geyser",
   TV: "TV",
   OTHER: "Other",
+};
+
+/**
+ * Appliance limits for a single job
+ */
+export const ApplianceLimits = {
+  MAX_PER_JOB: 10,
+  MAX_NAME_LENGTH: 100,
 };
 
 /**

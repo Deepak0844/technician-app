@@ -17,6 +17,7 @@ import {
   updateJobSchema,
   jobListQuerySchema,
   recentOrganizationsQuerySchema,
+  recentAppliancesQuerySchema,
 } from "#schemas/validationSchemas.js";
 
 const router = express.Router();
@@ -30,6 +31,11 @@ router.get(
   "/organizations/recent",
   validateQuery(recentOrganizationsQuerySchema),
   jobController.getRecentOrganizations,
+);
+router.get(
+  "/appliances/recent",
+  validateQuery(recentAppliancesQuerySchema),
+  jobController.getRecentAppliances,
 );
 router.get(
   "/customer/:customerId",

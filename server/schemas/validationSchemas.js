@@ -2,6 +2,8 @@ import { z } from "zod";
 
 // Constants
 import {
+  ApplianceLimits,
+  ErrorMessages,
   JobStatus,
   PriorityLevels,
   PaymentMethods,
@@ -9,6 +11,10 @@ import {
 
 // Utils
 import { getBillToError } from "#utils/invoiceUtils.js";
+import {
+  normalizeAppliances,
+  summarizeAppliances,
+} from "#utils/applianceUtils.js";
 
 // Shared max constraints
 const MAX_TEXT_LENGTH = 2000;
@@ -222,6 +228,54 @@ function requireBillTo(data, ctx) {
 }
 
 /**
+ * Job: One appliance serviced on the job
+ */
+const applianceSchema = z.object({
+  type: z.string().trim().max(ApplianceLimits.MAX_NAME_LENGTH),
+  brand: z.string().trim().max(ApplianceLimits.MAX_NAME_LENGTH).optional(),
+});
+
+/**
+ * The appliance list a payload asks for: `appliances`, or (older clients) a
+ * single `applianceType`. Undefined when the payload says nothing about it.
+ */
+function requestedAppliances(data) {
+  if (data.appliances !== undefined) return data.appliances;
+  if (data.applianceType) return [{ type: data.applianceType }];
+  return undefined;
+}
+
+/**
+ * At least one appliance is needed on create; on update only when the
+ * payload touches the appliances.
+ */
+function requireAppliances(data, ctx, { required }) {
+  const requested = requestedAppliances(data);
+  if (requested === undefined && !required) return;
+  if (normalizeAppliances(requested).length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["appliances"],
+      message: ErrorMessages.APPLIANCE_REQUIRED,
+    });
+  }
+}
+
+/**
+ * Store the cleaned list and keep `applianceType` as its summary.
+ */
+function applyAppliances(data) {
+  const requested = requestedAppliances(data);
+  if (requested === undefined) return data;
+  const appliances = normalizeAppliances(requested);
+  return {
+    ...data,
+    appliances,
+    applianceType: summarizeAppliances(appliances),
+  };
+}
+
+/**
  * Job: Invoice display options (which Bill To details the invoice shows)
  */
 const invoiceDisplaySchema = z.object({
@@ -242,10 +296,20 @@ const organizationSchema = z.object({
  * Job: Shared fields (used by create and update)
  */
 const jobSharedFields = {
+  // Clients that predate multi-appliance support send only `applianceType`.
   applianceType: z
     .string()
+    .trim()
     .min(1, "Appliance type is required")
-    .max(MAX_SHORT_TEXT),
+    .max(MAX_SHORT_TEXT)
+    .optional(),
+  appliances: z
+    .array(applianceSchema)
+    .max(
+      ApplianceLimits.MAX_PER_JOB,
+      ErrorMessages.APPLIANCE_LIMIT(ApplianceLimits.MAX_PER_JOB),
+    )
+    .optional(),
   issue: z
     .string()
     .min(1, "Issue description is required")
@@ -292,28 +356,40 @@ export const createJobSchema = z
     customerId: z.string().min(1, "Customer ID is required").max(64),
     ...jobSharedFields,
   })
-  .superRefine(requireBillTo);
+  .superRefine(requireBillTo)
+  .superRefine((data, ctx) => requireAppliances(data, ctx, { required: true }))
+  .transform(applyAppliances);
 
 /**
  * Job: Update (all fields optional, customerId can be changed)
  * Strip .default() from all shared fields so absent fields don't
  * overwrite existing DB values with their defaults (e.g. amount → 0).
  */
-export const updateJobSchema = z.object({
-  customerId: z.string().min(1).max(64).optional(),
-  ...Object.fromEntries(
-    Object.entries(jobSharedFields).map(([k, v]) => {
-      // Unwrap ZodDefault so missing fields are truly undefined, not defaulted
-      const unwrapped = v instanceof z.ZodDefault ? v.removeDefault() : v;
-      return [k, unwrapped.optional()];
-    }),
-  ),
-});
+export const updateJobSchema = z
+  .object({
+    customerId: z.string().min(1).max(64).optional(),
+    ...Object.fromEntries(
+      Object.entries(jobSharedFields).map(([k, v]) => {
+        // Unwrap ZodDefault so missing fields are truly undefined, not defaulted
+        const unwrapped = v instanceof z.ZodDefault ? v.removeDefault() : v;
+        return [k, unwrapped.optional()];
+      }),
+    ),
+  })
+  .superRefine((data, ctx) => requireAppliances(data, ctx, { required: false }))
+  .transform(applyAppliances);
 
 /**
  * Job: Recent organizations query
  */
 export const recentOrganizationsQuerySchema = z.object({
+  q: z.string().max(MAX_SHORT_TEXT).optional().default(""),
+});
+
+/**
+ * Job: Recent appliances query
+ */
+export const recentAppliancesQuerySchema = z.object({
   q: z.string().max(MAX_SHORT_TEXT).optional().default(""),
 });
 
