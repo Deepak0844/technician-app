@@ -100,7 +100,7 @@ app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 app.get("/", (_req, res) => {
   ResponseUtils.success(res, {
     message: "Technician App API is running",
-    version: process.env.npm_package_version || "0.0.2",
+    version: process.env.npm_package_version || "0.0.3",
   });
 });
 
