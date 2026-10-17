@@ -142,7 +142,7 @@ export const jobApi = api.injectEndpoints({
       query: ({ id, serviceDate }) => ({
         url: ApiUrls.JOB_SERVICE_DATE(id),
         method: "patch",
-        body: { serviceDate },
+        data: { serviceDate },
       }),
       invalidatesTags: (result, error, arg) => [
         { type: TagTypes.JOBS, id: arg.id },
