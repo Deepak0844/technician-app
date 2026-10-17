@@ -114,7 +114,10 @@ export default function AddJobModals({
                 indicatorColor: colors.primary,
                 arrowColor: colors.primary,
               }}
-              onDayPress={(day) => setServiceDate(new Date(day.timestamp))}
+              // Local midnight of the picked day (not UTC) so "today" stays today
+              onDayPress={(day) =>
+                setServiceDate(new Date(day.year, day.month - 1, day.day))
+              }
               markedDates={{
                 [getLocalDateString(serviceDate)]: { selected: true },
               }}

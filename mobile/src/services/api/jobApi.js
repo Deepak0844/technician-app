@@ -137,6 +137,19 @@ export const jobApi = api.injectEndpoints({
         ...ApiUtils.listTags(TagTypes.DASHBOARD),
       ],
     }),
+    // Change only the service date (also for completed + paid jobs)
+    changeServiceDate: builder.mutation({
+      query: ({ id, serviceDate }) => ({
+        url: ApiUrls.JOB_SERVICE_DATE(id),
+        method: "patch",
+        data: { serviceDate },
+      }),
+      invalidatesTags: (result, error, arg) => [
+        { type: TagTypes.JOBS, id: arg.id },
+        ...ApiUtils.listTags(TagTypes.JOBS),
+        ...ApiUtils.listTags(TagTypes.DASHBOARD),
+      ],
+    }),
     reopenJob: builder.mutation({
       query: (id) => ({ url: ApiUrls.JOB_REOPEN(id), method: "post" }),
       onQueryStarted: async (_arg, { queryFulfilled }) => {
@@ -174,4 +187,5 @@ export const {
   useRepeatJobMutation,
   useDeleteJobMutation,
   useReopenJobMutation,
+  useChangeServiceDateMutation,
 } = jobApi;

@@ -328,7 +328,12 @@ const jobSharedFields = {
     .optional()
     .default([]),
   status: z.nativeEnum(JobStatus).optional().default(JobStatus.PENDING),
-  serviceDate: z.string().min(1, "Service date is required"),
+  serviceDate: z
+    .string()
+    .min(1, "Service date is required")
+    .refine((value) => !Number.isNaN(Date.parse(value)), {
+      message: ErrorMessages.SERVICE_DATE_INVALID,
+    }),
   nextReminderDate: z.string().optional().nullable(),
   warranty: z.string().max(MAX_SHORT_TEXT).optional().default(""),
   warrantyStartDate: z.string().optional().nullable(),
@@ -378,6 +383,18 @@ export const updateJobSchema = z
   })
   .superRefine((data, ctx) => requireAppliances(data, ctx, { required: false }))
   .transform(applyAppliances);
+
+/**
+ * Job: Change only the service date (works on completed + paid jobs too)
+ */
+export const changeServiceDateSchema = z.object({
+  serviceDate: z
+    .string()
+    .min(1, "Service date is required")
+    .refine((value) => !Number.isNaN(Date.parse(value)), {
+      message: ErrorMessages.SERVICE_DATE_INVALID,
+    }),
+});
 
 /**
  * Job: Recent organizations query

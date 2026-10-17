@@ -159,6 +159,26 @@ export const updateJob = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Change only the service date of a job (also for completed + paid
+ *          jobs). A completed job's completed date follows the new date.
+ * @route   PATCH /api/v1/jobs/:jobId/service-date
+ * @access  Private
+ */
+export const changeServiceDate = asyncHandler(async (req, res) => {
+  const job = await JobService.changeServiceDate(
+    req.user._id,
+    req.params.jobId,
+    req.body.serviceDate,
+  );
+  return ResponseUtils.success(
+    res,
+    job,
+    HttpStatus.OK,
+    SuccessMessages.JOB_DATE_CHANGED,
+  );
+});
+
+/**
  * @desc    Delete a job permanently
  * @route   DELETE /api/v1/jobs/:jobId
  * @access  Private
