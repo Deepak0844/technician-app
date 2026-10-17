@@ -13,7 +13,7 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
   const submitJob = async (formData) => {
     const {
       selectedCustomer,
-      appliance,
+      appliances,
       issue,
       serviceDone,
       diagnosticFee,
@@ -38,6 +38,10 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
 
     if (!selectedCustomer) {
       Alert.alert("Error", "Please select a customer");
+      return;
+    }
+    if (!appliances?.length) {
+      Alert.alert("Error", "Select at least one appliance");
       return;
     }
     if (!issue.trim()) {
@@ -97,7 +101,9 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
 
     const payload = {
       customerId: selectedCustomer._id || selectedCustomer.serverId,
-      applianceType: appliance,
+      appliances: appliances.map(({ type }) => ({ type })),
+      // Summary kept for servers that predate multi-appliance support
+      applianceType: appliances.map((a) => a.type).join(", "),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       issue: issue.trim(),
       serviceDone: serviceDone.trim(),

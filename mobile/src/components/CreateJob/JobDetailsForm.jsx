@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput } from "react-native";
-import { Settings, Check } from "lucide-react-native";
+import { Settings } from "lucide-react-native";
 import useTheme from "@hooks/useTheme";
-import { ApplianceOptions } from "@constants/appConstants";
+import ApplianceAutocomplete from "@components/CreateJob/ApplianceAutocomplete";
 
 const JobDetailsForm = ({
-  appliance,
-  setAppliance,
+  appliances,
+  setAppliances,
   issue,
   setIssue,
   serviceDone,
@@ -132,68 +132,8 @@ const JobDetailsForm = ({
           })}
         </View>
 
-        {/* Appliance Selector — 2-column emoji grid */}
-        <Text
-          style={{
-            fontFamily: "Inter",
-            color: colors.textDisabled,
-            fontSize: 8,
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: 4,
-            marginBottom: 12,
-            marginLeft: 4,
-          }}
-        >
-          Device Type
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: 10,
-            marginBottom: 24,
-          }}
-        >
-          {ApplianceOptions.map((item) => {
-            const isSelected = appliance === item.value;
-            return (
-              <TouchableOpacity
-                key={item.value}
-                onPress={() => setAppliance(item.value)}
-                style={{
-                  width: "47.5%",
-                  paddingVertical: 14,
-                  paddingHorizontal: 12,
-                  borderRadius: 14,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  backgroundColor: isSelected
-                    ? colors.primaryBg
-                    : colors.bgCard,
-                  borderWidth: 1.5,
-                  borderColor: isSelected ? colors.primary : colors.border,
-                }}
-              >
-                <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
-                <Text
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: isSelected ? colors.primary : colors.textSecondary,
-                    flex: 1,
-                  }}
-                  numberOfLines={1}
-                >
-                  {item.label}
-                </Text>
-                {isSelected && <Check size={14} color={colors.primary} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        {/* Appliances — multi-select with autocomplete */}
+        <ApplianceAutocomplete selected={appliances} onChange={setAppliances} />
 
         <Text
           style={{

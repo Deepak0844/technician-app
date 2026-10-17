@@ -14,7 +14,7 @@ import { useGetJobsQuery } from "@services/api/jobApi";
 import { RouteNames } from "@constants/routeNames";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
-import { getLocalDateString } from "@utils/formatUtils";
+import { getApplianceLabel, getLocalDateString } from "@utils/formatUtils";
 
 // Gluestack Primitives
 import { Text } from "@components/ui/text";
@@ -459,7 +459,7 @@ export default function CalendarScreen() {
                                 : "none",
                             }}
                           >
-                            {job.applianceType}
+                            {getApplianceLabel(job, { max: 2 })}
                           </Text>
                           <Text
                             style={{

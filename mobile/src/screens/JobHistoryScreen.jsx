@@ -30,7 +30,10 @@ import {
   LayoutList,
   CalendarDays,
 } from "lucide-react-native";
-import { useGetJobsPagedInfiniteQuery } from "@services/api/jobApi";
+import {
+  useGetJobsPagedInfiniteQuery,
+  useGetRecentAppliancesQuery,
+} from "@services/api/jobApi";
 import Avatar from "@components/Avatar";
 import useTheme from "@hooks/useTheme";
 import { JobCardSkeleton } from "@components/SkeletonLoaders";
@@ -67,6 +70,16 @@ export default function JobHistoryScreen() {
   const [isPaidFilter, setIsPaidFilter] = useState(undefined); // undefined, true, false
   const [applianceFilter, setApplianceFilter] = useState(undefined);
   const [todayOnly, setTodayOnly] = useState(false);
+  // Appliance names the technician typed themselves (not in the preset grid)
+  const { data: recentAppliances } = useGetRecentAppliancesQuery(undefined);
+  const customApplianceNames = (recentAppliances?.data || [])
+    .map((a) => a.name)
+    .filter(
+      (name) =>
+        !APPLIANCE_OPTIONS.some(
+          (o) => o.value.toLowerCase() === name.toLowerCase(),
+        ),
+    );
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const hasScrolledRef = useRef(false);
 
@@ -160,276 +173,276 @@ export default function JobHistoryScreen() {
           behavior={Platform.OS === "ios" ? "padding" : "padding"}
           keyboardVerticalOffset={64}
         >
-        <Box style={{ flex: 1, padding: 16, paddingBottom: 0 }}>
-          <View style={{ marginBottom: 16 }}>
-            <Text
-              style={{
-                fontFamily: "Space Grotesk",
-                fontSize: 24,
-                fontWeight: "700",
-                color: colors.textPrimary,
-              }}
-            >
-              {route.params?.customerId ? "Service History" : "History"}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 16,
-            }}
-          >
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 16,
-                height: 48,
-                borderRadius: 12,
-                borderWidth: 1.5,
-                borderColor: colors.border,
-                backgroundColor: colors.bgInput,
-              }}
-            >
-              <Search
-                color={colors.textSecondary}
-                size={18}
-                style={{ marginRight: 10 }}
-              />
-              <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
-                <InputField
-                  placeholder="Search jobs..."
-                  placeholderTextColor={colors.placeholderText}
-                  value={search}
-                  onChangeText={setSearch}
-                  style={{
-                    fontFamily: "Inter",
-                    fontSize: 13,
-                    color: colors.textPrimary,
-                    flex: 1,
-                    height: "100%",
-                    backgroundColor: "transparent",
-                  }}
-                />
-              </Input>
+          <Box style={{ flex: 1, padding: 16, paddingBottom: 0 }}>
+            <View style={{ marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontFamily: "Space Grotesk",
+                  fontSize: 24,
+                  fontWeight: "700",
+                  color: colors.textPrimary,
+                }}
+              >
+                {route.params?.customerId ? "Service History" : "History"}
+              </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => setIsFilterOpen(true)}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-                backgroundColor:
-                  isFilterOpen ||
-                    applianceFilter ||
-                    isPaidFilter !== undefined ||
-                    todayOnly
-                    ? colors.primaryBg
-                    : colors.bgInput,
-                borderWidth: 1.5,
-                borderColor:
-                  applianceFilter || isPaidFilter !== undefined || todayOnly
-                    ? colors.primaryBorder
-                    : colors.border,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Filter
-                color={
-                  applianceFilter || isPaidFilter !== undefined || todayOnly
-                    ? colors.primary
-                    : colors.textSecondary
-                }
-                size={20}
-              />
-            </TouchableOpacity>
-          </View>
 
-          {/* Active Filter Chips */}
-          {(applianceFilter || isPaidFilter !== undefined || todayOnly) && (
             <View
               style={{
                 flexDirection: "row",
-                flexWrap: "wrap",
+                alignItems: "center",
                 gap: 8,
                 marginBottom: 16,
               }}
             >
-              {todayOnly && (
-                <TouchableOpacity
-                  onPress={() => setTodayOnly(false)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: colors.primaryBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: colors.primaryBorder,
-                    gap: 4,
-                  }}
-                >
-                  <CalendarDays size={11} color={colors.primary} />
-                  <Text
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 16,
+                  height: 48,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: colors.border,
+                  backgroundColor: colors.bgInput,
+                }}
+              >
+                <Search
+                  color={colors.textSecondary}
+                  size={18}
+                  style={{ marginRight: 10 }}
+                />
+                <Input variant="unstyled" style={{ flex: 1, height: "100%" }}>
+                  <InputField
+                    placeholder="Search jobs..."
+                    placeholderTextColor={colors.placeholderText}
+                    value={search}
+                    onChangeText={setSearch}
                     style={{
                       fontFamily: "Inter",
-                      fontSize: 10,
-                      fontWeight: "700",
-                      color: colors.primary,
+                      fontSize: 13,
+                      color: colors.textPrimary,
+                      flex: 1,
+                      height: "100%",
+                      backgroundColor: "transparent",
                     }}
-                  >
-                    TODAY
-                  </Text>
-                  <X size={11} color={colors.primary} />
-                </TouchableOpacity>
-              )}
-              {isPaidFilter !== undefined && (
-                <TouchableOpacity
-                  onPress={() => setIsPaidFilter(undefined)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: colors.successBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: colors.successBorder,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      fontWeight: "700",
-                      color: colors.success,
-                      marginRight: 4,
-                    }}
-                  >
-                    {isPaidFilter ? "PAID" : "UNPAID"}
-                  </Text>
-                  <X size={12} color={colors.success} />
-                </TouchableOpacity>
-              )}
-              {applianceFilter && (
-                <TouchableOpacity
-                  onPress={() => setApplianceFilter(undefined)}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: colors.primaryBg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 20,
-                    borderWidth: 1,
-                    borderColor: colors.primaryBorder,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Inter",
-                      fontSize: 10,
-                      fontWeight: "700",
-                      color: colors.primary,
-                      marginRight: 4,
-                    }}
-                  >
-                    {applianceFilter}
-                  </Text>
-                  <X size={12} color={colors.primary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
-          <FlatList
-            data={jobs}
-            keyExtractor={(item) => item._id}
-            showsVerticalScrollIndicator={false}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{
-              paddingBottom: isStackScreen
-                ? insets.bottom + 24
-                : TAB_BAR_CLEARANCE,
-            }}
-            onScrollBeginDrag={() => {
-              hasScrolledRef.current = true;
-            }}
-            onEndReached={() => {
-              if (
-                hasScrolledRef.current &&
-                hasNextPage &&
-                !isFetchingNextPage
-              ) {
-                fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.5}
-            refreshControl={
-              <RefreshControl
-                refreshing={isFetching && !isFetchingNextPage && !!jobsData}
-                onRefresh={onRefresh}
-                tintColor={colors.indigo}
-                colors={[colors.indigo]}
-              />
-            }
-            ListHeaderComponent={
-              loadingJobs && (
-                <View style={{ marginBottom: 16 }}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <JobCardSkeleton key={i} />
-                  ))}
-                </View>
-              )
-            }
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <View style={{ paddingVertical: 20, alignItems: "center" }}>
-                  <ActivityIndicator color={colors.indigo} />
-                </View>
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <JobCard
-                job={item}
-                onPress={() =>
-                  navigation.navigate("JobDetails", { job: item })
-                }
-              />
-            )}
-            ListEmptyComponent={
-              !loadingJobs && (
-                <View style={{ alignItems: "center", marginTop: 60 }}>
-                  <Search
-                    size={48}
-                    color={colors.border}
-                    style={{ marginBottom: 16 }}
                   />
-                  <Text
+                </Input>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsFilterOpen(true)}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  backgroundColor:
+                    isFilterOpen ||
+                    applianceFilter ||
+                    isPaidFilter !== undefined ||
+                    todayOnly
+                      ? colors.primaryBg
+                      : colors.bgInput,
+                  borderWidth: 1.5,
+                  borderColor:
+                    applianceFilter || isPaidFilter !== undefined || todayOnly
+                      ? colors.primaryBorder
+                      : colors.border,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Filter
+                  color={
+                    applianceFilter || isPaidFilter !== undefined || todayOnly
+                      ? colors.primary
+                      : colors.textSecondary
+                  }
+                  size={20}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Active Filter Chips */}
+            {(applianceFilter || isPaidFilter !== undefined || todayOnly) && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 16,
+                }}
+              >
+                {todayOnly && (
+                  <TouchableOpacity
+                    onPress={() => setTodayOnly(false)}
                     style={{
-                      fontFamily: "Inter",
-                      color: colors.textMuted,
-                      textAlign: "center",
-                      fontWeight: "700",
-                      letterSpacing: 2,
-                      textTransform: "uppercase",
-                      fontSize: 12,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: colors.primaryBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: colors.primaryBorder,
+                      gap: 4,
                     }}
                   >
-                    No jobs found matching your filters
-                  </Text>
-                </View>
-              )
-            }
-          />
-        </Box>
+                    <CalendarDays size={11} color={colors.primary} />
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: colors.primary,
+                      }}
+                    >
+                      TODAY
+                    </Text>
+                    <X size={11} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
+                {isPaidFilter !== undefined && (
+                  <TouchableOpacity
+                    onPress={() => setIsPaidFilter(undefined)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: colors.successBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: colors.successBorder,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: colors.success,
+                        marginRight: 4,
+                      }}
+                    >
+                      {isPaidFilter ? "PAID" : "UNPAID"}
+                    </Text>
+                    <X size={12} color={colors.success} />
+                  </TouchableOpacity>
+                )}
+                {applianceFilter && (
+                  <TouchableOpacity
+                    onPress={() => setApplianceFilter(undefined)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: colors.primaryBg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 20,
+                      borderWidth: 1,
+                      borderColor: colors.primaryBorder,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: colors.primary,
+                        marginRight: 4,
+                      }}
+                    >
+                      {applianceFilter}
+                    </Text>
+                    <X size={12} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            <FlatList
+              data={jobs}
+              keyExtractor={(item) => item._id}
+              showsVerticalScrollIndicator={false}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{
+                paddingBottom: isStackScreen
+                  ? insets.bottom + 24
+                  : TAB_BAR_CLEARANCE,
+              }}
+              onScrollBeginDrag={() => {
+                hasScrolledRef.current = true;
+              }}
+              onEndReached={() => {
+                if (
+                  hasScrolledRef.current &&
+                  hasNextPage &&
+                  !isFetchingNextPage
+                ) {
+                  fetchNextPage();
+                }
+              }}
+              onEndReachedThreshold={0.5}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isFetching && !isFetchingNextPage && !!jobsData}
+                  onRefresh={onRefresh}
+                  tintColor={colors.indigo}
+                  colors={[colors.indigo]}
+                />
+              }
+              ListHeaderComponent={
+                loadingJobs && (
+                  <View style={{ marginBottom: 16 }}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <JobCardSkeleton key={i} />
+                    ))}
+                  </View>
+                )
+              }
+              ListFooterComponent={
+                isFetchingNextPage ? (
+                  <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                    <ActivityIndicator color={colors.indigo} />
+                  </View>
+                ) : null
+              }
+              renderItem={({ item }) => (
+                <JobCard
+                  job={item}
+                  onPress={() =>
+                    navigation.navigate("JobDetails", { job: item })
+                  }
+                />
+              )}
+              ListEmptyComponent={
+                !loadingJobs && (
+                  <View style={{ alignItems: "center", marginTop: 60 }}>
+                    <Search
+                      size={48}
+                      color={colors.border}
+                      style={{ marginBottom: 16 }}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: "Inter",
+                        color: colors.textMuted,
+                        textAlign: "center",
+                        fontWeight: "700",
+                        letterSpacing: 2,
+                        textTransform: "uppercase",
+                        fontSize: 12,
+                      }}
+                    >
+                      No jobs found matching your filters
+                    </Text>
+                  </View>
+                )
+              }
+            />
+          </Box>
         </KeyboardAvoidingView>
 
         {/* Filter Modal — plain Modal gives a real measured height so flex:1 works */}
@@ -738,6 +751,55 @@ export default function JobHistoryScreen() {
                   );
                 })}
               </View>
+              {customApplianceNames.length > 0 && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginTop: 10,
+                  }}
+                >
+                  {customApplianceNames.map((name) => {
+                    const isActive = applianceFilter === name;
+                    return (
+                      <TouchableOpacity
+                        key={name}
+                        onPress={() =>
+                          setApplianceFilter(isActive ? undefined : name)
+                        }
+                        style={{
+                          paddingVertical: 8,
+                          paddingHorizontal: 14,
+                          borderRadius: 999,
+                          backgroundColor: isActive
+                            ? colors.primaryBg
+                            : colors.bgSurface,
+                          borderWidth: 1.5,
+                          borderColor: isActive
+                            ? colors.primary
+                            : colors.border,
+                        }}
+                      >
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontFamily: "Inter",
+                            fontSize: 12,
+                            fontWeight: "700",
+                            color: isActive
+                              ? colors.primary
+                              : colors.textSecondary,
+                            maxWidth: 180,
+                          }}
+                        >
+                          {name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </ScrollView>
 
             {/* Apply button — always visible, sits outside the ScrollView */}

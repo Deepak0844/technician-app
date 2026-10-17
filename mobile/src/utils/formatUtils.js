@@ -5,8 +5,14 @@
 export const formatCurrency = (val, options = {}) => {
   try {
     const num = Number(val || 0);
-    const minFractionDigits = options.minimumFractionDigits !== undefined ? options.minimumFractionDigits : 0;
-    const maxFractionDigits = options.maximumFractionDigits !== undefined ? options.maximumFractionDigits : 2;
+    const minFractionDigits =
+      options.minimumFractionDigits !== undefined
+        ? options.minimumFractionDigits
+        : 0;
+    const maxFractionDigits =
+      options.maximumFractionDigits !== undefined
+        ? options.maximumFractionDigits
+        : 2;
 
     // Use toFixed to get the right number of decimals initially
     let [integerPart, decimalPart] = num.toFixed(maxFractionDigits).split(".");
@@ -24,7 +30,11 @@ export const formatCurrency = (val, options = {}) => {
 
     // Handle decimals if required
     if (minFractionDigits > 0) {
-      result += "." + decimalPart.padEnd(minFractionDigits, "0").substring(0, maxFractionDigits);
+      result +=
+        "." +
+        decimalPart
+          .padEnd(minFractionDigits, "0")
+          .substring(0, maxFractionDigits);
     } else if (num % 1 !== 0 && maxFractionDigits > 0) {
       // If there are decimals and we allow them, show them up to maxFractionDigits
       const significantDecimals = decimalPart.replace(/0+$/, "");
@@ -133,4 +143,37 @@ export const buildBillToLines = (job) => {
   if (display.showAddress && address)
     lines.push({ kind: "address", text: address });
   return lines;
+};
+
+/**
+ * The appliances serviced on a job. Jobs saved before multi-appliance support
+ * only have `applianceType`, which is read as a single appliance.
+ *
+ * @param {object} job
+ * @returns {Array<{ type: string, isCustom?: boolean }>}
+ */
+export const getJobAppliances = (job) => {
+  // LEGACY: remove the applianceType branch after the data migration
+  if (Array.isArray(job?.appliances) && job.appliances.length > 0) {
+    return job.appliances;
+  }
+  return job?.applianceType
+    ? [{ type: job.applianceType, isCustom: false }]
+    : [];
+};
+
+/**
+ * Display text for a job's appliances: "AC, Refrigerator", or "AC, TV +2"
+ * when `max` names are allowed and there are more.
+ *
+ * @param {object} job
+ * @param {{ max?: number }} [options]
+ * @returns {string}
+ */
+export const getApplianceLabel = (job, { max } = {}) => {
+  const names = getJobAppliances(job).map((a) => a.type);
+  if (max && names.length > max) {
+    return `${names.slice(0, max).join(", ")} +${names.length - max}`;
+  }
+  return names.join(", ");
 };

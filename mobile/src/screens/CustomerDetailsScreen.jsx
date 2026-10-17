@@ -18,6 +18,7 @@ import { openDirections } from "@utils/locationUtils";
 import {
   formatCurrency,
   formatDateShort,
+  getJobAppliances,
 } from "@utils/formatUtils";
 import useTheme from "@hooks/useTheme";
 import Avatar from "@components/Avatar";
@@ -98,7 +99,14 @@ function StatCard({ icon: Icon, label, value, colors, accentColor }) {
 }
 
 // ─── Quick Action Button ─────────────────────────────────────────────────────
-function ActionButton({ icon: Icon, label, onPress, colors, primary, disabled }) {
+function ActionButton({
+  icon: Icon,
+  label,
+  onPress,
+  colors,
+  primary,
+  disabled,
+}) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -144,7 +152,6 @@ function ActionButton({ icon: Icon, label, onPress, colors, primary, disabled })
   );
 }
 
-
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function CustomerDetailsScreen() {
   const route = useRoute();
@@ -182,9 +189,10 @@ export default function CustomerDetailsScreen() {
 
   const filteredJobs = React.useMemo(() => {
     if (!selectedAppliance) return jobs;
-    return jobs.filter(
-      (j) => (j.applianceType || "General") === selectedAppliance,
-    );
+    return jobs.filter((j) => {
+      const types = getJobAppliances(j).map((a) => a.type);
+      return (types.length ? types : ["General"]).includes(selectedAppliance);
+    });
   }, [jobs, selectedAppliance]);
 
   const onRefresh = React.useCallback(() => {
@@ -201,22 +209,28 @@ export default function CustomerDetailsScreen() {
   const applianceStats = React.useMemo(() => {
     const stats = {};
     jobs.forEach((job) => {
-      const type = job.applianceType || "General";
-      if (!stats[type]) {
-        stats[type] = { count: 0, lastDate: null, totalSpent: 0 };
-      }
-      stats[type].count += 1;
-      const date = new Date(job.serviceDate);
-      if (!stats[type].lastDate || date > new Date(stats[type].lastDate)) {
-        stats[type].lastDate = job.serviceDate;
-      }
-      stats[type].totalSpent +=
+      // A job counts under each of its appliances; its bill is split evenly
+      // between them so the per-appliance amounts add up to the job total.
+      const types = getJobAppliances(job).map((a) => a.type);
+      if (types.length === 0) types.push("General");
+      const jobTotal =
         (parseFloat(job.amount) || 0) +
         (parseFloat(job.diagnosticFee) || 0) +
         (job.partsUsed || []).reduce(
           (acc, p) => acc + (p.price || 0) * (p.quantity || 0),
           0,
         );
+      const date = new Date(job.serviceDate);
+      types.forEach((type) => {
+        if (!stats[type]) {
+          stats[type] = { count: 0, lastDate: null, totalSpent: 0 };
+        }
+        stats[type].count += 1;
+        if (!stats[type].lastDate || date > new Date(stats[type].lastDate)) {
+          stats[type].lastDate = job.serviceDate;
+        }
+        stats[type].totalSpent += jobTotal / types.length;
+      });
     });
     return Object.entries(stats).map(([type, data]) => ({ type, ...data }));
   }, [jobs]);
@@ -461,7 +475,6 @@ export default function CustomerDetailsScreen() {
                 navigation.navigate(RouteNames.ADD_JOB, { customer })
               }
             />
-
           </View>
 
           {/* ── Stats Row ── */}
@@ -492,7 +505,7 @@ export default function CustomerDetailsScreen() {
           {/* ── Service Locations ── */}
           {(Array.isArray(customer.locations) &&
             customer.locations.length > 0) ||
-            customer.address ? (
+          customer.address ? (
             <View style={{ marginBottom: 24 }}>
               <View
                 style={{
@@ -538,7 +551,7 @@ export default function CustomerDetailsScreen() {
               </View>
 
               {Array.isArray(customer.locations) &&
-                customer.locations.length > 0 ? (
+              customer.locations.length > 0 ? (
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}

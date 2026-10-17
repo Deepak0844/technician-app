@@ -78,6 +78,18 @@ export const getRecentOrganizations = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get the user's recently used appliance names
+ * @route   GET /api/v1/jobs/appliances/recent
+ * @access  Private
+ */
+export const getRecentAppliances = asyncHandler(async (req, res) => {
+  const result = await JobService.getRecentAppliances(req.user._id, {
+    q: req.query.q,
+  });
+  return ResponseUtils.success(res, result, HttpStatus.OK);
+});
+
+/**
  * @desc    Get all jobs for a specific customer
  * @route   GET /api/v1/jobs/customer/:customerId
  * @access  Private

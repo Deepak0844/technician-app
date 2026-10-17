@@ -1,6 +1,7 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Alert } from "react-native";
+import { getApplianceLabel } from "@utils/formatUtils";
 
 /**
  * Converts an array of objects to a CSV string.
@@ -47,7 +48,7 @@ function convertToCSV(data) {
       `"${customerName}"`, // Wrap in quotes to handle names with commas
       customerPhone,
       date,
-      job.applianceType || "N/A",
+      getApplianceLabel(job) || "N/A",
       `"${(job.issue || "").replace(/"/g, '""')}"`, // Escape quotes in text
       job.status || "N/A",
       amount,
