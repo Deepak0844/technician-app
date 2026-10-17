@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 // Models
 import Job from "#models/Job.js";
 import Customer from "#models/Customer.js";
@@ -12,6 +14,7 @@ import { HttpStatus } from "#constants/httpConstants.js";
 
 // Utils
 import { AppError } from "#utils/errorUtils.js";
+import { getBillToError } from "#utils/invoiceUtils.js";
 
 /**
  * Create a new job
@@ -182,6 +185,9 @@ async function repeatJob(userId, jobId) {
     partsUsed: original.partsUsed,
     warranty: original.warranty,
     location: original.location,
+    invoiceDisplay: original.invoiceDisplay,
+    invoiceAddress: original.invoiceAddress,
+    organization: original.organization,
     priority: original.priority,
     internalNotes: original.internalNotes,
     status: JobStatus.PENDING,
@@ -297,11 +303,41 @@ async function updateJob(userId, jobId, updateData) {
     updateData.completedAt = new Date();
   }
 
+  const { invoiceDisplay, organization, ...rest } = updateData;
+
+  // Bill To rules apply to the final settings (request merged onto the saved
+  // job), so a partial update is judged fairly. Skipped when the request
+  // doesn't touch them, so unrelated edits never trip over old data.
+  if (invoiceDisplay || organization) {
+    const billToError = getBillToError({
+      showCustomerName:
+        invoiceDisplay?.showCustomerName ??
+        job.invoiceDisplay?.showCustomerName,
+      showOrganization:
+        invoiceDisplay?.showOrganization ??
+        job.invoiceDisplay?.showOrganization,
+      organizationName: organization?.name ?? job.organization?.name,
+    });
+    if (billToError)
+      throw new AppError(billToError, HttpStatus.BAD_REQUEST);
+  }
+
+  // Flatten nested option objects to dotted paths so a partial update
+  // doesn't wipe sibling keys.
+  const nestedSet = {};
+  for (const [key, value] of Object.entries(invoiceDisplay || {})) {
+    nestedSet[`invoiceDisplay.${key}`] = value;
+  }
+  for (const [key, value] of Object.entries(organization || {})) {
+    nestedSet[`organization.${key}`] = value;
+  }
+
   const updated = await Job.findByIdAndUpdate(
     jobId,
     {
       $set: {
-        ...updateData,
+        ...rest,
+        ...nestedSet,
         serviceDate: updateData.serviceDate
           ? new Date(updateData.serviceDate)
           : job.serviceDate,
@@ -319,6 +355,35 @@ async function updateJob(userId, jobId, updateData) {
     .lean();
 
   return updated;
+}
+
+/**
+ * Get the user's most recently used organizations (distinct by name)
+ */
+async function getRecentOrganizations(userId, { q = "", limit = 10 } = {}) {
+  const match = {
+    userId: new mongoose.Types.ObjectId(userId),
+    "organization.name": { $nin: [null, ""] },
+  };
+  if (q) {
+    const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    match["organization.name"] = { $regex: `^${escaped}`, $options: "i" };
+  }
+  const rows = await Job.aggregate([
+    { $match: match },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: { $toLower: "$organization.name" },
+        name: { $first: "$organization.name" },
+        lastUsed: { $first: "$createdAt" },
+      },
+    },
+    { $sort: { lastUsed: -1 } },
+    { $limit: limit },
+    { $project: { _id: 0, name: 1 } },
+  ]);
+  return rows;
 }
 
 async function getJobById(userId, jobId) {
@@ -382,6 +447,7 @@ const JobService = {
   createJob,
   getJobs,
   getJobsByCustomer,
+  getRecentOrganizations,
   getJobById,
   repeatJob,
   updateJob,

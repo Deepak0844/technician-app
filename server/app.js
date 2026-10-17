@@ -142,11 +142,7 @@ app.use((err, req, res, _next) => {
       ? "Invalid ID format"
       : `Invalid format for field '${err.path}'`;
 
-    return ResponseUtils.error(
-      res,
-      message,
-      HttpStatus.BAD_REQUEST,
-    );
+    return ResponseUtils.error(res, message, HttpStatus.BAD_REQUEST);
   }
 
   // MongoDB duplicate key error

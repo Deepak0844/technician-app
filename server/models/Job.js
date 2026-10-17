@@ -118,6 +118,24 @@ const jobSchema = new mongoose.Schema(
       latitude: Number,
       longitude: Number,
     },
+    // Which Bill To details the invoice shows. Display-only: hiding a value
+    // here never changes the underlying customer / job data.
+    invoiceDisplay: {
+      showCustomerName: { type: Boolean, default: true },
+      showCustomerPhone: { type: Boolean, default: true },
+      showOrganization: { type: Boolean, default: false },
+      showAddress: { type: Boolean, default: true },
+    },
+    // Optional address printed on the invoice instead of the service location.
+    invoiceAddress: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    // Optional company / school / hotel the invoice can be addressed to.
+    organization: {
+      name: { type: String, trim: true, default: "" },
+    },
     events: [
       {
         action: {
@@ -149,6 +167,8 @@ jobSchema.index({ userId: 1, serviceDate: 1 });
 jobSchema.index({ userId: 1, status: 1 });
 // Index for payment status queries
 jobSchema.index({ userId: 1, isPaid: 1 });
+// Recent organizations lookup
+jobSchema.index({ userId: 1, "organization.name": 1 });
 // Text index for full-text search scoped to a user
 jobSchema.index(
   { userId: 1, applianceType: "text", issue: "text", serviceDone: "text" },

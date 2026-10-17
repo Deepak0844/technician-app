@@ -16,6 +16,7 @@ import {
   createJobSchema,
   updateJobSchema,
   jobListQuerySchema,
+  recentOrganizationsQuerySchema,
 } from "#schemas/validationSchemas.js";
 
 const router = express.Router();
@@ -25,6 +26,11 @@ router.use(protect);
 
 router.post("/", validateBody(createJobSchema), jobController.createJob);
 router.get("/", validateQuery(jobListQuerySchema), jobController.getJobs);
+router.get(
+  "/organizations/recent",
+  validateQuery(recentOrganizationsQuerySchema),
+  jobController.getRecentOrganizations,
+);
 router.get(
   "/customer/:customerId",
   validateObjectId("customerId"),

@@ -31,6 +31,9 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       internalNotes,
       isPaid,
       paymentMethod,
+      invoiceDisplay,
+      organization,
+      invoiceAddress,
     } = formData;
 
     if (!selectedCustomer) {
@@ -39,6 +42,21 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
     }
     if (!issue.trim()) {
       Alert.alert("Error", "Please describe the issue");
+      return;
+    }
+    const hasOrgName = !!organization?.name?.trim();
+    if (
+      !invoiceDisplay?.showCustomerName &&
+      !(invoiceDisplay?.showOrganization && hasOrgName)
+    ) {
+      Alert.alert(
+        "Error",
+        "Show either the customer name or the organisation name on the invoice.",
+      );
+      return;
+    }
+    if (invoiceDisplay?.showOrganization && !hasOrgName) {
+      Alert.alert("Error", "Enter the organisation name or untick it.");
       return;
     }
     if (!userId) {
@@ -97,6 +115,9 @@ export default function useJobSubmission({ userId, editingJob, onSuccess }) {
       internalNotes: internalNotes,
       isPaid: isPaid,
       paymentMethod: paymentMethod,
+      invoiceDisplay,
+      organization: { name: organization?.name?.trim() ?? "" },
+      invoiceAddress: invoiceAddress?.trim() ?? "",
     };
 
     try {

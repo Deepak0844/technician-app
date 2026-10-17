@@ -26,6 +26,7 @@ export const ApiUrls = {
   JOBS: "/jobs",
   JOB_BY_ID: (id) => `/jobs/${id}`,
   JOB_REOPEN: (id) => `/jobs/${id}/reopen`,
+  JOBS_RECENT_ORGANIZATIONS: "/jobs/organizations/recent",
   JOBS_BY_CUSTOMER: (customerId) => `/jobs/customer/${customerId}`,
   JOB_REPEAT: (jobId) => `/jobs/repeat/${jobId}`,
 
