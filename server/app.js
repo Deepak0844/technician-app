@@ -100,7 +100,7 @@ app.use(`${BASE_URL}/dashboard`, dashboardRoutes);
 app.get("/", (_req, res) => {
   ResponseUtils.success(res, {
     message: "Technician App API is running",
-    version: process.env.npm_package_version || "0.0.3",
+    version: process.env.npm_package_version || "0.0.4",
   });
 });
 
@@ -142,11 +142,7 @@ app.use((err, req, res, _next) => {
       ? "Invalid ID format"
       : `Invalid format for field '${err.path}'`;
 
-    return ResponseUtils.error(
-      res,
-      message,
-      HttpStatus.BAD_REQUEST,
-    );
+    return ResponseUtils.error(res, message, HttpStatus.BAD_REQUEST);
   }
 
   // MongoDB duplicate key error

@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "auth_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 const THEME_KEY = "app_theme_mode";
 const PALETTE_KEY = "app_theme_palette";
 
@@ -23,10 +24,31 @@ async function getToken() {
 }
 
 /**
- * Delete stored JWT token (on logout).
+ * Save the refresh token used to obtain a new access token when it expires.
  */
-async function clearToken() {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+async function saveRefreshToken(token) {
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
+}
+
+/**
+ * Read the stored refresh token (null if missing or unreadable).
+ */
+async function getRefreshToken() {
+  try {
+    return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Delete stored access + refresh tokens (on logout / failed refresh).
+ */
+async function clearTokens() {
+  await Promise.all([
+    SecureStore.deleteItemAsync(TOKEN_KEY),
+    SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
+  ]);
 }
 
 /**
@@ -59,7 +81,9 @@ async function getPalette() {
 const StorageUtils = {
   saveToken,
   getToken,
-  clearToken,
+  saveRefreshToken,
+  getRefreshToken,
+  clearTokens,
   saveTheme,
   getTheme,
   savePalette,

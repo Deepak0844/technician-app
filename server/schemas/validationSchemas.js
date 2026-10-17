@@ -13,6 +13,7 @@ import { getBillToError } from "#utils/invoiceUtils.js";
 // Shared max constraints
 const MAX_TEXT_LENGTH = 2000;
 const MAX_SHORT_TEXT = 255;
+const MAX_REFRESH_TOKEN_LENGTH = 256;
 const MAX_ITEMS = 50;
 const MAX_PAGE_SIZE = 100;
 
@@ -53,6 +54,25 @@ export const verifyOtpSchema = z.object({
     .max(128, "Session ID too long"),
   name: z.string().max(MAX_SHORT_TEXT).optional(),
 });
+
+/**
+ * Auth: Refresh / Logout (refresh token in body)
+ */
+export const refreshTokenSchema = z.object({
+  refreshToken: z
+    .string()
+    .min(1, "Refresh token is required")
+    .max(MAX_REFRESH_TOKEN_LENGTH),
+});
+
+/**
+ * Auth: Logout (body optional — clients may send only an access token)
+ */
+export const logoutSchema = z
+  .object({
+    refreshToken: z.string().max(MAX_REFRESH_TOKEN_LENGTH).nullish(),
+  })
+  .default({});
 
 /**
  * Auth: Update Profile

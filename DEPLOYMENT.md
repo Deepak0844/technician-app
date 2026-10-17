@@ -18,15 +18,16 @@ Your server is ready to be hosted on platforms like **Vercel**, **Render**, or *
 
 Set **all** of the following on your hosting platform:
 
-| Variable            | Required | Example                             |
-| ------------------- | -------- | ----------------------------------- |
-| `PORT`              | No       | `3000` (host usually provides this) |
-| `MONGODB_URI`       | Yes      | `mongodb+srv://...`                 |
-| `JWT_SECRET`        | Yes      | `your_random_secure_string`         |
-| `JWT_EXPIRES_IN`    | No       | `7d`                                |
-| `TWOFACTOR_API_KEY` | Yes      | `your_2factor_api_key`              |
-| `NODE_ENV`          | Yes      | `production`                        |
-| `ALLOWED_ORIGINS`   | No       | `https://your-frontend.com`         |
+| Variable                     | Required | Example                             |
+| ---------------------------- | -------- | ----------------------------------- |
+| `PORT`                       | No       | `3000` (host usually provides this) |
+| `MONGODB_URI`                | Yes      | `mongodb+srv://...`                 |
+| `JWT_SECRET`                 | Yes      | `your_random_secure_string`         |
+| `JWT_EXPIRES_IN`             | No       | `15m` (access token lifetime)       |
+| `REFRESH_TOKEN_EXPIRES_DAYS` | No       | `30`                                |
+| `TWOFACTOR_API_KEY`          | Yes      | `your_2factor_api_key`              |
+| `NODE_ENV`                   | Yes      | `production`                        |
+| `ALLOWED_ORIGINS`            | No       | `https://your-frontend.com`         |
 
 ### Steps for [Render](https://render.com)
 

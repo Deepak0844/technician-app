@@ -43,7 +43,7 @@ import {
   Calendar,
   ChevronRight,
   Palette,
-  Camera
+  Camera,
 } from "lucide-react-native";
 import { exportJobsToCSV } from "@utils/exportUtils";
 import { formatDate } from "@utils/formatUtils";
@@ -124,8 +124,9 @@ export default function ProfileScreen() {
   }
 
   async function handleLogout() {
-    await logout().catch(() => { });
-    await StorageUtils.clearToken();
+    const refreshToken = await StorageUtils.getRefreshToken();
+    await logout({ refreshToken }).catch(() => {});
+    await StorageUtils.clearTokens();
     dispatch(clearCredentials());
   }
 
@@ -600,7 +601,12 @@ export default function ProfileScreen() {
             >
               {/* Logo picker section */}
               <View style={{ alignItems: "center", marginBottom: 24 }}>
-                <Text style={[s.editLabel, { color: colors.textMuted, marginBottom: 10 }]}>
+                <Text
+                  style={[
+                    s.editLabel,
+                    { color: colors.textMuted, marginBottom: 10 },
+                  ]}
+                >
                   Company Logo
                 </Text>
                 {isLogoUploading ? (
@@ -655,11 +661,16 @@ export default function ProfileScreen() {
                   activeOpacity={0.75}
                   style={[
                     s.logoPickerBtn,
-                    { backgroundColor: colors.primaryBg, borderColor: colors.primaryBorder },
+                    {
+                      backgroundColor: colors.primaryBg,
+                      borderColor: colors.primaryBorder,
+                    },
                   ]}
                 >
                   <Camera size={14} color={colors.primary} />
-                  <Text style={[s.logoPickerBtnText, { color: colors.primary }]}>
+                  <Text
+                    style={[s.logoPickerBtnText, { color: colors.primary }]}
+                  >
                     {user.companyLogo ? "Change Logo" : "Add Logo"}
                   </Text>
                 </TouchableOpacity>

@@ -5,6 +5,8 @@ export const ErrorMessages = {
   SERVER_ERROR: "Server Error",
   NOT_AUTHORIZED: "Not authorized to access this route",
   TOKEN_EXPIRED: "Your session has expired, please log in again",
+  REFRESH_TOKEN_INVALID:
+    "Refresh token is invalid or expired, please log in again",
   INVALID_TOKEN: "Invalid or expired token",
   RESOURCE_NOT_FOUND: "Resource not found",
   BAD_REQUEST: "Please provide required fields",
@@ -42,6 +44,7 @@ export const SuccessMessages = {
   OTP_SENT: "OTP sent successfully",
   LOGIN_SUCCESS: "Logged in successfully",
   LOGOUT_SUCCESS: "Logged out successfully",
+  TOKEN_REFRESHED: "Token refreshed successfully",
   PROFILE_LOADED: "User profile loaded successfully",
   PROFILE_UPDATED: "User profile updated successfully",
   CUSTOMER_CREATED: "Customer created successfully",
@@ -62,9 +65,25 @@ export const SuccessMessages = {
 };
 
 /**
+ * Auth route paths (relative to the /auth mount point)
+ */
+export const AuthRoutes = {
+  SEND_OTP: "/send-otp",
+  VERIFY_OTP: "/verify-otp",
+  REFRESH: "/refresh",
+  LOGOUT: "/logout",
+  ME: "/me",
+  ME_LOGO: "/me/logo",
+};
+
+/**
  * Auth / Cookie Constants
  */
 export const AUTH_COOKIE_NAME = "token";
+
+// A just-rotated refresh token replayed within this window is treated as a
+// client retry (lost response), not theft.
+export const REFRESH_REUSE_GRACE_MS = 10 * 1000;
 
 export const CookieConfig = {
   HTTP_ONLY: true,

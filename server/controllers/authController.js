@@ -44,8 +44,10 @@ export const sendOtp = asyncHandler(async (req, res) => {
 export const verifyOtp = asyncHandler(async (req, res) => {
   const { phone, otp, sessionId, name } = req.body;
   const user = await AuthService.verifyOtp(phone, otp, sessionId, name);
+  const refreshToken = await AuthService.issueRefreshToken(user._id);
   return TokenUtils.sendTokenResponse(
     user,
+    refreshToken,
     HttpStatus.OK,
     res,
     SuccessMessages.LOGIN_SUCCESS,
@@ -53,13 +55,29 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Logout — revokes the current JWT so it cannot be reused even if
- *          the mobile client still holds it in SecureStore.
+ * @desc    Exchange a refresh token for a new access + refresh token pair
+ * @route   POST /api/v1/auth/refresh
+ * @access  Public (authenticated by the refresh token itself)
+ */
+export const refresh = asyncHandler(async (req, res) => {
+  const tokens = await AuthService.refreshSession(req.body.refreshToken);
+  return ResponseUtils.success(
+    res,
+    tokens,
+    HttpStatus.OK,
+    SuccessMessages.TOKEN_REFRESHED,
+  );
+});
+
+/**
+ * @desc    Logout — revokes the session's refresh token and, if a valid one was
+ *          sent, the current JWT. Works with an expired access token, since
+ *          holding the refresh token is proof of the session.
  * @route   POST /api/v1/auth/logout
- * @access  Private
+ * @access  Public (identifyToken attaches the access token when valid)
  */
 export const logout = asyncHandler(async (req, res) => {
-  // req.token and req.tokenExp are attached by the protect middleware
+  // req.token and req.tokenExp are attached by identifyToken when valid
   if (req.token && req.tokenExp) {
     await TokenBlocklist.findOneAndUpdate(
       { token: req.token },
@@ -70,6 +88,11 @@ export const logout = asyncHandler(async (req, res) => {
       logger.error({ err }, "TokenBlocklist upsert failed during logout");
     });
   }
+
+  // Also kill the refresh token so this device can't mint new access tokens
+  await AuthService.revokeSession(req.body.refreshToken).catch((err) => {
+    logger.error({ err }, "Refresh token revocation failed during logout");
+  });
 
   res.clearCookie(AUTH_COOKIE_NAME, { httpOnly: true, sameSite: "strict" });
   return ResponseUtils.success(
@@ -135,10 +158,7 @@ export const uploadLogo = asyncHandler(async (req, res) => {
   const base64Image = req.file.buffer.toString("base64");
   const logoUrl = `data:${req.file.mimetype};base64,${base64Image}`;
 
-  const user = await AuthService.saveLogoUrl(
-    req.user.id,
-    logoUrl
-  );
+  const user = await AuthService.saveLogoUrl(req.user.id, logoUrl);
 
   return ResponseUtils.success(
     res,

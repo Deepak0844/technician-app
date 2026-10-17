@@ -1,3 +1,6 @@
+// Node
+import crypto from "crypto";
+
 // Third-party
 import jwt from "jsonwebtoken";
 
@@ -26,12 +29,23 @@ function verifyToken(token) {
   return jwt.verify(token, Env.JWT_SECRET);
 }
 
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 /**
- * Set the auth cookie (for web clients) AND return token in body (for mobile clients).
- * Mobile apps (React Native) have no browser cookie jar, so they read token from response body
- * and store it in expo-secure-store.
+ * Generate a new opaque refresh token (not persisted — see AuthService).
  */
-function sendTokenResponse(user, statusCode, res, message) {
+function generateRefreshToken() {
+  return crypto.randomBytes(48).toString("base64url");
+}
+
+/**
+ * Set the auth cookie (for web clients) AND return tokens in body (for mobile clients).
+ * Mobile apps (React Native) have no browser cookie jar, so they read tokens from the
+ * response body and store them in expo-secure-store.
+ */
+function sendTokenResponse(user, refreshToken, statusCode, res, message) {
   const token = signToken(user._id);
 
   const cookieOptions = {
@@ -47,6 +61,7 @@ function sendTokenResponse(user, statusCode, res, message) {
     res,
     {
       token,
+      refreshToken,
       _id: user._id,
       phone: user.phone,
       name: user.name,
@@ -60,6 +75,8 @@ function sendTokenResponse(user, statusCode, res, message) {
 const TokenUtils = {
   signToken,
   verifyToken,
+  hashToken,
+  generateRefreshToken,
   sendTokenResponse,
 };
 
