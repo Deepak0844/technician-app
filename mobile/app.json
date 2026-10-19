@@ -7,16 +7,6 @@
     "icon": "./assets/icon.png",
     "backgroundColor": "#000000",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#0f0f1a"
-    },
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#7c3aed",
-      "iosDisplayInForeground": true
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.technicianapp.mobile",
@@ -71,6 +61,8 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/icon.png",
+          "color": "#7c3aed",
           "sounds": []
         }
       ],
@@ -86,12 +78,13 @@
         {
           "android": {
             "ndkVersion": "27.1.12297006",
-            "compileSdkVersion": 36,
-            "targetSdkVersion": 34,
-            "buildToolsVersion": "35.0.0"
+            "targetSdkVersion": 34
           }
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-sharing",
+      "expo-status-bar"
     ]
   }
 }

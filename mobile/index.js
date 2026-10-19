@@ -5,6 +5,7 @@ import { registerRootComponent } from "expo";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 import * as Contacts from "expo-contacts";
+import { LogBox } from "react-native";
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
@@ -42,6 +43,10 @@ configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false,
 });
+
+// NativeWind (react-native-css-interop) touches RN's deprecated ImageBackground
+// on import; the app doesn't use it. Dev-only toast, remove once NativeWind fixes it.
+LogBox.ignoreLogs(["ImageBackground is deprecated"]);
 
 // Keep the native splash visible until bootstrap (auth + theme) completes
 SplashScreen.preventAutoHideAsync();
