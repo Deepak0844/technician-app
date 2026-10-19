@@ -63,7 +63,8 @@ export const authApi = api.injectEndpoints({
     updateMe: authEndpoints.updateMe(builder),
     uploadLogo: authEndpoints.uploadLogo(builder),
   }),
-  overrideExisting: false,
+  // Fast Refresh re-runs this module in dev; let it re-register the endpoints
+  overrideExisting: __DEV__,
 });
 
 export const {
