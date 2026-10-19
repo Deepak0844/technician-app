@@ -11,7 +11,8 @@ export const dashboardApi = api.injectEndpoints({
         ApiUtils.listTags(TagTypes.DASHBOARD),
     }),
   }),
-  overrideExisting: false,
+  // Fast Refresh re-runs this module in dev; let it re-register the endpoints
+  overrideExisting: __DEV__,
 });
 
 export const { useGetDashboardSummaryQuery } = dashboardApi;

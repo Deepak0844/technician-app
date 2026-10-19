@@ -170,7 +170,8 @@ export const jobApi = api.injectEndpoints({
       ],
     }),
   }),
-  overrideExisting: false,
+  // Fast Refresh re-runs this module in dev; let it re-register the endpoints
+  overrideExisting: __DEV__,
 });
 
 export const {
