@@ -78,7 +78,7 @@
         {
           "android": {
             "ndkVersion": "27.1.12297006",
-            "targetSdkVersion": 34
+            "targetSdkVersion": 36
           }
         }
       ],
