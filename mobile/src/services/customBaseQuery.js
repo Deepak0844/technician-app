@@ -106,7 +106,10 @@ const customBaseQuery = () => async (rawArgs, api) => {
 
     const status = error.response?.status;
     if (__DEV__) {
-      console.error("[customBaseQuery] error", {
+      // An expired/missing session (401) is expected, so log it quietly instead
+      // of raising the red LogBox toast.
+      const log = status === 401 ? console.log : console.error;
+      log("[customBaseQuery] error", {
         status,
         message: error.message,
         isAxiosError: error.isAxiosError,
